@@ -1,0 +1,335 @@
+{
+  "info": {
+    "_postman_id": "a9f7be72-1caa-4d4f-8a4c-1ec1fe8aa001",
+    "name": "Gift Marketplace - Recently Viewed APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for testing Recently Viewed APIs."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://testmarketplace.aibitsoft.cloud"
+    },
+    {
+      "key": "apiVersion",
+      "value": "api/v1"
+    },
+    {
+      "key": "bearerToken",
+      "value": ""
+    },
+    {
+      "key": "clientOrigin",
+      "value": "https://your-frontend-domain.com"
+    },
+    {
+      "key": "loginEmail",
+      "value": ""
+    },
+    {
+      "key": "loginPassword",
+      "value": ""
+    },
+    {
+      "key": "guestId",
+      "value": ""
+    },
+    {
+      "key": "moduleType",
+      "value": "food"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST Customer Login with Email (Auto Save Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let json = {};",
+              "try {",
+              "  json = pm.response.json();",
+              "} catch (e) {",
+              "  pm.test('Response must be JSON', function () {",
+              "    pm.expect.fail('Login response is not JSON');",
+              "  });",
+              "}",
+              "",
+              "const token = json.token || (json.data && json.data.token) || json.access_token || (json.data && json.data.access_token);",
+              "",
+              "pm.test('Token exists in login response', function () {",
+              "  pm.expect(token).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "if (token) {",
+              "  pm.collectionVariables.set('bearerToken', token);",
+              "  console.log('bearerToken saved to collection variables');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email_or_phone\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\",\n  \"login_type\": \"manual\",\n  \"field_type\": \"email\",\n  \"type\": \"email\",\n  \"guest_id\": \"{{guestId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Login and auto-save token to collection variable bearerToken."
+      },
+      "response": []
+    },
+    {
+      "name": "GET Recently Viewed List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/customer/recently-viewed?module={{moduleType}}&limit=20&offset=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "customer",
+            "recently-viewed"
+          ],
+          "query": [
+            {
+              "key": "module",
+              "value": "{{moduleType}}"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "offset",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Fetch recently viewed history."
+      },
+      "response": []
+    },
+    {
+      "name": "POST Track Recently Viewed",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"module\": \"{{moduleType}}\",\n  \"entity_id\": 123,\n  \"viewed_at\": \"2026-04-07T10:30:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/customer/recently-viewed/track",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "customer",
+            "recently-viewed",
+            "track"
+          ]
+        },
+        "description": "Track a viewed entity."
+      },
+      "response": []
+    },
+    {
+      "name": "POST Merge Guest History",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"histories\": [\n    {\n      \"module\": \"food\",\n      \"entity_id\": 123,\n      \"viewed_at\": \"2026-04-07T10:30:00Z\"\n    },\n    {\n      \"module\": \"ecommerce\",\n      \"entity_id\": 22,\n      \"viewed_at\": \"2026-04-07T10:29:00Z\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/customer/recently-viewed/merge",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "customer",
+            "recently-viewed",
+            "merge"
+          ]
+        },
+        "description": "Merge guest recently viewed history after login."
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE Clear Module History",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/customer/recently-viewed/clear?module={{moduleType}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "customer",
+            "recently-viewed",
+            "clear"
+          ],
+          "query": [
+            {
+              "key": "module",
+              "value": "{{moduleType}}"
+            }
+          ]
+        },
+        "description": "Clear recently viewed history for a single module."
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE Clear All History",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Origin",
+            "value": "{{clientOrigin}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{apiVersion}}/customer/recently-viewed/clear",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{apiVersion}}",
+            "customer",
+            "recently-viewed",
+            "clear"
+          ]
+        },
+        "description": "Clear all recently viewed history."
+      },
+      "response": []
+    }
+  ]
+}
