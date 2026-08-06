@@ -149,6 +149,7 @@ export const getItemDataForAddToCart = (
   mainPrice,
   guest_id
 ) => {
+  const resolvedPrice = Number(mainPrice ?? values?.price ?? values?.unit_price ?? values?.item?.price ?? 0) || 0;
   const cartRowId = values?.cartItemId || values?.id;
   const productId = values?.item?.id || values?.item_id || (values?.cartItemId ? values?.id : null);
   let totalQty = 0;
