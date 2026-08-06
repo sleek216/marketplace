@@ -775,42 +775,12 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
           </Stack>
         )}
 
-        {/* Actions: qty fills width → cart → fav */}
+        {/* Actions: wishlist button */}
         <Box
           sx={{ mt: "auto", pt: 0.6 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Stack direction="row" alignItems="center" spacing={0.6} width="100%">
-            <InlineQty
-              value={qty}
-              onDec={handleLocalDecrement}
-              onInc={handleLocalIncrement}
-              disabled={busy || (!isProductExist && isOutOfStock)}
-              min={1}
-            />
-
-            <IconButton
-              aria-label={t("Add to Cart")}
-              disabled={busy || isOutOfStock}
-              onClick={handleCartButtonClick}
-              sx={{
-                width: ACTION_SIZE,
-                height: ACTION_SIZE,
-                p: 0,
-                flexShrink: 0,
-                borderRadius: R,
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                "&:hover": { bgcolor: "primary.dark" },
-                "&.Mui-disabled": {
-                  bgcolor: alpha(theme.palette.grey[500], 0.35),
-                  color: "#fff",
-                },
-              }}
-            >
-              <ShoppingCartOutlinedIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" width="100%">
             <IconButton
               aria-label={
                 isWishlisted ? "Remove from wishlist" : "Add to wishlist"
