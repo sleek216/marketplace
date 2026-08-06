@@ -6,8 +6,6 @@ import CookiesConsent from "../CookiesConsent";
 import PushNotificationLayout from "../PushNotificationLayout";
 import HeroSection from "./hero-section/HeroSection";
 import LandingModulesSection from "./LandingModulesSection";
-import MarketplaceRecentlyViewedSection from "./MarketplaceRecentlyViewedSection";
-import LandingNewArrivalsSection from "./LandingNewArrivalsSection";
 import LandingPromotionalBannerSection from "./LandingPromotionalBannerSection";
 import LandingDoorstepDeliveryBanner from "./LandingDoorstepDeliveryBanner";
 import LandingFeaturesSection from "./LandingFeaturesSection";
@@ -57,14 +55,8 @@ const LandingPage = ({ configData, landingPageData }) => {
           }
         />
 
-        {/* Cross-Module Recently Viewed Products Section (Renders only if user viewed items) */}
-        <MarketplaceRecentlyViewedSection />
-
         {/* Modules Section (Marketplace Services & Modules) */}
         <LandingModulesSection />
-
-        {/* Cross-Module Newly Added Products Section */}
-        <LandingNewArrivalsSection />
 
         {/* High-Impact Promotional Grocery Showcase Banner */}
         <LandingPromotionalBannerSection />
