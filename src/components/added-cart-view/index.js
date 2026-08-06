@@ -87,8 +87,15 @@ const CardView = (props) => {
   // Otherwise, use regular module-wise filtering (for non-landing pages).
   const visibleCartList = useMemo(() => {
     if (isLandingPage && selectedModuleGroup) {
-      // Show items belonging to the selected module group
-      return selectedModuleGroup.items;
+      const activeModId = selectedModuleGroup.moduleId;
+      const activeModType = selectedModuleGroup.moduleType;
+      return (cartList || []).filter((item) => {
+        const itemModId = item?.module_id || item?.module?.id;
+        const itemModType = item?.module_type || item?.module?.module_type;
+        if (activeModId && itemModId) return String(itemModId) === String(activeModId);
+        if (activeModType && itemModType) return itemModType === activeModType;
+        return true;
+      });
     }
     if (isLandingPage && !selectedModuleGroup) {
       // On landing page before selecting a module — return all (for count in modules view)
