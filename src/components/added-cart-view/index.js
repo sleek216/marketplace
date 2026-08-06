@@ -133,6 +133,7 @@ const CardView = (props) => {
   const handleToggleSelect = (cartItem) => {
     const id = cartItem?.cartItemId || cartItem?.id;
     if (!id) return;
+    dispatch(clearCartMeta());
     const targetStr = String(id);
     setSelectedCartIds((prev) => {
       const exists = prev.some((itemId) => String(itemId) === targetStr);
