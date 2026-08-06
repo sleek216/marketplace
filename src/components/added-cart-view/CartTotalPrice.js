@@ -6,17 +6,23 @@ import { getAmountWithSign } from "../../helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "../../utils/CustomFunctions";
 import { useSelector } from "react-redux";
 
-const CartTotalPrice = ({ cartList }) => {
+const CartTotalPrice = ({ cartList, allCartList }) => {
   const { cartMeta } = useSelector((state) => state.cart);
-  const localSubtotal = cartItemsTotalAmount(cartList);
 
-  // Compute store fallback delivery charges if backend returns 0 (e.g. before address selection)
-  const storeFallbackDeliveryFee = React.useMemo(() => {
+  // Always compute subtotal locally from the SELECTED items (real-time, no API needed)
+  const grandSubtotal = React.useMemo(
+    () => cartItemsTotalAmount(cartList),
+    [cartList]
+  );
+
+  // Compute local delivery fee from selected items' stores
+  const localDeliveryFee = React.useMemo(() => {
     if (!Array.isArray(cartList) || cartList.length === 0) return 0;
     const storeMap = new Map();
     cartList.forEach((cartRow) => {
       const item = cartRow?.item || cartRow || {};
-      const storeObj = item?.store || item?.store_details || item?.item?.store || item;
+      const storeObj =
+        item?.store || item?.store_details || item?.item?.store || item;
       const storeId = storeObj?.id || item?.store_id || item?.id;
       if (storeId && !storeMap.has(storeId)) {
         if (storeObj?.free_delivery || item?.free_delivery) {
@@ -30,26 +36,37 @@ const CartTotalPrice = ({ cartList }) => {
             Number(item?.minimum_delivery_charge) ||
             Number(item?.delivery_charge) ||
             0;
-          storeMap.set(storeId, fee);
+          storeMap.set(storeId, fee > 0 ? fee : 60);
         }
       }
     });
     let totalFee = 0;
     storeMap.forEach((val) => {
-      totalFee += val > 0 ? val : 60;
+      totalFee += val;
     });
-    return totalFee > 0 ? totalFee : (cartList.length > 0 ? 60 : 0);
+    return totalFee > 0 ? totalFee : cartList.length > 0 ? 60 : 0;
   }, [cartList]);
 
-  const deliveryCharge =
-    cartMeta?.total_delivery_charge != null && Number(cartMeta.total_delivery_charge) > 0
-      ? Number(cartMeta.total_delivery_charge)
-      : storeFallbackDeliveryFee;
-
-  const grandSubtotal =
-    cartMeta?.grand_subtotal != null && Number(cartMeta.grand_subtotal) > 0
-      ? Number(cartMeta.grand_subtotal)
-      : localSubtotal;
+  // If backend has delivery charge scale proportionally to selected items
+  const deliveryCharge = React.useMemo(() => {
+    const backendDelivery = Number(cartMeta?.total_delivery_charge) || 0;
+    if (backendDelivery > 0) {
+      const allSubtotal = cartItemsTotalAmount(
+        Array.isArray(allCartList) && allCartList.length > 0
+          ? allCartList
+          : cartList
+      );
+      if (allSubtotal > 0 && grandSubtotal < allSubtotal) {
+        // Scale delivery proportionally to selected items ratio
+        return (
+          Math.round(((backendDelivery * grandSubtotal) / allSubtotal) * 100) /
+          100
+        );
+      }
+      return backendDelivery;
+    }
+    return localDeliveryFee;
+  }, [cartMeta, grandSubtotal, allCartList, cartList, localDeliveryFee]);
 
   const grandTotal = grandSubtotal + deliveryCharge;
 

@@ -68,8 +68,16 @@ const CartContents = (props) => {
       const apiGroup = apiGroups.find(
         (sg) => String(sg?.store_id) === String(group.storeId)
       );
+
+      // Only count selected items for real-time totals
+      const selectedGroupItems = group.items.filter(({ item }) =>
+        !selectedCartIds || selectedCartIds.length === 0
+          ? true
+          : selectedCartIds.includes(item?.cartItemId)
+      );
+
       const itemsSubtotal = cartItemsTotalAmount(
-        group.items.map(({ item }) => item)
+        selectedGroupItems.map(({ item }) => item)
       );
 
       const firstItem = group.items[0]?.item || {};
@@ -113,7 +121,7 @@ const CartContents = (props) => {
         hasApiTotals: Boolean(apiGroup),
       };
     });
-  }, [cartList, cartMeta]);
+  }, [cartList, cartMeta, selectedCartIds]);
 
   return (
     <CustomStackFullWidth

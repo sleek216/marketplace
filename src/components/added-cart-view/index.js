@@ -287,7 +287,7 @@ const CardView = (props) => {
                 cartList={selectedCartList}
               />
             )}
-            <CartTotalPrice cartList={selectedCartList} />
+            <CartTotalPrice cartList={selectedCartList} allCartList={activeCartList} />
             <CartActions
               setSideDrawerOpen={setSideDrawerOpen}
               cartList={activeCartList}
