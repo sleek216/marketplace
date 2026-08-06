@@ -49,7 +49,11 @@ const CardView = (props) => {
     }
   };
 
-  useGetAllCartList(getGuestId(), cartListSuccessHandler, selectedCartIds);
+  const { isFetching: isCartApiFetching } = useGetAllCartList(
+    getGuestId(),
+    cartListSuccessHandler,
+    selectedCartIds
+  );
 
   // Landing page: show modules first, then drill into a selected module
   const isLandingPage =
@@ -304,7 +308,11 @@ const CardView = (props) => {
                 cartList={selectedCartList}
               />
             )}
-            <CartTotalPrice cartList={selectedCartList} allCartList={activeCartList} />
+            <CartTotalPrice
+              cartList={selectedCartList}
+              allCartList={activeCartList}
+              isFetchingApi={isCartApiFetching}
+            />
             <CartActions
               setSideDrawerOpen={setSideDrawerOpen}
               cartList={activeCartList}

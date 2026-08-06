@@ -1,12 +1,12 @@
 import React from "react";
 import { CustomStackFullWidth } from "../../styled-components/CustomStyles.style";
-import { Typography } from "@mui/material";
+import { CircularProgress, Stack, Typography } from "@mui/material";
 import { t } from "i18next";
 import { getAmountWithSign } from "../../helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "../../utils/CustomFunctions";
 import { useSelector } from "react-redux";
 
-const CartTotalPrice = ({ cartList }) => {
+const CartTotalPrice = ({ cartList, isFetchingApi }) => {
   const { cartMeta } = useSelector((state) => state.cart);
 
   const localSubtotal = React.useMemo(
@@ -48,8 +48,7 @@ const CartTotalPrice = ({ cartList }) => {
     return totalFee > 0 ? totalFee : 60;
   }, [cartList, selectedCount]);
 
-  // When 0 items are checked, everything is 0.
-  // When items are checked, use backend's total_delivery_charge, grand_subtotal & grand_total directly if selection_applied is true.
+  // Exact math: Grand Subtotal + Total Delivery Fee
   const grandSubtotal = selectedCount === 0 ? 0 : localSubtotal;
 
   const deliveryCharge =
@@ -61,20 +60,14 @@ const CartTotalPrice = ({ cartList }) => {
       ? Number(cartMeta.total_delivery_charge)
       : localDeliveryFee;
 
-  const grandTotal =
-    selectedCount === 0
-      ? 0
-      : cartMeta?.selection_applied &&
-        cartMeta?.grand_total != null &&
-        Number(cartMeta.grand_total) >= 0
-      ? Number(cartMeta.grand_total)
-      : grandSubtotal + deliveryCharge;
+  const grandTotal = selectedCount === 0 ? 0 : grandSubtotal + deliveryCharge;
 
   return (
     <>
       <CustomStackFullWidth
         justifyContent="space-between"
         direction="row"
+        alignItems="center"
         sx={{ px: 1.75, pt: 1, pb: 0.35 }}
       >
         <Typography fontSize="14px" color="text.secondary">
@@ -87,11 +80,17 @@ const CartTotalPrice = ({ cartList }) => {
       <CustomStackFullWidth
         justifyContent="space-between"
         direction="row"
+        alignItems="center"
         sx={{ px: 1.75, py: 0.35 }}
       >
-        <Typography fontSize="14px" color="text.secondary">
-          {t("Total Delivery Fee")}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontSize="14px" color="text.secondary">
+            {t("Total Delivery Fee")}
+          </Typography>
+          {isFetchingApi && (
+            <CircularProgress size={12} thickness={5} color="primary" />
+          )}
+        </Stack>
         <Typography fontSize="14px" fontWeight={600}>
           {getAmountWithSign(deliveryCharge)}
         </Typography>
@@ -99,11 +98,17 @@ const CartTotalPrice = ({ cartList }) => {
       <CustomStackFullWidth
         justifyContent="space-between"
         direction="row"
+        alignItems="center"
         sx={{ px: 1.75, pt: 0.5, pb: 1.25 }}
       >
-        <Typography fontSize="15px" fontWeight={700}>
-          {t("Grand Total")}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontSize="15px" fontWeight={700}>
+            {t("Grand Total")}
+          </Typography>
+          {isFetchingApi && (
+            <CircularProgress size={14} thickness={5} color="primary" />
+          )}
+        </Stack>
         <Typography fontSize="15px" fontWeight={700} color="primary.main">
           {getAmountWithSign(grandTotal)}
         </Typography>
