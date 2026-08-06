@@ -27,11 +27,21 @@ import { useWishListDelete } from "api-manage/hooks/react-query/wish-list/useWis
 import NextImage from "components/NextImage";
 import AmountWithDiscountedAmount from "../AmountWithDiscountedAmount";
 import { useRouter } from "next/router";
+import {
+  mapApiCartRowsToReduxItems,
+  getCartsFromResponse,
+} from "helper-functions/normalizeCartListResponse";
 import { getGuestId } from "helper-functions/getToken";
 import { isAvailable } from "utils/CustomFunctions";
-import { not_logged_in_message, out_of_stock } from "utils/toasterMessages";
+import {
+  not_logged_in_message,
+  out_of_stock,
+  update_error_text,
+  product_updated_in_cart_message,
+} from "utils/toasterMessages";
 import {
   setCart,
+  setCartList,
   setDecrementToCartItem,
   setIncrementToCartItem,
   setRemoveItemFromCart,
@@ -168,7 +178,7 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
   const { mutate: cartItemRemoveMutate } = useDeleteCartItem();
 
   const imageBaseUrl = configData?.base_urls?.item_image_url;
-  const cartItem = aliasCartList?.find((cart) => cart.id === item?.id);
+  const cartItem = aliasCartList?.find((cart) => String(cart.id) === String(item?.id));
   const isProductExist = Boolean(cartItem);
   const cartCount = cartItem?.quantity || 0;
 
@@ -268,9 +278,21 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
         selectedOption: [],
       };
     });
-    reduxDispatch(setCart(product));
+    reduxDispatch(setCart({ ...product, isUpdate: true }));
     setQty(1);
     toast.success(t("Item added to cart"));
+  };
+
+  const clampQty = (value) => Math.min(Math.max(1, value), maxQty);
+
+  const handleLocalIncrement = (e) => {
+    e.stopPropagation();
+    setQty((prev) => clampQty(prev + 1));
+  };
+
+  const handleLocalDecrement = (e) => {
+    e.stopPropagation();
+    setQty((prev) => clampQty(prev - 1));
   };
 
   const handleAddToCart = (e) => {
@@ -301,9 +323,101 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
       return;
     }
 
-    if (isProductExist) return;
-
     const addQty = Math.min(Math.max(1, qty), maxQty);
+    const resolvedPrice = Number(item?.price ?? item?.unit_price ?? item?.price_with_discount ?? 0) || 0;
+
+    if (isProductExist && cartItem) {
+      const currentQty = Number(cartItem?.quantity || 0);
+      const remainingStock = Number.isFinite(resolvedStock) ? resolvedStock - currentQty : null;
+
+      if (remainingStock !== null && remainingStock <= 0) {
+        toast.error(t(out_of_stock));
+        return;
+      }
+
+      const finalAddQty = remainingStock !== null ? Math.min(addQty, remainingStock) : addQty;
+      if (finalAddQty <= 0) {
+        toast.error(t(out_of_stock));
+        return;
+      }
+
+      const updateQuantity = currentQty + finalAddQty;
+      const updateItemObject = {
+        cart_id: cartItem?.cartItemId || cartItem?.id,
+        guest_id: getGuestId(),
+        model: item?.available_date_starts ? "ItemCampaign" : "Item",
+        add_on_ids: [],
+        add_on_qtys: [],
+        item_id: item?.id,
+        price: resolvedPrice * updateQuantity,
+        quantity: updateQuantity,
+        variation: [],
+        moduleIdOverride: item?.module_id || item?.module?.id,
+      };
+
+      const tempProduct = {
+        ...cartItem,
+        quantity: updateQuantity,
+        totalPrice: resolvedPrice * updateQuantity,
+        isUpdate: true,
+      };
+      reduxDispatch(setCart(tempProduct));
+      setQty(1);
+
+      updateMutate(updateItemObject, {
+        onSuccess: (res) => {
+          toast.success(t("Item added to cart"), { id: "cart-toast" });
+          if (res) {
+            const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+            const itemModuleId = item?.module_id || item?.module?.id;
+            const itemModuleType = item?.module_type || item?.module?.module_type;
+            const otherModulesItems = aliasCartList.filter((c) => {
+              const cModuleId = c?.module_id || c?.module?.id;
+              const cModuleType = c?.module_type || c?.module?.module_type;
+              if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+              if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+              return true;
+            });
+            const normalizedApiItems = mappedFromApi.map((apiItem) => ({
+              ...apiItem,
+              module_id: apiItem?.module_id || itemModuleId,
+              module_type: apiItem?.module_type || itemModuleType,
+            }));
+            reduxDispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
+          }
+        },
+        onError: (err) => {
+          const status = err?.response?.status;
+          const msg = (err?.response?.data?.message || err?.response?.data?.errors?.[0]?.message || "").toLowerCase();
+          const isNotFound = status === 404 || msg.includes("not found") || msg.includes("notfound");
+          const isAlreadyInCart = msg.includes("already") || msg.includes("exist");
+          if (!isNotFound && !isAlreadyInCart) {
+            onErrorResponse(err);
+          }
+        },
+      });
+      return;
+    }
+
+    const itemModuleId = item?.module_id || item?.module?.id;
+    const itemModuleType = item?.module_type || item?.module?.module_type;
+
+    // Optimistic instant 0ms Add to Cart
+    const tempProduct = {
+      ...item,
+      id: item?.id,
+      cartItemId: item?.cartItemId || `temp_${item?.id}_${Date.now()}`,
+      quantity: addQty,
+      price: resolvedPrice,
+      totalPrice: resolvedPrice * addQty,
+      selectedOption: [],
+      module_id: itemModuleId,
+      module_type: itemModuleType,
+      module: item?.module,
+    };
+    reduxDispatch(setCart(tempProduct));
+    setQty(1);
+
     addToMutate(
       {
         guest_id: getGuestId(),
@@ -311,79 +425,102 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
         add_on_ids: [],
         add_on_qtys: [],
         item_id: item?.id,
-        price: item?.price,
+        price: resolvedPrice,
         quantity: addQty,
         variation: [],
-        moduleIdOverride: item?.module_id || item?.module?.id,
+        moduleIdOverride: itemModuleId,
       },
-      { onSuccess: handleAddSuccess, onError: onErrorResponse }
+      {
+        onSuccess: (res) => {
+          toast.success(t("Item added to cart"), { id: "cart-toast" });
+          if (res) {
+            const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+            const otherModulesItems = aliasCartList.filter((c) => {
+              const cModuleId = c?.module_id || c?.module?.id;
+              const cModuleType = c?.module_type || c?.module?.module_type;
+              if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+              if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+              return true;
+            });
+            const normalizedApiItems = mappedFromApi.map((apiItem) => ({
+              ...apiItem,
+              module_id: apiItem?.module_id || itemModuleId,
+              module_type: apiItem?.module_type || itemModuleType,
+            }));
+            reduxDispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
+          }
+        },
+        onError: (err) => {
+          const msg = (err?.response?.data?.errors?.[0]?.message || err?.response?.data?.message || "").toLowerCase();
+          const isAlreadyInCart =
+            msg.includes("already") ||
+            msg.includes("exist") ||
+            err?.response?.status === 422 ||
+            err?.response?.status === 403;
+          if (!isAlreadyInCart) {
+            reduxDispatch(setRemoveItemFromCart(tempProduct));
+            onErrorResponse(err);
+          }
+        },
+      }
     );
   };
 
-  const handleIncrement = (e) => {
+  const handleUpdateExistingCart = (e) => {
     e.stopPropagation();
     if (!cartItem?.cartItemId) return;
-    if (cartCount >= maxQty) {
+    const targetQty = clampQty(qty);
+    if (targetQty === cartCount) {
+      toast.error(t(update_error_text));
+      return;
+    }
+    if (targetQty > maxQty) {
       toast.error(t(out_of_stock));
       return;
     }
+    const itemModuleId = item?.module_id || item?.module?.id || cartItem?.module_id;
+    const itemModuleType = item?.module_type || item?.module?.module_type || cartItem?.module_type;
+
+    // Optimistic instant UI update
+    reduxDispatch(
+      setIncrementToCartItem({
+        ...cartItem,
+        quantity: targetQty,
+        module_id: itemModuleId,
+        module_type: itemModuleType,
+        isUpdate: true,
+      })
+    );
+    toast.success(t(product_updated_in_cart_message), { id: "cart-update" });
     updateMutate(
-      { cart_id: cartItem.cartItemId, quantity: cartCount + 1, moduleIdOverride: item?.module_id || item?.module?.id },
+      { cart_id: cartItem.cartItemId, quantity: targetQty, moduleIdOverride: itemModuleId },
       {
         onSuccess: (res) => {
-          res?.forEach((entry) => {
-            if (cartItem?.cartItemId === entry?.id) {
-              reduxDispatch(
-                setIncrementToCartItem({
-                  ...entry?.item,
-                  cartItemId: entry?.id,
-                  totalPrice: entry?.price,
-                  quantity: entry?.quantity,
-                })
-              );
-            }
+          const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+          const otherModulesItems = cartList.filter((c) => {
+            const cModuleId = c?.module_id || c?.module?.id;
+            const cModuleType = c?.module_type || c?.module?.module_type;
+            if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+            if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+            return true;
           });
+          reduxDispatch(setCartList([...otherModulesItems, ...mappedFromApi]));
         },
-        onError: onErrorResponse,
+        onError: (err) => {
+          const status = err?.response?.status;
+          const msg = (err?.response?.data?.message || err?.response?.data?.errors?.[0]?.message || "").toLowerCase();
+          const isNotFound = status === 404 || msg.includes("not found") || msg.includes("notfound");
+          if (!isNotFound) {
+            onErrorResponse(err);
+          }
+        },
       }
     );
   };
 
-  const handleDecrement = (e) => {
+  const handleCartButtonClick = (e) => {
     e.stopPropagation();
-    if (!cartItem?.cartItemId) return;
-    if (cartCount === 1) {
-      cartItemRemoveMutate(
-        {
-          cart_id: cartItem.cartItemId,
-          guestId: getGuestId(),
-          moduleIdOverride: item?.module_id || item?.module?.id,
-        },
-        {
-          onSuccess: () => reduxDispatch(setRemoveItemFromCart(cartItem)),
-          onError: onErrorResponse,
-        }
-      );
-      return;
-    }
-    updateMutate(
-      { cart_id: cartItem.cartItemId, quantity: cartCount - 1, moduleIdOverride: item?.module_id || item?.module?.id },
-      {
-        onSuccess: (res) => {
-          res?.forEach((entry) => {
-            reduxDispatch(
-              setDecrementToCartItem({
-                ...entry?.item,
-                cartItemId: entry?.id,
-                totalPrice: entry?.price,
-                quantity: entry?.quantity,
-              })
-            );
-          });
-        },
-        onError: onErrorResponse,
-      }
-    );
+    handleAddToCart(e);
   };
 
   const bumpPreAddQty = (delta) => (e) => {
@@ -645,9 +782,9 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
         >
           <Stack direction="row" alignItems="center" spacing={0.6} width="100%">
             <InlineQty
-              value={isProductExist ? cartCount : qty}
-              onDec={isProductExist ? handleDecrement : bumpPreAddQty(-1)}
-              onInc={isProductExist ? handleIncrement : bumpPreAddQty(1)}
+              value={qty}
+              onDec={handleLocalDecrement}
+              onInc={handleLocalIncrement}
               disabled={busy || (!isProductExist && isOutOfStock)}
               min={1}
             />
@@ -655,14 +792,7 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
             <IconButton
               aria-label={t("Add to Cart")}
               disabled={busy || isOutOfStock}
-              onClick={
-                isProductExist
-                  ? (e) => {
-                      e.stopPropagation();
-                      handleIncrement(e);
-                    }
-                  : handleAddToCart
-              }
+              onClick={handleCartButtonClick}
               sx={{
                 width: ACTION_SIZE,
                 height: ACTION_SIZE,

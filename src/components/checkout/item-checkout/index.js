@@ -548,6 +548,10 @@ const ItemCheckout = (props) => {
 					"selected_cart_ids",
 					JSON.stringify(selectedCartIdsFromQuery)
 				);
+				formData.append(
+					"multi_store_cart_ids",
+					JSON.stringify(selectedCartIdsFromQuery)
+				);
 			}
 			formData.append("house", token ? address?.house : guestUserInfo?.house);
 			formData.append("floor", token ? address?.floor : guestUserInfo?.floor);
@@ -595,6 +599,9 @@ const ItemCheckout = (props) => {
 						? 1
 						: 0,
 				selected_cart_ids: isSelectedCartCheckout
+					? selectedCartIdsFromQuery
+					: undefined,
+				multi_store_cart_ids: isSelectedCartCheckout
 					? selectedCartIdsFromQuery
 					: undefined,
 				partial_payment: usePartialPayment,

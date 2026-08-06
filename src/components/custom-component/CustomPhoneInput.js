@@ -72,8 +72,11 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       borderRadius: borderRadius
         ? `${borderRadius} 0px 0px ${borderRadius} !important`
         : "2px 0px 0px 2px !important",
-      width: "58px !important",
+      width: "64px !important",
       paddingLeft: "10px !important",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       "&:hover": {
         backgroundColor: theme.palette.background.custom2,
       },
@@ -119,7 +122,8 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       backgroundColor: theme.palette.background.paper,
       color: theme.palette.neutral[1000],
       paddingLeft: languageDirection === "rtl" ? "72px" : "72px",
-      marginRight: languageDirection === "rtl" ? "72px" : "72px",
+      marginRight: 0,
+      boxSizing: "border-box",
       ...(alignWithMuiField && {
         marginTop: 0,
       }),
@@ -193,9 +197,7 @@ const CustomPhoneInput = ({
     const nationalNumber = getLocalNumber(currentValue, dialCode);
     setSelectedDialCode(dialCode);
     setPhoneNumber(nationalNumber);
-    onHandleChange(
-      nationalNumber ? `${dialCode} ${nationalNumber}`.trim() : dialCode
-    );
+    onHandleChange(nationalNumber ? `${dialCode}${nationalNumber}` : dialCode);
   };
   const { configData } = useSelector((state) => state.configData);
   const { t } = useTranslation();

@@ -144,7 +144,7 @@ const ProductInformationBottomSection = ({
         variationErrorToast();
       } else {
         handleRedirect();
-        handleModalClose();
+        handleModalClose?.();
       }
     } else {
       handleRedirect();
@@ -250,45 +250,25 @@ const ProductInformationBottomSection = ({
         </PrimaryButton>
       )}
       {!productDetailsData?.isCampaignItem && (
-        <>
-          {!isInCart(productDetailsData?.id) &&
-            (isFoodModuleItem || productDetailsData?.stock > 0) &&
-            isVariationAvailable(productDetailsData) && (
-              <PrimaryButton
-                onClick={() => handleVariationAvailability("add")}
-                sx={{
-                  ...btnBaseSx(marketplaceLayout),
-                  flex: 1,
-                  fontSize: { xs: "12px", md: "14px" },
-                  backgroundColor: theme.palette.secondary.main,
-                  color: theme.palette.secondary.contrastText,
-                  "&:hover": {
-                    backgroundColor: theme.palette.secondary.dark,
-                  },
-                }}
-                disabled={!isFoodModuleItem && productDetailsData?.stock === 0}
-              >
-                {isLoading ? <Loading /> : t("Add to Cart")}
-              </PrimaryButton>
-            )}
-          {isInCart(productDetailsData?.id) && (
-            <PrimaryButton
-              onClick={() =>
-                handleVariationAvailability(
-                  "update",
-                  isInCart(productDetailsData?.id)
-                )
-              }
-              sx={{
-                ...btnBaseSx(marketplaceLayout),
-                width: 200,
-                fontSize: { xs: "12px", md: "14px" },
-              }}
-            >
-              {updateIsLoading ? <Loading /> : t("Update To Cart")}
-            </PrimaryButton>
-          )}
-        </>
+        (isFoodModuleItem || productDetailsData?.stock > 0) &&
+        isVariationAvailable(productDetailsData) && (
+          <PrimaryButton
+            onClick={() => handleVariationAvailability("add")}
+            sx={{
+              ...btnBaseSx(marketplaceLayout),
+              flex: 1,
+              fontSize: { xs: "12px", md: "14px" },
+              backgroundColor: theme.palette.secondary.main,
+              color: theme.palette.secondary.contrastText,
+              "&:hover": {
+                backgroundColor: theme.palette.secondary.dark,
+              },
+            }}
+            disabled={!isFoodModuleItem && productDetailsData?.stock === 0}
+          >
+            {isLoading ? <Loading /> : t("Add to Cart")}
+          </PrimaryButton>
+        )
       )}
     </BottomStack>
   );

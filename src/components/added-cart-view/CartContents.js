@@ -71,9 +71,35 @@ const CartContents = (props) => {
       const itemsSubtotal = cartItemsTotalAmount(
         group.items.map(({ item }) => item)
       );
-      const deliveryCharge = Number(apiGroup?.delivery_charge) || 0;
+
+      const firstItem = group.items[0]?.item || {};
+      const storeObj =
+        firstItem?.store ||
+        firstItem?.store_details ||
+        firstItem?.item?.store ||
+        firstItem?.item?.store_details ||
+        firstItem;
+
+      const fallbackDeliveryCharge =
+        Number(storeObj?.minimum_shipping_charge) ||
+        Number(storeObj?.minimum_delivery_charge) ||
+        Number(storeObj?.delivery_charge) ||
+        Number(firstItem?.minimum_shipping_charge) ||
+        Number(firstItem?.minimum_delivery_charge) ||
+        Number(firstItem?.delivery_charge) ||
+        0;
+
+      const deliveryCharge =
+        apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) > 0
+          ? Number(apiGroup.delivery_charge)
+          : storeObj?.free_delivery || firstItem?.free_delivery
+          ? 0
+          : fallbackDeliveryCharge > 0
+          ? fallbackDeliveryCharge
+          : 60;
+
       const storeTotal =
-        apiGroup?.store_total != null
+        apiGroup?.store_total != null && Number(apiGroup.store_total) > 0
           ? Number(apiGroup.store_total)
           : itemsSubtotal + deliveryCharge;
 

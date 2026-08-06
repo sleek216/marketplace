@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Book as LibraryBooksIcon, Home as HomeIcon, MessageCircle as SmsRoundedIcon, ShoppingCart as ShoppingCartRoundedIcon, Heart as FavoriteIcon } from "lucide-react";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
-import { Badge, BottomNavigation, Paper } from "@mui/material";
+import { Badge, BottomNavigation, Paper, Box } from "@mui/material";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import { CustomBottomNavigationAction } from "./NavBar.style";
 import { t } from "i18next";
@@ -13,10 +13,19 @@ import { getCartListModuleWise } from "helper-functions/getCartListModuleWise";
 import WishListCardView from "../wishlist";
 import { getGuestId, getToken } from "helper-functions/getToken";
 import { toast } from "react-hot-toast";
+import useGetAllCartList from "api-manage/hooks/react-query/add-cart/useGetAllCartList";
+import {
+  getCartsFromResponse,
+  getCartMetaFromResponse,
+  mapApiCartRowsToReduxItems,
+} from "helper-functions/normalizeCartListResponse";
+import { getModule } from "helper-functions/getLanguage";
+import { setCartList, setCartMeta } from "redux/slices/cart";
 import {
   OPEN_CART_DRAWER_EVENT,
   Taxi,
 } from "components/header/second-navbar/SecondNavbar";
+import { useChatUnreadBadgeContext } from "contexts/ChatUnreadBadgeContext";
 
 const styles = {
   maxWidth: 2000,
@@ -45,13 +54,23 @@ const BottomNav = () => {
   const currentRoute = router.pathname.replace("/", "");
 
   const cartListSuccessHandler = (res) => {
-    if (!res) return;
+    if (res == null) return;
     dispatch(setCartMeta(getCartMetaFromResponse(res)));
     dispatch(setCartList(mapApiCartRowsToReduxItems(getCartsFromResponse(res))));
   };
 
-  const { refetch: cartListRefetch, isLoading: cartLoading } =
+  const {
+    data: cartListData,
+    refetch: cartListRefetch,
+    isLoading: cartLoading,
+  } =
     useGetAllCartList(getGuestId(), cartListSuccessHandler);
+
+  useEffect(() => {
+    if (cartListData != null) {
+      cartListSuccessHandler(cartListData);
+    }
+  }, [cartListData]);
   const handleCartDrawerOpen = () => {
     setSideDrawerOpen(true);
   };
@@ -62,10 +81,10 @@ const BottomNav = () => {
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
   }, []);
   useEffect(() => {
-    if (sideDrawerOpen) {
+    if (sideDrawerOpen && cartList?.length === 0 && cartListData == null) {
       cartListRefetch?.();
     }
-  }, [sideDrawerOpen, cartListRefetch]);
+  }, [sideDrawerOpen, cartListRefetch, cartList?.length, cartListData]);
   const handleWishListsDrawerOpen = () => {
     if (getToken()) {
       setWishListSideDrawerOpen(true);
@@ -74,7 +93,11 @@ const BottomNav = () => {
     }
   };
 
-  // const handleChange = () => {};
+  const isLandingPage = router.pathname === "/" || router.pathname === "" || !selectedModule?.id;
+  const bottomCartBadgeCount = isLandingPage
+    ? (cartList?.length || 0)
+    : (getCartListModuleWise(cartList)?.length || 0);
+
   return (
     <CustomStackFullWidth>
       <Paper
@@ -126,12 +149,12 @@ const BottomNav = () => {
               icon={<HomeIcon />}
             />
 
-              {selectedModule?.module_type === "rental" ? (<CustomBottomNavigationAction
+                {selectedModule?.module_type === "rental" ? (<CustomBottomNavigationAction
                   label={t("My Trips")}
                   value="my-trips"
                   icon={
                       <Badge color="primary">
-                          <LocalTaxiIcon />
+                      <Taxi />
                       </Badge>
                   }
               />) : (<CustomBottomNavigationAction
@@ -152,7 +175,7 @@ const BottomNav = () => {
                   value="cart"
                   icon={
                     <Badge
-                      badgeContent={getCartListModuleWise(cartList)?.length}
+                      badgeContent={bottomCartBadgeCount > 0 ? bottomCartBadgeCount : null}
                       color="primary"
                     >
                       <ShoppingCartRoundedIcon />

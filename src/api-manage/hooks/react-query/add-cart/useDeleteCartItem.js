@@ -1,10 +1,15 @@
 import MainApi from "../../../MainApi";
 import { cart_all_item_remove, cart_item_delete } from "../../../ApiRoutes";
-import { useMutation } from "react-query";
+import { useMutation, useQueryClient } from "react-query";
+import { getCurrentModuleId } from "helper-functions/getCurrentModuleType";
 
 const deleteItem = async (cartIdAndGuestId) => {
   const { moduleIdOverride, guestId, cart_id } = cartIdAndGuestId || {};
   const requestConfig = moduleIdOverride ? { moduleIdOverride } : {};
+
+  if (typeof cart_id === "string" && cart_id.startsWith("temp_")) {
+    return { data: { message: "Optimistic item deleted locally" } };
+  }
 
   if (guestId) {
     const { data } = await MainApi.delete(
@@ -22,5 +27,14 @@ const deleteItem = async (cartIdAndGuestId) => {
 };
 
 export default function useDeleteCartItem() {
-  return useMutation("delete-all-cart-item", deleteItem);
+  const queryClient = useQueryClient();
+  return useMutation("delete-all-cart-item", deleteItem, {
+    onSuccess: (data) => {
+      const queryKey = ["cart-itemss"];
+      if (Array.isArray(data)) {
+        queryClient.setQueryData(queryKey, data);
+      }
+      queryClient.invalidateQueries("cart-itemss");
+    },
+  });
 }

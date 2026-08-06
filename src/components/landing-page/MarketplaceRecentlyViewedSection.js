@@ -179,6 +179,11 @@ const MarketplaceRecentlyViewedSection = () => {
   if (!isLoading && !isFetching && products.length === 0) return null;
 
   const showLoading = isLoading && products.length === 0;
+
+  if (!showLoading && (!products || products.length === 0)) {
+    return null;
+  }
+
   const showNav =
     isDesktop && products.length > 0 && (canScrollLeft || canScrollRight);
 

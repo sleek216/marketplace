@@ -8,6 +8,8 @@ export const cart_clear_description =
   "You have item from another store in cart. If you continue, your all previous item from cart will be removed and this one will be added.";
 export const update_error_text = "No changes found to update.";
 export const product_update_to_cart_message = "Updated successfully.";
+export const product_updated_in_cart_message = "Product updated in cart";
+export const already_in_cart_message = "Already in cart";
 export const not_logged_in_message = "You are not logged in";
 export const message_sending_image_limit =
   "Maximum 3 images can be send at a time.";

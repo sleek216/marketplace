@@ -27,6 +27,14 @@ import { t } from "i18next";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { useGetWishList } from "api-manage/hooks/react-query/rental-wishlist/useGetWishlist";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { useQueryClient } from "react-query";
+import useGetAllCartList from "api-manage/hooks/react-query/add-cart/useGetAllCartList";
+import {
+  getCartMetaFromResponse,
+  getCartsFromResponse,
+  mapApiCartRowsToReduxItems,
+} from "helper-functions/normalizeCartListResponse";
+import { setCartList, setCartMeta } from "redux/slices/cart";
 
 export const setUpRecaptcha = () => {
   if (document.getElementById("recaptcha-container")) {
@@ -65,6 +73,7 @@ const AuthModal = ({ modalFor, open, handleClose, setModalFor }) => {
   const user = medium === "google" ? userInfo : fbUserInfo;
   const jwt = medium === "google" ? jwtToken : fbJwtToken;
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const recaptchaWrapperRef = useRef(null);
   const { mutate, isLoading } = useUpdateUserInfo();
   const { mutate: loginMutation, isLoading: loginIsLoading } = useSignIn();
@@ -90,6 +99,13 @@ const AuthModal = ({ modalFor, open, handleClose, setModalFor }) => {
   const onSuccessHandler = (res) => {
     dispatch(setWishList(res));
   };
+  const cartListSuccessHandler = (res) => {
+    if (res) {
+      dispatch(setCartMeta(getCartMetaFromResponse(res)));
+      dispatch(setCartList(mapApiCartRowsToReduxItems(getCartsFromResponse(res))));
+    }
+  };
+  const { refetch: cartListRefetch } = useGetAllCartList(getGuestId(), cartListSuccessHandler);
   const { refetch } = useWishListGet(onSuccessHandler);
   const { refetch: rentalWishlistRefetch } = useGetWishList(onSuccessHandler);
 
@@ -97,14 +113,31 @@ const AuthModal = ({ modalFor, open, handleClose, setModalFor }) => {
     localStorage.setItem("token", value);
     notifyHeaderSessionSync();
     toast.success(t(loginSuccessFull));
-    if (zoneid) {
-      if (moduleType === "rental") {
-        await rentalWishlistRefetch();
-      } else {
-        await refetch();
-      }
+
+    // Clear stale cart cache
+    queryClient.removeQueries({ queryKey: ["cart-itemss"], exact: false });
+
+    // Fire ALL post-login fetches in PARALLEL for maximum speed
+    const [cartData] = await Promise.allSettled([
+      cartListRefetch(),
+      profileRefatch(),
+      zoneid
+        ? moduleType === "rental"
+          ? rentalWishlistRefetch()
+          : refetch()
+        : Promise.resolve(),
+    ]);
+
+    // Sync cart to Redux immediately
+    if (cartData?.status === "fulfilled" && cartData?.value?.data) {
+      dispatch(setCartMeta(getCartMetaFromResponse(cartData.value.data)));
+      dispatch(
+        setCartList(
+          mapApiCartRowsToReduxItems(getCartsFromResponse(cartData.value.data))
+        )
+      );
     }
-    await profileRefatch();
+
     handleClose?.();
   };
   const handleRegistrationOnSuccess = (token) => {

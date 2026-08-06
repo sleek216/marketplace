@@ -16,6 +16,10 @@ import { useRouter } from "next/router";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
+import {
+	mapApiCartRowsToReduxItems,
+	getCartsFromResponse,
+} from "helper-functions/normalizeCartListResponse";
 import { setCart, setCartList } from "redux/slices/cart";
 import { addWishList } from "redux/slices/wishList";
 import SimpleBar from "simplebar-react";
@@ -107,7 +111,7 @@ const ProductInformation = ({
 		if (cartList.length > 0) {
 			const itemIsInCart = cartList.find(
 				(item) =>
-					item?.id === productDetailsData?.id &&
+					String(item?.id) === String(productDetailsData?.id) &&
 					JSON.stringify(item?.selectedOption?.[0]) ===
 					JSON.stringify(option)
 			);
@@ -191,14 +195,152 @@ const ProductInformation = ({
 			toast.error(t(out_of_stock));
 			return;
 		}
-		const itemObject = {
-			...getItemObject(state?.modalData[0]),
-			moduleIdOverride:
-				productDetailsData?.module_id || productDetailsData?.module?.id,
+
+		const modalItem = state?.modalData[0] || productDetailsData;
+		const addQty = modalItem?.quantity || 1;
+		const resolvedPrice = Number(modalItem?.price ?? modalItem?.unit_price ?? productDetailsData?.price ?? productDetailsData?.unit_price ?? 0) || 0;
+
+		dispatch({
+			type: ACTION.setModalData,
+			payload: {
+				...modalItem,
+				quantity: 1,
+				totalPrice: resolvedPrice,
+			},
+		});
+
+		const itemIsInCart = cartList?.find((item) => {
+			const isSameId = String(item?.id) === String(productDetailsData?.id || modalItem?.id);
+			if (!isSameId) return false;
+			const itemOpt = JSON.stringify(item?.selectedOption || []);
+			const modalOpt = JSON.stringify(modalItem?.selectedOption || []);
+			return itemOpt === modalOpt || JSON.stringify(item?.selectedOption?.[0]) === JSON.stringify(modalItem?.selectedOption?.[0]);
+		});
+
+		if (itemIsInCart) {
+			const currentQty = Number(itemIsInCart?.quantity || 0);
+			const stockLimit = Number.isFinite(getResolvedStock()) ? getResolvedStock() : null;
+			const remainingStock = stockLimit !== null ? stockLimit - currentQty : null;
+			if (remainingStock !== null && remainingStock <= 0) {
+				toast.error(t(out_of_stock));
+				return;
+			}
+			const finalAddQty = remainingStock !== null ? Math.min(addQty, remainingStock) : addQty;
+			if (finalAddQty <= 0) {
+				toast.error(t(out_of_stock));
+				return;
+			}
+			const updateQuantity = currentQty + finalAddQty;
+			const cartIdToUpdate = itemIsInCart?.cartItemId || itemIsInCart?.id || modalItem?.cartItemId;
+
+			const itemModuleId = productDetailsData?.module_id || productDetailsData?.module?.id || modalItem?.module_id;
+			const itemModuleType = productDetailsData?.module_type || productDetailsData?.module?.module_type || modalItem?.module_type;
+
+			const updatedProduct = {
+				...modalItem,
+				id: modalItem?.id || productDetailsData?.id,
+				cartItemId: cartIdToUpdate,
+				quantity: updateQuantity,
+				totalPrice: resolvedPrice * updateQuantity,
+				module_id: itemModuleId,
+				module_type: itemModuleType,
+				isUpdate: true,
+			};
+
+			dispatchRedux(setCart(updatedProduct));
+			toast.success(t("Item added to cart"));
+			handleModalClose?.();
+
+			const cartItemObject = {
+				cart_id: cartIdToUpdate,
+				guest_id: getGuestId(),
+				model: modalItem?.available_date_starts ? "ItemCampaign" : "Item",
+				add_on_ids: [],
+				add_on_qtys: [],
+				item_id: modalItem?.id || productDetailsData?.id,
+				price: resolvedPrice * updateQuantity,
+				quantity: updateQuantity,
+				variation: modalItem?.selectedOption || [],
+				moduleIdOverride: itemModuleId,
+			};
+
+			updateMutate(cartItemObject, {
+				onSuccess: (res) => {
+					if (res) {
+						const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+						const otherModulesItems = cartList.filter((c) => {
+							const cModuleId = c?.module_id || c?.module?.id;
+							const cModuleType = c?.module_type || c?.module?.module_type;
+							if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+							if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+							return true;
+						});
+						dispatchRedux(setCartList([...otherModulesItems, ...mappedFromApi]));
+					}
+				},
+				onError: (err) => {
+					const status = err?.response?.status;
+					const msg = (err?.response?.data?.message || err?.response?.data?.errors?.[0]?.message || "").toLowerCase();
+					const isNotFound = status === 404 || msg.includes("not found") || msg.includes("notfound");
+					if (!isNotFound) {
+						onErrorResponse(err);
+					}
+				},
+			});
+			return;
+		}
+
+		const itemModuleId = productDetailsData?.module_id || productDetailsData?.module?.id || modalItem?.module_id;
+		const itemModuleType = productDetailsData?.module_type || productDetailsData?.module?.module_type || modalItem?.module_type;
+
+		const tempProduct = {
+			...modalItem,
+			id: modalItem?.id || productDetailsData?.id,
+			cartItemId: modalItem?.cartItemId || `temp_${modalItem?.id || productDetailsData?.id}_${Date.now()}`,
+			quantity: addQty,
+			totalPrice: resolvedPrice * addQty,
+			selectedOption: modalItem?.selectedOption || [],
+			module_id: itemModuleId,
+			module_type: itemModuleType,
+			module: productDetailsData?.module,
 		};
+
+		// Optimistic instant 0ms Add to Cart
+		dispatchRedux(setCart(tempProduct));
+		toast.success(t("Item added to cart"));
+		handleModalClose?.();
+
+		const itemObject = {
+			...getItemObject(modalItem),
+			moduleIdOverride: itemModuleId,
+		};
+
 		mutate(itemObject, {
-			onSuccess: handleSuccess,
-			onError: onErrorResponse,
+			onSuccess: (res) => {
+				if (res) {
+					const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+					const otherModulesItems = cartList.filter((c) => {
+						const cModuleId = c?.module_id || c?.module?.id;
+						const cModuleType = c?.module_type || c?.module?.module_type;
+						if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+						if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+						return true;
+					});
+					dispatchRedux(setCartList([...otherModulesItems, ...mappedFromApi]));
+				}
+			},
+			onError: (err) => {
+				const msg = (err?.response?.data?.errors?.[0]?.message || err?.response?.data?.message || "").toLowerCase();
+				const isAlreadyInCart =
+					msg.includes("already") ||
+					msg.includes("exist") ||
+					err?.response?.status === 422 ||
+					err?.response?.status === 403;
+				if (!isAlreadyInCart) {
+					dispatchRedux(setRemoveItemFromCart(tempProduct));
+					onErrorResponse(err);
+				}
+			},
 		});
 	};
 
@@ -220,7 +362,7 @@ const ProductInformation = ({
 				return newItem;
 			});
 			dispatchRedux(setCartList(pp));
-			toast.success(t(product_update_to_cart_message));
+			toast.success(t("Cart updated successfully"), { id: "cart-update" });
 			handleModalClose?.();
 		}
 	};
@@ -238,30 +380,49 @@ const ProductInformation = ({
 				icon: "⚠️",
 			});
 		} else {
-			const itemIsInCart = cartList.find(
-				(item) =>
-					item?.id === productDetailsData?.id &&
-					JSON.stringify(item?.selectedOption?.[0]) ===
-					JSON.stringify(state.modalData[0]?.selectedOption?.[0])
-			);
+			const itemIsInCart = cartList.find((item) => {
+				const isSameId = String(item?.id) === String(productDetailsData?.id || state.modalData[0]?.id);
+				if (!isSameId) return false;
+				const itemOpt = JSON.stringify(item?.selectedOption || []);
+				const modalOpt = JSON.stringify(state.modalData[0]?.selectedOption || []);
+				return itemOpt === modalOpt || JSON.stringify(item?.selectedOption?.[0]) === JSON.stringify(state.modalData[0]?.selectedOption?.[0]);
+			});
+
+			const cartIdToUpdate = itemIsInCart?.cartItemId || itemIsInCart?.id || state.modalData[0]?.cartItemId;
+
+			const updatedProduct = {
+				...state.modalData[0],
+				id: state.modalData[0]?.id || productDetailsData?.id,
+				cartItemId: cartIdToUpdate,
+				quantity: state.modalData[0]?.quantity,
+				totalPrice: state.modalData[0]?.totalPrice,
+				isUpdate: true,
+			};
+
+			// Optimistic instant UI update (0ms)
+			dispatchRedux(setCart(updatedProduct));
+			toast.success(t("Cart updated successfully"), { id: "cart-update" });
+
 			const cartItemObject = {
-				cart_id: itemIsInCart?.cartItemId,
+				cart_id: cartIdToUpdate,
 				guest_id: getGuestId(),
 				model: state.modalData[0]?.available_date_starts
 					? "ItemCampaign"
 					: "Item",
 				add_on_ids: [],
 				add_on_qtys: [],
-				item_id: state.modalData[0]?.id,
+				item_id: state.modalData[0]?.id || productDetailsData?.id,
 				price: state.modalData[0]?.totalPrice,
 				quantity: state.modalData[0]?.quantity,
-				variation: state.modalData[0]?.selectedOption,
+				variation: state.modalData[0]?.selectedOption || [],
 				moduleIdOverride:
 					productDetailsData?.module_id || productDetailsData?.module?.id,
 			};
 			updateMutate(cartItemObject, {
 				onSuccess: updateCartSuccessHandler,
-				onError: onErrorResponse,
+				onError: (err) => {
+					onErrorResponse(err);
+				},
 			});
 			if (productUpdate) {
 				handleModalClose?.();

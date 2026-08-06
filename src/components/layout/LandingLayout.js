@@ -16,7 +16,6 @@ export const LandingLayout = ({ children, configData, landingPageData }) => {
 
   return (
     <AppShellRoot justifyContent="space-between">
-      <ModuleSelect />
       <header>
         <HeaderComponent configData={configData} />
       </header>

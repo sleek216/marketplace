@@ -33,7 +33,6 @@ const StyledIconButton = styled(IconButton)(({ theme }) => ({
     transform: "scale(1.1)",
   },
   transition: "all 0.2s ease-in-out",
-  // boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
   svg: {
     fontSize: ".875rem",
   }

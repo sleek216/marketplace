@@ -65,7 +65,7 @@ const NavLinks = ({ moduleType }) => {
     >
       <NavMenuLink
         component={Link}
-        href="/home"
+        href="/"
         underline="none"
         sx={{
           cursor: "pointer",
@@ -75,12 +75,11 @@ const NavLinks = ({ moduleType }) => {
           py: 0.85,
           borderRadius: "8px",
           textDecoration: "none",
-          color: router.pathname === "/home" ? "primary.main" : undefined,
-          backgroundColor:
-            router.pathname === "/home" ? "action.selected" : "transparent",
+          color: (router.pathname === "/" || router.pathname === "/home") ? "primary.main" : "text.primary",
+          backgroundColor: "transparent",
           "&:hover": {
             color: "primary.main",
-            backgroundColor: "action.hover",
+            backgroundColor: "alpha(theme.palette.primary.main, 0.05)",
           },
         }}
       >

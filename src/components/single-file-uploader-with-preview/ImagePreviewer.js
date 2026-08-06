@@ -19,6 +19,7 @@ const ImagePreviewer = ({
   objectFit = "cover",
   height = "130px",
   marginLeft,
+  onDeleteClick,
 }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,6 +83,7 @@ const ImagePreviewer = ({
             <ImageHoverOverlay
               onViewClick={handleViewClick}
               onEditClick={handleEditClick}
+              onDeleteClick={onDeleteClick}
             />
           </FilePreviewerWrapper>
         ) : (

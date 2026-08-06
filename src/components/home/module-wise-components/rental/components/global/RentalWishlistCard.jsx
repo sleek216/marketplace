@@ -145,7 +145,7 @@ const RentalWishListCard = ({ item }) => {
           selectedOption: [],
         };
       });
-      reduxDispatch(setCart(product));
+      reduxDispatch(setCart({ ...product, isUpdate: true }));
       toast.success(t("Item added to cart"));
       dispatch({ type: ACTION.setClearCartModal, payload: false });
     }

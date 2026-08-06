@@ -7,11 +7,10 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import ThemeSwitches from "../header/top-navbar/ThemeSwitches";
 import CustomLanguage from "../header/top-navbar/language/CustomLanguage";
 import { useSelector } from "react-redux";
 import { t } from "i18next";
-import { Palette, Languages, Settings as SettingsIcon } from "lucide-react";
+import { Languages, Settings as SettingsIcon } from "lucide-react";
 import { useTheme } from "@emotion/react";
 import ProfileSectionHeader from "../user-information/ProfileSectionHeader";
 
@@ -77,17 +76,10 @@ const CustomSettings = () => {
         icon={SettingsIcon}
         title={t("Settings")}
         subtitle={t(
-          "Customize your experience by adjusting theme and language preferences"
+          "Customize your experience by adjusting language preferences"
         )}
       />
       <Box>
-        <SettingRow
-          icon={Palette}
-          title={t("Theme Settings")}
-          subtitle={t("Switch between light and dark mode")}
-          control={<ThemeSwitches />}
-          showDivider
-        />
         <SettingRow
           icon={Languages}
           title={t("Change language")}

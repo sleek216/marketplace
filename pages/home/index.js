@@ -2,77 +2,91 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Router from "next/router";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setConfigData } from "redux/slices/configData";
+import { setConfigData, setLandingPageData } from "redux/slices/configData";
+import { useGetConfigData } from "../../src/api-manage/hooks/useGetConfigData";
+import useGetLandingPage from "../../src/api-manage/hooks/react-query/useGetLandingPage";
 import MainLayout from "../../src/components/layout/MainLayout";
 import ModuleWiseLayout from "../../src/components/module-wise-layout";
 import ZoneGuard from "../../src/components/route-guard/ZoneGuard";
 import SEO from "../../src/components/seo";
-import { useGetConfigData } from "../../src/api-manage/hooks/useGetConfigData";
-import useGetLandingPage from "../../src/api-manage/hooks/react-query/useGetLandingPage";
-import { setLandingPageData } from "../../src/redux/slices/configData";
+import PageBootLoader from "../../src/components/PageBootLoader";
+
+const hasContent = (obj) => obj && Object.keys(obj).length > 0;
 
 const Home = () => {
 	const dispatch = useDispatch();
-	const { data: dataConfig, refetch: configRefetch } = useGetConfigData();
-	const { data: dataLanding, refetch: refetchLanding } = useGetLandingPage();
+	const {
+		data: dataConfig,
+		refetch: configRefetch,
+		isFetching: configLoading,
+	} = useGetConfigData();
+	const {
+		data: dataLanding,
+		refetch: refetchLanding,
+		isFetching: landingLoading,
+	} = useGetLandingPage();
 
 	const { landingPageData, configData } = useSelector(
 		(state) => state.configData
 	);
 
-	useEffect(() => {
-		if (!configData) {
-			configRefetch();
-		}
-	}, [configData]);
+	const resolvedConfig = configData ?? dataConfig;
+	const resolvedLanding = landingPageData ?? dataLanding;
 
 	useEffect(() => {
-		if (!landingPageData) {
-			refetchLanding();
-		}
-	}, [landingPageData]);
+		configRefetch();
+		refetchLanding();
+	}, []);
 
 	useEffect(() => {
-		if (dataLanding) {
-			dispatch(setLandingPageData(dataLanding));
+		if (resolvedLanding) {
+			dispatch(setLandingPageData(resolvedLanding));
 		}
-	}, [dataLanding]);
+	}, [resolvedLanding, dispatch]);
+
 	useEffect(() => {
-		if (dataConfig) {
-			if (dataConfig.length === 0) {
-				Router.push("/404");
-			} else if (dataConfig?.maintenance_mode) {
-				Router.push("/maintainance");
-			} else {
-				dispatch(setConfigData(dataConfig));
-			}
+		if (!resolvedConfig) return;
+
+		if (resolvedConfig.length === 0) {
+			Router.push("/404");
+		} else if (resolvedConfig?.maintenance_mode) {
+			Router.push("/maintainance");
+		} else {
+			dispatch(setConfigData(resolvedConfig));
 		}
-	}, [dataConfig]);
-	useEffect(() => {
-		if (dataConfig) {
-			dispatch(setConfigData(dataConfig));
-		}
-	}, [dataConfig]);
+	}, [resolvedConfig, dispatch]);
+
+	const isLoading =
+		!hasContent(resolvedConfig) && (configLoading || landingLoading);
+
+	if (isLoading) {
+		return (
+			<>
+				<CssBaseline />
+				<PageBootLoader message="Loading home..." />
+			</>
+		);
+	}
 
 	return (
 		<>
 			<CssBaseline />
-			{configData && (
+			{resolvedConfig && (
 				<SEO
 					title="Home"
-					image={configData?.fav_icon_full_url}
-					businessName={configData?.business_name}
-					configData={configData}
+					image={resolvedConfig?.fav_icon_full_url}
+					businessName={resolvedConfig?.business_name}
+					configData={resolvedConfig}
 				/>
 			)}
 
 			<MainLayout
-				configData={configData}
-				landingPageData={landingPageData}
+				configData={resolvedConfig}
+				landingPageData={resolvedLanding}
 			>
 				<ModuleWiseLayout
-					configData={configData}
-					landingPageData={landingPageData}
+					configData={resolvedConfig}
+					landingPageData={resolvedLanding}
 				/>
 			</MainLayout>
 		</>

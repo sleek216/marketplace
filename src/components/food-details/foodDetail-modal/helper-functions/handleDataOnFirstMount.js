@@ -21,8 +21,10 @@ export const handleInitialTotalPriceVarPriceQuantitySet = (
     setTotalWithoutDiscount(product?.price);
   }
 
-  if (product.quantity) {
+  if (productUpdate && product.quantity) {
     setQuantity(product.quantity);
+  } else {
+    setQuantity(1);
   }
   if (product?.selectedAddons?.length > 0) {
     setSelectedAddOns([...product.selectedAddons]);

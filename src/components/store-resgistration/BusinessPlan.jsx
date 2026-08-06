@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, alpha, Typography, useTheme } from "@mui/material";
+import { Alert, alpha, Grid, Typography, useTheme } from "@mui/material";
 import {
   CustomStackFullWidth,
   SliderCustom,
@@ -63,40 +63,45 @@ const BusinessPlan = ({
   const [isHover, setIsHover] = useState(false);
   const packageCount = data?.packages?.length ?? 0;
   const settings = {
-    infinite: false,
-    speed: 400,
-    slidesToShow: Math.min(4, packageCount || 4),
+    autoplay: true,
+    autoplaySpeed: 3000,
+    infinite: true,
+    pauseOnHover: true,
+    speed: 600,
+    slidesToShow: 3,
     slidesToScroll: 1,
-    arrows: packageCount > 4,
-    prevArrow: isHover && packageCount > 4 ? <PrevFood displayNoneOnMobile /> : null,
-    nextArrow: isHover && packageCount > 4 ? <NextFood displayNoneOnMobile /> : null,
+    arrows: false,
     responsive: [
       {
         breakpoint: 1400,
         settings: {
-          slidesToShow: Math.min(4, packageCount || 4),
-          arrows: packageCount > 4,
+          slidesToShow: 3,
+          slidesToScroll: 1,
+          infinite: true,
         },
       },
       {
         breakpoint: 1100,
         settings: {
-          slidesToShow: Math.min(3, packageCount || 3),
-          arrows: packageCount > 3,
+          slidesToShow: 2.2,
+          slidesToScroll: 1,
+          infinite: true,
         },
       },
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: Math.min(2, packageCount || 2),
-          arrows: packageCount > 2,
+          slidesToShow: 1.5,
+          slidesToScroll: 1,
+          infinite: true,
         },
       },
       {
         breakpoint: 520,
         settings: {
-          slidesToShow: 1,
-          arrows: packageCount > 1,
+          slidesToShow: 1.1,
+          slidesToScroll: 1,
+          infinite: true,
         },
       },
     ],
@@ -220,8 +225,9 @@ const BusinessPlan = ({
                 )}
               </Stack>
               <Typography
-                fontSize={{ xs: "11px", md: "13px" }}
-                color={theme.palette.neutral[500]}
+                fontSize={{ xs: "12px", md: "13.5px" }}
+                color={theme.palette.neutral[700]}
+                lineHeight={1.5}
               >
                 {t(
                   `Store will pay ${configData?.admin_commission}% commission to ${configData?.business_name} from each order. You will get access of all the features and options  in store panel , app and interaction with user.`
@@ -288,8 +294,9 @@ const BusinessPlan = ({
               </Stack>
 
               <Typography
-                fontSize={{ xs: "11px", md: "13px" }}
-                color={theme.palette.neutral[500]}
+                fontSize={{ xs: "12px", md: "13.5px" }}
+                color={theme.palette.neutral[700]}
+                lineHeight={1.5}
               >
                 {t(
                   "Run store by purchasing subsciption  packages. You will have access the features of in store panel , app and interaction with user according to the subscription packages."
@@ -299,46 +306,48 @@ const BusinessPlan = ({
           )}
       </CustomStackFullWidth>
       {selectedPlan === "subscription" && data?.packages?.length > 0 && (
-          <Stack width="100%" mt={{ xs: 2.5, md: 3.5 }} spacing={1.5}>
-            <Stack spacing={0.5}>
-              <Typography
-                fontWeight={600}
-                fontSize={{ xs: "15px", md: "17px" }}
-                color="text.primary"
-              >
-                {t("Choose Subscription Package")}
-              </Typography>
-              <Typography fontSize="12px" color="text.secondary">
-                {t("Select one package to continue with your subscription plan.")}
-              </Typography>
-            </Stack>
-            <Box
-              onMouseEnter={() => setIsHover(true)}
-              onMouseLeave={() => setIsHover(false)}
-              sx={{
-                mx: { xs: -0.5, md: 0 },
-                "& .slick-list": { margin: "0 -6px" },
-                "& .slick-slide > div": { height: "100%" },
-                "& .slick-track": { display: "flex", alignItems: "stretch" },
-              }}
+        <Stack width="100%" mt={{ xs: 2.5, md: 3.5 }} spacing={2}>
+          <Stack spacing={0.5}>
+            <Typography
+              fontWeight={700}
+              fontSize={{ xs: "16px", md: "19px" }}
+              color="text.primary"
             >
-              <SliderCustom padding="0">
-                <Slider {...settings}>
-                  {data?.packages?.map((item) => (
-                    <Plan
-                      key={item.id}
-                      item={item}
-                      setSelectedPackage={(id) => {
-                        clearRegistrationError?.();
-                        setSelectedPackage(id);
-                      }}
-                      selectedPackage={selectedPackage}
-                    />
-                  ))}
-                </Slider>
-              </SliderCustom>
-            </Box>
+              {t("Choose Subscription Package")}
+            </Typography>
+            <Typography fontSize="13px" color="text.secondary">
+              {t("Select one package to continue with your subscription plan.")}
+            </Typography>
           </Stack>
+
+          <Box
+            onMouseEnter={() => setIsHover(true)}
+            onMouseLeave={() => setIsHover(false)}
+            sx={{
+              mx: { xs: -0.5, md: 0 },
+              "& .slick-list": { margin: "0 -6px", padding: "12px 0" },
+              "& .slick-slide > div": { height: "100%" },
+              "& .slick-track": { display: "flex", alignItems: "stretch" },
+            }}
+          >
+            <SliderCustom padding="0">
+              <Slider {...settings}>
+                {data?.packages?.map((item, index) => (
+                  <Plan
+                    key={item.id}
+                    item={item}
+                    isPopular={index === 2 || item?.package_name?.toLowerCase().includes("premium")}
+                    setSelectedPackage={(id) => {
+                      clearRegistrationError?.();
+                      setSelectedPackage(id);
+                    }}
+                    selectedPackage={selectedPackage}
+                  />
+                ))}
+              </Slider>
+            </SliderCustom>
+          </Box>
+        </Stack>
       )}
       {registrationError && (
         <Alert

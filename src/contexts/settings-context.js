@@ -17,19 +17,20 @@ export const restoreSettings = () => {
     const storedData = window.localStorage.getItem("settings");
     if (storedData) {
       settings = JSON.parse(storedData);
-    } else {
-      settings = {
-        direction: "ltr",
-        responsiveFontSizes: true,
-        theme: window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light",
-      };
     }
   } catch (err) {
     // If stored data is not a stringified JSON this will fail,
     // that's why we catch the error
   }
+
+  if (!settings) {
+    settings = {
+      direction: "ltr",
+      responsiveFontSizes: true,
+      theme: "light",
+    };
+  }
+  settings.theme = "light";
 
   return settings;
 };

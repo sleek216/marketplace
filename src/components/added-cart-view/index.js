@@ -6,7 +6,6 @@ import EmptyCart from "./EmptyCart";
 import CartActions from "./CartActions";
 import { CustomStackFullWidth } from "../../styled-components/CustomStyles.style";
 import CartContents from "./CartContents";
-import { getCartListModuleWise } from "../../helper-functions/getCartListModuleWise";
 import { useRouter } from "next/router";
 import CustomSideDrawer from "../side-drawer/CustomSideDrawer";
 import DrawerHeader from "./DrawerHeader";
@@ -14,9 +13,8 @@ import CartIcon from "./assets/CartIcon";
 import FreeDeliveryProgressBar from "./FreeDeliveryProgressBar";
 import CartTotalPrice from "./CartTotalPrice";
 import { useTheme } from "@emotion/react";
-import { alpha } from "@mui/material";
+import { alpha, Box, Stack, Typography } from "@mui/material";
 import DotSpin from "../DotSpin";
-import { Stack } from "@mui/system";
 import useDeleteCartItem from "../../api-manage/hooks/react-query/add-cart/useDeleteCartItem";
 import { setCartList, clearCartMeta } from "redux/slices/cart";
 import { useTranslation } from "react-i18next";
@@ -25,6 +23,8 @@ import {
   cartItemsTotalAmount,
   getStoreMinimumOrderAmount,
 } from "utils/CustomFunctions";
+import { getCartListModuleWise } from "helper-functions/getCartListModuleWise";
+import LandingCartModuleList from "./LandingCartModuleList";
 
 const CardView = (props) => {
   const theme = useTheme();
@@ -35,29 +35,73 @@ const CardView = (props) => {
   const { configData } = useSelector((state) => state.configData);
   const imageBaseUrl = configData?.base_urls?.item_image_url;
   const router = useRouter();
-  const moduleWiseCartList = getCartListModuleWise(cartList);
   const [selectedCartIds, setSelectedCartIds] = useState([]);
   const { mutateAsync: removeCartItemMutate, isLoading: removeSelectedLoading } =
     useDeleteCartItem();
+
+  // Landing page: show modules first, then drill into a selected module
+  const isLandingPage =
+    router.pathname === "/" ||
+    (router.pathname === "/home" && !router.query?.module_id);
+  const [selectedModuleGroup, setSelectedModuleGroup] = useState(null);
+
+  // Reset module selection whenever drawer opens or route changes
+  useEffect(() => {
+    if (sideDrawerOpen && isLandingPage) {
+      setSelectedModuleGroup(null);
+    }
+  }, [sideDrawerOpen, isLandingPage, router.asPath]);
+
+  // Reset module selection when drawer closes
+  useEffect(() => {
+    if (!sideDrawerOpen) {
+      setSelectedModuleGroup(null);
+    }
+  }, [sideDrawerOpen]);
+
   const closeHandler = () => {
     setSideDrawerOpen(false);
   };
 
+  const handleBackToModules = () => {
+    setSelectedModuleGroup(null);
+  };
+
+  // On landing page: if a module is selected, show only its items.
+  // Otherwise, use regular module-wise filtering (for non-landing pages).
+  const visibleCartList = useMemo(() => {
+    if (isLandingPage && selectedModuleGroup) {
+      // Show items belonging to the selected module group
+      return selectedModuleGroup.items;
+    }
+    if (isLandingPage && !selectedModuleGroup) {
+      // On landing page before selecting a module — return all (for count in modules view)
+      return Array.isArray(cartList) ? cartList : [];
+    }
+    return getCartListModuleWise(cartList);
+  }, [cartList, isLandingPage, selectedModuleGroup]);
+
+  // For cart actions / totals (only the "drill-in" items when on landing page)
+  const activeCartList = useMemo(() => {
+    if (isLandingPage && !selectedModuleGroup) return [];
+    return visibleCartList;
+  }, [isLandingPage, selectedModuleGroup, visibleCartList]);
+
   useEffect(() => {
-    const currentIds = moduleWiseCartList?.map((item) => item?.cartItemId) || [];
+    const currentIds = activeCartList?.map((item) => item?.cartItemId) || [];
     setSelectedCartIds((prev) => {
       const validPrev = prev.filter((id) => currentIds.includes(id));
       if (validPrev.length > 0) return validPrev;
       return currentIds;
     });
-  }, [cartList]);
+  }, [activeCartList]);
 
   const selectedCartList = useMemo(
     () =>
-      moduleWiseCartList.filter((item) =>
+      activeCartList.filter((item) =>
         selectedCartIds.includes(item?.cartItemId)
       ),
-    [moduleWiseCartList, selectedCartIds]
+    [activeCartList, selectedCartIds]
   );
 
   const cartSubtotal = useMemo(
@@ -91,34 +135,53 @@ const CardView = (props) => {
 
     const guestId =
       typeof window !== "undefined" ? localStorage.getItem("guest_id") : "";
-    const results = await Promise.allSettled(
-      selectedCartIds.map((cartId) =>
-        removeCartItemMutate({
-          cart_id: cartId,
-          guestId,
-        })
-      )
-    );
+    const idsToDelete = [...selectedCartIds];
 
-    const successIds = selectedCartIds.filter(
-      (_, index) => results[index]?.status === "fulfilled"
-    );
-    if (!successIds.length) return;
-
-    const nextCartList = moduleWiseCartList.filter(
-      (item) => !successIds.includes(item?.cartItemId)
+    // Optimistic instant UI deletion (0ms)
+    const nextCartList = cartList.filter(
+      (item) => !idsToDelete.includes(item?.cartItemId) && !idsToDelete.includes(item?.id)
     );
     dispatch(setCartList(nextCartList));
     dispatch(clearCartMeta());
-    setSelectedCartIds((prev) => prev.filter((id) => !successIds.includes(id)));
+    setSelectedCartIds([]);
     toast.success(t("Selected items removed from cart"));
-    refetch?.();
+
+    // Backend deletion in background
+    try {
+      await Promise.all(
+        idsToDelete.map((cartId) =>
+          removeCartItemMutate({
+            cart_id: cartId,
+            guestId,
+          })
+        )
+      );
+      refetch?.();
+    } catch (err) {
+      console.error("Cart deletion error:", err);
+      refetch?.();
+    }
   };
+
+  const allCartItems = Array.isArray(cartList) ? cartList : [];
+  // On landing page, show module list even if there are items across modules.
+  // hasAnyItems guards against showing the module list when cart is truly empty.
+  const hasAnyItems = allCartItems.length > 0;
+
+  // Items for the selected module (on landing page drill-in)
+  const selectedModuleHasItems =
+    isLandingPage && selectedModuleGroup
+      ? selectedModuleGroup.items.length > 0
+      : true;
+
+  // Whether to show the products view (not modules list)
+  const showProductsView =
+    !isLandingPage || (isLandingPage && selectedModuleGroup);
 
   const getModuleWiseCartContent = () => {
     return (
       <CartContents
-        cartList={moduleWiseCartList}
+        cartList={activeCartList}
         imageBaseUrl={imageBaseUrl}
         refetch={refetch}
         selectedCartIds={selectedCartIds}
@@ -154,28 +217,60 @@ const CardView = (props) => {
               color={theme.palette.primary.main}
             />
           }
-          title="Shopping Cart"
+          title={
+            isLandingPage && selectedModuleGroup
+              ? selectedModuleGroup.moduleName
+              : "Shopping Cart"
+          }
           closeHandler={closeHandler}
           onDeleteSelected={handleDeleteSelected}
           disableDelete={selectedCartIds.length === 0 || removeSelectedLoading}
-          showDeleteAction
+          showDeleteAction={showProductsView}
+          showBackButton={isLandingPage && !!selectedModuleGroup}
+          onBack={handleBackToModules}
         />
-        {isLoading ? (
+
+        {isLoading && !hasAnyItems && !isLandingPage ? (
           <Stack height="214px" width="100%" justifyContent="center">
             <DotSpin />
           </Stack>
-        ) : moduleWiseCartList?.length === 0 ? (
+        ) : isLandingPage && !selectedModuleGroup ? (
+          // ── Landing page: show ALL modules (Instant 0ms API-driven) ──
+          <LandingCartModuleList
+            cartList={allCartItems}
+            onSelectModule={setSelectedModuleGroup}
+          />
+        ) : !hasAnyItems ? (
+          // Truly empty cart (no items in any module)
           <EmptyCart
-            cartList={moduleWiseCartList}
+            cartList={[]}
+            setSideDrawerOpen={setSideDrawerOpen}
+          />
+        ) : isLandingPage && selectedModuleGroup && !selectedModuleHasItems ? (
+          // ── Module selected but 0 items → empty state for this module ──
+          <EmptyCart
+            cartList={[]}
+            setSideDrawerOpen={setSideDrawerOpen}
+            text={t("Browse Products")}
+            subTitle={t(
+              "You haven't added any items from {{module}} yet.",
+              { module: selectedModuleGroup.moduleName }
+            )}
+          />
+        ) : activeCartList.length === 0 ? (
+          // ── Current module has no items (but other modules might) ──
+          <EmptyCart
+            cartList={[]}
             setSideDrawerOpen={setSideDrawerOpen}
           />
         ) : (
+          // ── Products view ──
           <Stack sx={{ flex: 1, minHeight: 0, width: "100%", overflow: "hidden" }}>
             {getModuleWiseCartContent()}
           </Stack>
         )}
 
-        {moduleWiseCartList.length > 0 && (
+        {showProductsView && activeCartList.length > 0 && (
           <Stack
             sx={{
               width: "100%",
@@ -195,7 +290,7 @@ const CardView = (props) => {
             <CartTotalPrice cartList={selectedCartList} />
             <CartActions
               setSideDrawerOpen={setSideDrawerOpen}
-              cartList={moduleWiseCartList}
+              cartList={activeCartList}
               selectedCartIds={selectedCartIds}
               selectedCartList={selectedCartList}
               minimumOrderBlocked={minimumOrderBlocked}

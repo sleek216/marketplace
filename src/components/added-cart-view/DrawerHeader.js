@@ -1,9 +1,10 @@
 import React from "react";
 import { styled } from "@mui/material/styles";
-import { alpha, Stack, Typography } from "@mui/material";
+import { alpha, Stack, Typography, IconButton } from "@mui/material";
 import { t } from "i18next";
 import ClearIcon from "@mui/icons-material/Clear";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { CustomCloseIconButton } from "./Cart.style";
 
 const DrawerHeaderWrapper = styled(Stack)(({ theme }) => ({
@@ -24,11 +25,32 @@ const DrawerHeader = ({
   onDeleteSelected,
   disableDelete,
   showDeleteAction = false,
+  showBackButton = false,
+  onBack,
 }) => {
   return (
     <DrawerHeaderWrapper>
       <Stack direction="row" spacing={1} alignItems="center">
-        {CartIcon}
+        {showBackButton && onBack ? (
+          <IconButton
+            onClick={onBack}
+            size="small"
+            sx={{
+              borderRadius: "6px",
+              p: "4px",
+              color: (theme) => theme.palette.text.secondary,
+              "&:hover": {
+                bgcolor: (theme) => alpha(theme.palette.divider, 0.35),
+              },
+              transition: "all 0.18s ease",
+            }}
+            aria-label={t("Back to modules")}
+          >
+            <ArrowBackIosNewIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        ) : (
+          CartIcon
+        )}
         <Typography fontSize="16px" fontWeight={700} color="text.primary">
           {t(title)}
         </Typography>

@@ -5,8 +5,15 @@ import { useGeolocated } from "react-geolocated";
 import CookiesConsent from "../CookiesConsent";
 import PushNotificationLayout from "../PushNotificationLayout";
 import HeroSection from "./hero-section/HeroSection";
+import LandingModulesSection from "./LandingModulesSection";
 import MarketplaceRecentlyViewedSection from "./MarketplaceRecentlyViewedSection";
-import MarketplaceProductsSection from "./MarketplaceProductsSection";
+import LandingNewArrivalsSection from "./LandingNewArrivalsSection";
+import LandingPromotionalBannerSection from "./LandingPromotionalBannerSection";
+import LandingDoorstepDeliveryBanner from "./LandingDoorstepDeliveryBanner";
+import LandingFeaturesSection from "./LandingFeaturesSection";
+import LandingHowItWorksSection from "./LandingHowItWorksSection";
+import ComponentOne from "./ComponentOne";
+import Testimonials from "./Testimonials";
 
 const MapModal = dynamic(() => import("../Map/MapModal"));
 
@@ -41,6 +48,7 @@ const LandingPage = ({ configData, landingPageData }) => {
   return (
     <>
       <PushNotificationLayout>
+        {/* Hero Banner */}
         <HeroSection
           landingPageDataheroSection={landingPageData?.hero_section}
           promotionalBanner={
@@ -48,11 +56,38 @@ const LandingPage = ({ configData, landingPageData }) => {
               ?.promotion_banners_full_url
           }
         />
-        <MarketplaceRecentlyViewedSection key={`rv-${zoneEpoch}`} />
-        <MarketplaceProductsSection
-          key={zoneEpoch}
-          onRequestLocation={handleRequestLocation}
-        />
+
+        {/* Cross-Module Recently Viewed Products Section (Renders only if user viewed items) */}
+        <MarketplaceRecentlyViewedSection />
+
+        {/* Modules Section (Marketplace Services & Modules) */}
+        <LandingModulesSection />
+
+        {/* Cross-Module Newly Added Products Section */}
+        <LandingNewArrivalsSection />
+
+        {/* High-Impact Promotional Grocery Showcase Banner */}
+        <LandingPromotionalBannerSection />
+
+        {/* Doorstep Delivery Banner (Delivery Guy + Spinning Same Day Delivery Stamp) */}
+        <LandingDoorstepDeliveryBanner />
+
+        {/* E-Commerce Value Propositions & Platform Features */}
+        <LandingFeaturesSection />
+
+        {/* Simple 3-Step How It Works Guide */}
+        <LandingHowItWorksSection />
+
+        {/* Highlight Promo Banner */}
+        {landingPageData?.company_title && (
+          <ComponentOne landingPageData={landingPageData} />
+        )}
+
+        {/* Customer Testimonials & Reviews */}
+        {landingPageData?.testimonial_list?.length > 0 && (
+          <Testimonials landingPageData={landingPageData} />
+        )}
+
         {open && (
           <MapModal
             open={open}
@@ -61,6 +96,7 @@ const LandingPage = ({ configData, landingPageData }) => {
             disableAutoFocus
           />
         )}
+
         <NoSsr>
           <CookiesConsent text={configData?.cookies_text} />
         </NoSsr>

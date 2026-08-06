@@ -28,6 +28,14 @@ import { getLoginUserCheck } from "components/auth/sign-in/loginHepler";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import useMergeRecentlyViewed from "api-manage/hooks/react-query/recently-viewed/useMergeRecentlyViewed";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { useQueryClient } from "react-query";
+import useGetAllCartList from "api-manage/hooks/react-query/add-cart/useGetAllCartList";
+import {
+  getCartMetaFromResponse,
+  getCartsFromResponse,
+  mapApiCartRowsToReduxItems,
+} from "helper-functions/normalizeCartListResponse";
+import { setCartList, setCartMeta } from "redux/slices/cart";
 
 const SignUp = ({
   configData,
@@ -38,6 +46,7 @@ const SignUp = ({
 }) => {
   const router = useRouter();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const [openModuleSelection, setOpenModuleSelection] = useState(false);
   const theme = useTheme();
   const [otpData, setOtpData] = useState({ type: "" });
@@ -89,7 +98,11 @@ const SignUp = ({
     if (partialSaveDetected) setPartialSaveDetected(false);
   };
   const handleOnChange = (value) => {
-    signUpFormik.setFieldValue("phone", `+${value}`);
+    const normalizedPhone = `${value ?? ""}`.replace(/\D/g, "");
+    signUpFormik.setFieldValue(
+      "phone",
+      normalizedPhone ? `+${normalizedPhone}` : ""
+    );
     if (signUpFormik.errors.phone) signUpFormik.setFieldError("phone", "");
     // Reset loop detection when user changes phone
     if (partialSaveDetected) setPartialSaveDetected(false);
@@ -231,6 +244,13 @@ const SignUp = ({
     dispatch(setUser(res));
     //handleClose()
   };
+  const cartListSuccessHandler = (res) => {
+    if (res) {
+      dispatch(setCartMeta(getCartMetaFromResponse(res)));
+      dispatch(setCartList(mapApiCartRowsToReduxItems(getCartsFromResponse(res))));
+    }
+  };
+  const { refetch: cartListRefetch } = useGetAllCartList(getGuestId(), cartListSuccessHandler);
   const { data: userData, refetch: profileRefetch } =
     useGetProfile(userOnSuccessHandler);
   const handleTokenAfterSignUp = async (response) => {
@@ -242,14 +262,25 @@ const SignUp = ({
       }
       localStorage.setItem("token", token);
       notifyHeaderSessionSync();
-      try {
-        await mergeRecentlyViewed();
-      } catch (error) {}
-      
-      try {
-        await profileRefetch();
-      } catch (error) {
-        console.error("Error refetching profile:", error);
+
+      // Clear stale cart cache
+      queryClient.removeQueries({ queryKey: ["cart-itemss"], exact: false });
+
+      // Fire ALL post-signup fetches in PARALLEL for maximum speed
+      const [cartData] = await Promise.allSettled([
+        cartListRefetch(),
+        profileRefetch(),
+        mergeRecentlyViewed().catch(() => {}),
+      ]);
+
+      // Sync cart to Redux immediately
+      if (cartData?.status === "fulfilled" && cartData?.value?.data) {
+        dispatch(setCartMeta(getCartMetaFromResponse(cartData.value.data)));
+        dispatch(
+          setCartList(
+            mapApiCartRowsToReduxItems(getCartsFromResponse(cartData.value.data))
+          )
+        );
       }
 
       toast.success(t(signup_successfull));

@@ -15,9 +15,9 @@ const ImageUploaderWithPreview = ({
   objectFit,
   height,
   marginLeft,
+  onDelete,
 }) => {
   const imageContainerRef = useRef();
-  console.log({ error })
   return (
     <>
       <ImagePreviewer
@@ -32,6 +32,7 @@ const ImageUploaderWithPreview = ({
         height={height}
         objectFit={objectFit}
         marginLeft={marginLeft}
+        onDeleteClick={onDelete}
       />
       <input
         ref={imageContainerRef}

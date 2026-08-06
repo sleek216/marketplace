@@ -12,15 +12,9 @@ import ModuleSelect from "../module-select/ModuleSelect";
 const ModuleWiseLayout = ({ configData, landingPageData }) => {
 	const [rerender, setRerender] = useState(false);
 	const { selectedModule } = useSelector((state) => state.utilsData);
-	const { data, refetch } = useGetModule();
+	const { data } = useGetModule();
 	const dispatch = useDispatch();
 	const router = useRouter();
-
-	useEffect(() => {
-		if (router.pathname === "/home") {
-			refetch();
-		}
-	}, [router.pathname, refetch]);
 
 	useEffect(() => {
 		if (data?.length > 0) {

@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   allData: {},
-  activeStep: null,
+  activeStep: 0,
   inZone: null,
   /** Inline Formik errors to apply when returning to step 0 from a later step. */
   fieldErrors: null,

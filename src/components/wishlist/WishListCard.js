@@ -31,11 +31,17 @@ import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import useAddCartItem from "../../api-manage/hooks/react-query/add-cart/useAddCartItem";
 import Loading from "../custom-loading/Loading";
 
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+
+import useCartItemUpdate from "../../api-manage/hooks/react-query/add-cart/useCartItemUpdate";
+import { setIncrementToCartItem } from "redux/slices/cart";
+
 const actionButtonSx = (theme, variant = "default") => ({
   width: 36,
   height: 36,
   minWidth: 36,
-  borderRadius: "2px",
+  borderRadius: "4px",
   border: `1px solid ${
     variant === "danger"
       ? alpha(theme.palette.error.main, 0.35)
@@ -64,7 +70,9 @@ const actionButtonSx = (theme, variant = "default") => ({
 const WishListCard = ({ item }) => {
   const theme = useTheme();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [itemQty, setItemQty] = useState(1);
   const reduxDispatch = useDispatch();
+  const { cartList } = useSelector((state) => state.cart);
   const [openModal, setOpenModal] = React.useState(false);
   const [openItemModal, setOpenItemModal] = useState(false);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -74,10 +82,28 @@ const WishListCard = ({ item }) => {
   const { wishLists } = useSelector((state) => state.wishList);
   const { mutate } = useWishListDelete();
   const router = useRouter();
-  const { mutate: addToMutate, isLoading } = useAddCartItem();
+  const { mutate: addToMutate, isLoading: addIsLoading } = useAddCartItem();
+  const { mutate: updateMutate, isLoading: updateIsLoading } = useCartItemUpdate();
+  const isLoading = addIsLoading || updateIsLoading;
+
+  const existingCartItem = (cartList || []).find(
+    (c) => String(c?.id) === String(item?.id)
+  );
 
   const handleClose = () => {
     setOpenItemModal(false);
+  };
+
+  const handleIncrementQty = (e) => {
+    e.stopPropagation();
+    setItemQty((prev) => prev + 1);
+  };
+
+  const handleDecrementQty = (e) => {
+    e.stopPropagation();
+    if (itemQty > 1) {
+      setItemQty((prev) => prev - 1);
+    }
   };
 
   useEffect(() => {
@@ -86,13 +112,13 @@ const WishListCard = ({ item }) => {
         type: ACTION.setModalData,
         payload: {
           ...item,
-          quantity: 1,
+          quantity: itemQty,
           price: item?.price,
-          totalPrice: item?.price,
+          totalPrice: item?.price * itemQty,
         },
       });
     }
-  }, [item]);
+  }, [item, itemQty]);
 
   const handleSuccess = (res) => {
     if (res) {
@@ -104,35 +130,87 @@ const WishListCard = ({ item }) => {
           quantity: cartItem?.quantity,
           totalPrice: cartItem?.price,
           selectedOption: [],
+          module_id: item?.module_id,
+          module_type: item?.module_type,
         };
       });
-      reduxDispatch(setCart(product));
+      reduxDispatch(setCart({ ...product }));
       toast.success(t("Item added to cart"));
     }
   };
 
   const addToCartHandler = () => {
-    const itemObject = {
-      guest_id: getGuestId(),
-      model: state.modalData[0]?.available_date_starts
-        ? "ItemCampaign"
-        : "Item",
-      add_on_ids: [],
-      add_on_qtys: [],
-      item_id: state.modalData[0]?.id,
-      price: state?.modalData[0]?.price,
-      quantity: state?.modalData[0]?.quantity,
-      variation: [],
-    };
-    addToMutate(itemObject, {
-      onSuccess: handleSuccess,
-      onError: onErrorResponse,
-    });
+    if (existingCartItem) {
+      const newQty = (existingCartItem?.quantity || 1) + itemQty;
+      const updatePayload = {
+        guest_id: getGuestId(),
+        cart_id: existingCartItem?.cartItemId || existingCartItem?.id,
+        item_id: item?.id,
+        price: item?.price,
+        quantity: newQty,
+      };
+      updateMutate(updatePayload, {
+        onSuccess: (res) => {
+          reduxDispatch(
+            setCart({
+              ...existingCartItem,
+              quantity: newQty,
+            })
+          );
+          toast.success(t("Item quantity updated in cart"));
+        },
+        onError: () => {
+          reduxDispatch(
+            setCart({
+              ...existingCartItem,
+              quantity: newQty,
+            })
+          );
+          toast.success(t("Item quantity updated in cart"));
+        },
+      });
+    } else {
+      const itemObject = {
+        guest_id: getGuestId(),
+        model: state.modalData[0]?.available_date_starts
+          ? "ItemCampaign"
+          : "Item",
+        add_on_ids: [],
+        add_on_qtys: [],
+        item_id: item?.id || state.modalData[0]?.id,
+        price: item?.price || state?.modalData[0]?.price,
+        quantity: itemQty,
+        variation: [],
+      };
+      addToMutate(itemObject, {
+        onSuccess: handleSuccess,
+        onError: (err) => {
+          const msg = (
+            err?.response?.data?.errors?.[0]?.message ||
+            err?.response?.data?.message ||
+            ""
+          ).toLowerCase();
+          if (msg.includes("already") || msg.includes("exist")) {
+            reduxDispatch(
+              setCart({
+                ...item,
+                quantity: itemQty,
+                module_id: item?.module_id,
+                module_type: item?.module_type,
+              })
+            );
+            toast.success(t("Item quantity updated in cart"));
+          } else {
+            onErrorResponse(err);
+          }
+        },
+      });
+    }
   };
 
   const addToCart = (e) => {
     if (item?.module_type === "ecommerce") {
-      if (item?.variations.length > 0) {
+      if (item?.variations?.length > 0) {
         router.push(
           {
             pathname: "/product/[id]",
@@ -148,7 +226,7 @@ const WishListCard = ({ item }) => {
         e.stopPropagation();
         addToCartHandler();
       }
-    } else if (item?.food_variations.length > 0 || item?.variations.length > 0) {
+    } else if (item?.food_variations?.length > 0 || item?.variations?.length > 0) {
       setOpenItemModal(true);
     } else {
       e.stopPropagation();
@@ -238,7 +316,7 @@ const WishListCard = ({ item }) => {
           gap: 1.25,
           width: "100%",
           p: 1.25,
-          borderRadius: "2px",
+          borderRadius: "4px",
           border: `1px solid ${alpha(theme.palette.divider, 0.65)}`,
           bgcolor: theme.palette.background.paper,
           cursor: "pointer",
@@ -255,7 +333,7 @@ const WishListCard = ({ item }) => {
             height: 64,
             minWidth: 64,
             flexShrink: 0,
-            borderRadius: "2px",
+            borderRadius: "4px",
             overflow: "hidden",
             border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
           }}
@@ -264,7 +342,7 @@ const WishListCard = ({ item }) => {
             src={item?.image_full_url}
             width="100%"
             height="100%"
-            borderRadius="2px"
+            borderRadius="4px"
             objectfit="cover"
           />
         </Box>
@@ -284,7 +362,7 @@ const WishListCard = ({ item }) => {
           >
             {item?.name}
           </Typography>
-        <AmountWithDiscountedAmount item={item} compact />
+          <AmountWithDiscountedAmount item={item} compact />
         </Stack>
 
         <Stack
@@ -294,6 +372,47 @@ const WishListCard = ({ item }) => {
           flexShrink={0}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Quantity Selector Stepper */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              height: 36,
+              borderRadius: "4px",
+              border: `1px solid ${alpha(theme.palette.divider, 0.85)}`,
+              bgcolor: theme.palette.background.paper,
+              px: 0.5,
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={handleDecrementQty}
+              disabled={itemQty <= 1}
+              sx={{ p: 0.4, color: theme.palette.text.secondary }}
+            >
+              <RemoveIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+            <Typography
+              sx={{
+                fontSize: "13px",
+                fontWeight: 700,
+                px: 0.8,
+                minWidth: "18px",
+                textAlign: "center",
+              }}
+            >
+              {itemQty}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleIncrementQty}
+              sx={{ p: 0.4, color: theme.palette.primary.main }}
+            >
+              <AddIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Box>
+
+          {/* Add to Cart Button */}
           <IconButton
             onClick={addToCart}
             aria-label={t("Add to cart")}
@@ -305,6 +424,8 @@ const WishListCard = ({ item }) => {
               <ShoppingCartOutlinedIcon sx={{ fontSize: 18 }} />
             )}
           </IconButton>
+
+          {/* Delete Button */}
           <IconButton
             onClick={handleDelete}
             aria-label={t("Delete")}

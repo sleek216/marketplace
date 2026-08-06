@@ -13,6 +13,7 @@ import ImageUploaderWithPreview from "../../single-file-uploader-with-preview/Im
 import ImageAddIcon from "../../single-file-uploader-with-preview/ImageAddIcon";
 import { Stack } from "@mui/system";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CloseIcon from "@mui/icons-material/Close";
 
 const LightTooltip = styled(({ className, ...props }) => (
 	<Tooltip {...props} classes={{ popper: className }} />
@@ -43,6 +44,11 @@ const SinglePrescriptionUpload = (props) => {
 	};
 	const imageOnchangeHandlerForImage = (value) => {
 		setImage(value);
+	};
+	const handleDeleteImage = (e) => {
+		e?.stopPropagation?.();
+		setImage("");
+		handleImageUpload?.(null);
 	};
 	const list = () => (
 		<CustomStackFullWidth
@@ -137,15 +143,40 @@ const SinglePrescriptionUpload = (props) => {
 				<Stack width="140px" position="relative">
 					<ImageUploaderWithPreview
 						type="file"
-						// labelText={t("File upload")}
 						hintText="Image format - jpg, png, jpeg, gif Image Size - maximum size 2 MB Image Ratio - 1:1"
 						file={image}
 						onChange={singleFileUploadHandlerForImage}
 						imageOnChange={imageOnchangeHandlerForImage}
 						width="8.75rem"
-						borderRadius={borderRadius ?? "50%"}
+						borderRadius={borderRadius ?? "12px"}
+						onDelete={handleDeleteImage}
 					/>
-					{typeof image !== "string" && (
+					{Boolean(image) && (
+						<IconButton
+							onClick={handleDeleteImage}
+							aria-label="delete prescription"
+							title={t("Delete Prescription")}
+							sx={{
+								position: "absolute",
+								top: "-10px",
+								right: "-10px",
+								backgroundColor: (theme) => theme.palette.error.main,
+								color: "#ffffff",
+								width: 28,
+								height: 28,
+								zIndex: 25,
+								boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
+								"&:hover": {
+									backgroundColor: (theme) => theme.palette.error.dark,
+									transform: "scale(1.15)",
+								},
+								transition: "all 0.2s ease-in-out",
+							}}
+						>
+							<CloseIcon sx={{ fontSize: 16 }} />
+						</IconButton>
+					)}
+					{typeof image !== "string" && !image && (
 						<ImageAddIcon
 							top="10px"
 							right="10px"

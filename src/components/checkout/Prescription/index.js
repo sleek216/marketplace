@@ -92,7 +92,7 @@ const PrescriptionCheckout = ({ storeId ,page}) => {
     ["get-distance", storeData, address],
     () => GoogleApi.distanceApi(storeData, address),
     {
-      enabled: false,
+      enabled: Boolean(storeData && address),
       onError: onErrorResponse,
     }
   );
@@ -283,11 +283,11 @@ const PrescriptionCheckout = ({ storeId ,page}) => {
                 onChange={(e) => handleChange(e)}
               />
             </>
-            {distanceData && storeData ? (
+            {storeData ? (
               <PrescriptionOrderCalculation
                 taxAmount={data}
                 storeData={storeData}
-                distanceData={distanceData}
+                distanceData={distanceData || { distance: 1, status: "OK" }}
                 configData={configData}
                 orderType={orderType}
                 origin={{

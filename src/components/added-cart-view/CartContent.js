@@ -12,10 +12,15 @@ import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  setCartList,
   setDecrementToCartItem,
   setIncrementToCartItem,
   setRemoveItemFromCart,
 } from "redux/slices/cart";
+import {
+  mapApiCartRowsToReduxItems,
+  getCartsFromResponse,
+} from "helper-functions/normalizeCartListResponse";
 import FoodDetailModal from "../food-details/foodDetail-modal/FoodDetailModal";
 import VariationContent from "./VariationContent";
 import { toast } from "react-hot-toast";
@@ -42,6 +47,7 @@ import {
 const CartContent = (props) => {
   const { cartItem, imageBaseUrl, isSelected, onToggleSelect, refetch } = props;
   const { configData } = useSelector((state) => state.configData);
+  const { cartList } = useSelector((state) => state.cart);
   const theme = useTheme();
   const dispatch = useDispatch();
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -49,46 +55,36 @@ const CartContent = (props) => {
   const { mutate, isLoading: removeIsLoading } = useDeleteCartItem();
   const { mutate: updateMutate, isLoading } = useCartItemUpdate();
 
-  const cartUpdateHandleSuccess = (res) => {
-    if (res) {
-      res?.forEach((item) => {
-        if (cartItem?.cartItemId === item?.id) {
-          const product = {
-            ...item?.item,
-            cartItemId: item?.id,
-            totalPrice: item?.price,
-            quantity: item?.quantity,
-            food_variations: item?.item?.food_variations,
-            selectedAddons: item?.item?.addons,
-            itemBasePrice: item?.item?.price,
-            selectedOption: item?.variation,
-          };
-
-          dispatch(setIncrementToCartItem(product)); // Dispatch the single product
-        }
+  const handleSyncFromApi = (res) => {
+    if (!res) return;
+    const carts = getCartsFromResponse(res);
+    if (Array.isArray(carts) && carts.length > 0) {
+      const mapped = mapApiCartRowsToReduxItems(carts);
+      const itemModuleId = cartItem?.module_id || cartItem?.module?.id;
+      const itemModuleType = cartItem?.module_type || cartItem?.module?.module_type;
+      const otherModulesItems = (cartList || []).filter((c) => {
+        const cModuleId = c?.module_id || c?.module?.id;
+        const cModuleType = c?.module_type || c?.module?.module_type;
+        if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
+        if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
+        return true;
       });
-      refetch?.();
+      const normalizedApiItems = mapped.map((apiItem) => ({
+        ...apiItem,
+        module_id: apiItem?.module_id || itemModuleId,
+        module_type: apiItem?.module_type || itemModuleType,
+      }));
+      dispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
     }
   };
+
+  const cartUpdateHandleSuccess = (res) => {
+    handleSyncFromApi(res);
+    refetch?.();
+  };
   const cartUpdateHandleSuccessDecrement = (res) => {
-    if (res) {
-      res?.forEach((item) => {
-        if (cartItem?.cartItemId === item?.id) {
-          const product = {
-            ...item?.item,
-            cartItemId: item?.id,
-            totalPrice: item?.price,
-            quantity: item?.quantity,
-            food_variations: item?.item?.food_variations,
-            selectedAddons: item?.item?.addons,
-            itemBasePrice: item?.item?.price,
-            selectedOption: item?.variation,
-          };
-          dispatch(setDecrementToCartItem(product));
-        }
-      });
-      refetch?.();
-    }
+    handleSyncFromApi(res);
+    refetch?.();
   };
   const handleIncrement = (cartItem) => {
     const updateQuantity = cartItem?.quantity + 1;
@@ -139,14 +135,26 @@ const CartContent = (props) => {
       }
     }
 
+    // Optimistically update Redux store immediately for 0ms UI response
+    const product = {
+      ...cartItem,
+      totalPrice: mainPrice,
+      quantity: updateQuantity,
+    };
+    dispatch(setIncrementToCartItem({ ...product, isUpdate: true }));
+
     updateMutate(itemObject, {
       onSuccess: cartUpdateHandleSuccess,
-      onError: onErrorResponse,
+      onError: (err) => {
+        refetch?.();
+        onErrorResponse(err);
+      },
     });
   };
 
   const handleDecrement = () => {
     const updateQuantity = cartItem?.quantity - 1;
+    if (updateQuantity < 1) return;
     const price =
       cartItem?.price + getTotalVariationsPrice(cartItem?.food_variations);
     //here quantity is decremented with number 1
@@ -166,9 +174,21 @@ const CartContent = (props) => {
       ),
       moduleIdOverride: resolveCartItemModuleId(cartItem),
     };
+
+    // Optimistically update Redux store immediately for 0ms UI response
+    const decProduct = {
+      ...cartItem,
+      totalPrice: mainPrice,
+      quantity: updateQuantity,
+    };
+    dispatch(setDecrementToCartItem({ ...decProduct, isUpdate: true }));
+
     updateMutate(itemObject, {
       onSuccess: cartUpdateHandleSuccessDecrement,
-      onError: onErrorResponse,
+      onError: (err) => {
+        refetch?.();
+        onErrorResponse(err);
+      },
     });
   };
 
@@ -276,7 +296,7 @@ const CartContent = (props) => {
           >
             {cartItem?.name}
           </Typography>
-          {cartItem?.module_type === "pharmacy" && (
+          {cartItem?.module_type === "pharmacy" && cartItem?.generic_name && (
             <Typography
               sx={{
                 overflow: "hidden",
@@ -289,7 +309,9 @@ const CartContent = (props) => {
               color="text.secondary"
               fontSize="12px"
             >
-              {cartItem?.generic_name[0]}
+              {Array.isArray(cartItem?.generic_name)
+                ? cartItem?.generic_name[0]
+                : cartItem?.generic_name}
             </Typography>
           )}
           {cartItem?.is_prescription_required == 1 && (

@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setCart,
+  setCartList,
   setDecrementToCartItem,
   setIncrementToCartItem,
   setRemoveItemFromCart,
@@ -46,6 +47,10 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import { useAddToWishlist } from "api-manage/hooks/react-query/wish-list/useAddWishList";
 import { useWishListDelete } from "api-manage/hooks/react-query/wish-list/useWishListDelete";
+import {
+  mapApiCartRowsToReduxItems,
+  getCartsFromResponse,
+} from "helper-functions/normalizeCartListResponse";
 import { getCartListModuleWise } from "helper-functions/getCartListModuleWise";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { getLanguage } from "helper-functions/getLanguage";
@@ -414,15 +419,22 @@ const ProductCard = (props) => {
     const isInCart = getItemFromCartlist();
     if (isInCart) {
       setIsProductExist(true);
-      setCount(isInCart?.quantity);
+      setCount(1);
     } else {
       setIsProductExist(false);
       setCount(0);
     }
   }, [aliasCartList, item?.id]);
   const getItemFromCartlist = () => {
-    const cartList = getCartListModuleWise(aliasCartList);
-    return cartList?.find((things) => things.id === item?.id);
+    // First try within the current module's cart (normal case)
+    const moduleCart = getCartListModuleWise(aliasCartList);
+    const found = moduleCart?.find((things) => String(things.id) === String(item?.id));
+    if (found) return found;
+    // Fallback: search across the entire cart (handles landing page / cross-module)
+    if (Array.isArray(aliasCartList)) {
+      return aliasCartList.find((things) => String(things.id) === String(item?.id)) || null;
+    }
+    return null;
   };
   useEffect(() => {
     wishlistItemExistHandler();
@@ -464,7 +476,7 @@ const ProductCard = (props) => {
       });
     }
   }, [item]);
-  const isInCart = cartList?.find((things) => things.id === item?.id);
+  const isInCart = cartList?.find((cart) => String(cart?.id) === String(item?.id));
   const resolvedModuleType = item?.module_type || item?.module?.module_type;
   const resolvedStock = Number(item?.stock ?? state?.modalData?.[0]?.stock);
   const hasFiniteStock = Number.isFinite(resolvedStock);
@@ -482,7 +494,8 @@ const ProductCard = (props) => {
           selectedOption: [],
         };
       });
-      reduxDispatch(setCart(product));
+      // Do NOT pass isUpdate:true — let cart slice auto-increment quantity
+      reduxDispatch(setCart({ ...product }));
       toast.success(t("Item added to cart"));
     }
   };
@@ -493,22 +506,164 @@ const ProductCard = (props) => {
       return;
     }
 
-    if (!isInCart) {
+    const modalItem = state.modalData[0] || item;
+    const addQty = Number(modalItem?.quantity || 1);
+    const resolvedPrice = Number(modalItem?.price ?? modalItem?.unit_price ?? item?.price ?? item?.unit_price ?? 0) || 0;
+    const existingCartItem = getItemFromCartlist();
+    const currentQty = Number(existingCartItem?.quantity || 0);
+    const remainingStock = hasFiniteStock ? resolvedStock - currentQty : null;
+
+    if (remainingStock !== null && remainingStock <= 0) {
+      toast.error(t(out_of_stock));
+      return;
+    }
+
+    dispatch({
+      type: ACTION.setModalData,
+      payload: {
+        ...modalItem,
+        quantity: 1,
+        totalPrice: resolvedPrice,
+      },
+    });
+    setCount(1);
+    setIsProductExist(true);
+
+    if (!existingCartItem) {
+      const itemModuleId = item?.module_id || item?.module?.id || modalItem?.module_id || modalItem?.module?.id;
+      const itemModuleType = item?.module_type || item?.module?.module_type || modalItem?.module_type || modalItem?.module?.module_type;
+
+      const tempProduct = {
+        ...modalItem,
+        id: modalItem?.id || item?.id,
+        cartItemId: modalItem?.cartItemId || `temp_${modalItem?.id || item?.id}_${Date.now()}`,
+        quantity: addQty,
+        price: resolvedPrice,
+        totalPrice: resolvedPrice * addQty,
+        selectedOption: [],
+        module_id: itemModuleId,
+        module_type: itemModuleType,
+        module: item?.module || modalItem?.module,
+      };
+
+      // Optimistic instant 0ms Add to Cart
+      reduxDispatch(setCart(tempProduct));
+      setCount(1);
+      setIsProductExist(true);
+
       const itemObject = {
         guest_id: getGuestId(),
-        model: state.modalData[0]?.available_date_starts
-          ? "ItemCampaign"
-          : "Item",
+        model: modalItem?.available_date_starts ? "ItemCampaign" : "Item",
         add_on_ids: [],
         add_on_qtys: [],
-        item_id: state.modalData[0]?.id,
-        price: state?.modalData[0]?.price,
-        quantity: state?.modalData[0]?.quantity,
+        item_id: modalItem?.id || item?.id,
+        price: resolvedPrice,
+        quantity: addQty,
         variation: [],
+        moduleIdOverride: itemModuleId,
       };
+
       addToMutate(itemObject, {
-        onSuccess: handleSuccess,
-        onError: onErrorResponse,
+        onSuccess: (res) => {
+          toast.success(t("Item added to cart"), { id: "cart-toast" });
+          if (res) {
+            const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+            const currentModuleId = itemModuleId || getModuleId();
+            const currentModuleType = itemModuleType || getCurrentModuleType();
+            const otherModulesItems = aliasCartList.filter((c) => {
+              const cModuleId = c?.module_id || c?.module?.id;
+              const cModuleType = c?.module_type || c?.module?.module_type;
+              if (currentModuleId && cModuleId) return String(cModuleId) !== String(currentModuleId);
+              if (currentModuleType && cModuleType) return cModuleType !== currentModuleType;
+              return true;
+            });
+            const normalizedApiItems = mappedFromApi.map((apiItem) => ({
+              ...apiItem,
+              module_id: apiItem?.module_id || currentModuleId,
+              module_type: apiItem?.module_type || currentModuleType,
+            }));
+            reduxDispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
+          }
+        },
+        onError: (err) => {
+          const msg = (err?.response?.data?.errors?.[0]?.message || err?.response?.data?.message || "").toLowerCase();
+          const isAlreadyInCart =
+            msg.includes("already") ||
+            msg.includes("exist") ||
+            err?.response?.status === 422 ||
+            err?.response?.status === 403;
+          if (!isAlreadyInCart) {
+            reduxDispatch(setRemoveItemFromCart(tempProduct));
+            setIsProductExist(false);
+            setCount(0);
+            onErrorResponse(err);
+          }
+        },
+      });
+    } else {
+      const itemModuleId = item?.module_id || item?.module?.id || existingCartItem?.module_id || existingCartItem?.module?.id;
+      const itemModuleType = item?.module_type || item?.module?.module_type || existingCartItem?.module_type || existingCartItem?.module?.module_type;
+
+      const finalAddQty = remainingStock !== null ? Math.min(addQty, remainingStock) : addQty;
+      if (finalAddQty <= 0) {
+        toast.error(t(out_of_stock));
+        return;
+      }
+      const updateQuantity = currentQty + finalAddQty;
+      const itemObject = {
+        ...getItemDataForAddToCart(
+          existingCartItem,
+          updateQuantity,
+          getPriceAfterQuantityChange(existingCartItem, updateQuantity),
+          getGuestId()
+        ),
+        moduleIdOverride: itemModuleId,
+      };
+
+      const updatedProduct = {
+        ...existingCartItem,
+        quantity: updateQuantity,
+        totalPrice: resolvedPrice * updateQuantity,
+        module_id: itemModuleId,
+        module_type: itemModuleType,
+        isUpdate: true,
+      };
+
+      reduxDispatch(setCart(updatedProduct));
+      setCount(1);
+      setIsProductExist(true);
+
+      updateMutate(itemObject, {
+        onSuccess: (res) => {
+          toast.success(t("Item added to cart"), { id: "cart-toast" });
+          if (res) {
+            const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+            const currentModuleId = itemModuleId || getModuleId();
+            const currentModuleType = itemModuleType || getCurrentModuleType();
+            const otherModulesItems = aliasCartList.filter((c) => {
+              const cModuleId = c?.module_id || c?.module?.id;
+              const cModuleType = c?.module_type || c?.module?.module_type;
+              if (currentModuleId && cModuleId) return String(cModuleId) !== String(currentModuleId);
+              if (currentModuleType && cModuleType) return cModuleType !== currentModuleType;
+              return true;
+            });
+            const normalizedApiItems = mappedFromApi.map((apiItem) => ({
+              ...apiItem,
+              module_id: apiItem?.module_id || currentModuleId,
+              module_type: apiItem?.module_type || currentModuleType,
+            }));
+            reduxDispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
+          }
+        },
+        onError: (err) => {
+          const status = err?.response?.status;
+          const msg = (err?.response?.data?.message || err?.response?.data?.errors?.[0]?.message || "").toLowerCase();
+          const isNotFound = status === 404 || msg.includes("not found") || msg.includes("notfound");
+          const isAlreadyInCart = msg.includes("already") || msg.includes("exist");
+          if (!isNotFound && !isAlreadyInCart) {
+            onErrorResponse(err);
+          }
+        },
       });
     }
   };
@@ -595,7 +750,7 @@ const ProductCard = (props) => {
             selectedOption: item?.variation,
           };
 
-          reduxDispatch(setIncrementToCartItem(product)); // Dispatch the single product
+          reduxDispatch(setIncrementToCartItem({ ...product, isUpdate: true })); // Sync exact server quantity
         }
       });
     }
@@ -613,7 +768,7 @@ const ProductCard = (props) => {
           itemBasePrice: item?.item?.price,
           selectedOption: item?.variation,
         };
-        reduxDispatch(setDecrementToCartItem(product));
+        reduxDispatch(setDecrementToCartItem({ ...product, isUpdate: true }));
       });
     }
   };
@@ -661,7 +816,14 @@ const ProductCard = (props) => {
               onSuccess: cartUpdateHandleSuccess,
               onError: onErrorResponse,
             });
-            reduxDispatch(setIncrementToCartItem(isInCart));
+            reduxDispatch(
+              setIncrementToCartItem({
+                ...isInCart,
+                quantity: updateQuantity,
+                totalPrice: mainPrice,
+                isUpdate: true,
+              })
+            );
           }
         } else {
           toast.error(t(out_of_stock));

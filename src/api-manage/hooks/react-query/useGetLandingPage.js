@@ -10,5 +10,7 @@ const getData = async () => {
 export default function useGetLandingPage() {
     return useQuery("landing-page-data", getData, {
         enabled: false,
+        staleTime: 1000 * 60 * 5,
+        cacheTime: 1000 * 60 * 10,
     });
 }

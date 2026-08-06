@@ -18,6 +18,8 @@ const RecentlyViewedViewAllModal = ({
   onRequestDetail,
   loading = false,
   emptyLabel,
+  title,
+  subTitle,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -63,7 +65,7 @@ const RecentlyViewedViewAllModal = ({
                 color: "text.primary",
               }}
             >
-              {t("Recently Viewed")}
+              {title ? title : t("Recently Viewed")}
             </Typography>
             <Typography
               sx={{
@@ -73,7 +75,7 @@ const RecentlyViewedViewAllModal = ({
                 lineHeight: 1.35,
               }}
             >
-              {t("Continue from where you left off")}
+              {subTitle ? subTitle : t("Continue from where you left off")}
             </Typography>
           </Box>
           <IconButton

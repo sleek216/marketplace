@@ -24,6 +24,7 @@ import { ShoppingCart as ShoppingCartOutlinedIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import NavBarIcon from "./NavBarIcon";
 import { useDispatch, useSelector } from "react-redux";
+import { useQueryClient } from "react-query";
 import AccountPopover from "./account-popover";
 import CardView from "../../added-cart-view";
 import CustomContainer from "../../container";
@@ -54,7 +55,7 @@ import { Lock as LockOutlinedIcon, Car as DirectionsCarOutlinedIcon } from "luci
 import dynamic from "next/dynamic";
 import TaxiView from "components/home/module-wise-components/rental/components/home/TaxiView";
 import useGetBookingList from "api-manage/hooks/react-query/useGetBookingList";
-import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+import { getCurrentModuleType, getCurrentModuleId } from "helper-functions/getCurrentModuleType";
 import Box from "@mui/material/Box";
 import cookie from "js-cookie";
 import CustomModal from "components/modal";
@@ -85,21 +86,32 @@ export const OPEN_AUTH_MODAL_EVENT = "gift-marketplace-open-auth-modal";
 export const OPEN_CHAT_DRAWER_EVENT = "gift-marketplace-open-chat-drawer";
 
 const Cart = ({ isLoading, cartListRefetch }) => {
-  const [sideDrawerOpen, setSideDrawerOpen] = useState(false);
   const { cartList } = useSelector((state) => state.cart);
+  const { selectedModule } = useSelector((state) => state.utilsData);
+  const router = useRouter();
+  const [sideDrawerOpen, setSideDrawerOpen] = useState(false);
+  const dispatch = useDispatch();
+
+  const isLandingPage = router.pathname === "/" || router.pathname === "" || !selectedModule?.id;
+  const totalCartCount = isLandingPage
+    ? (cartList?.length || 0)
+    : (getCartListModuleWise(cartList)?.length || 0);
+
   useEffect(() => {
     const open = () => setSideDrawerOpen(true);
     window.addEventListener(OPEN_CART_DRAWER_EVENT, open);
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
   }, []);
+
+  const handleIconClick = () => {
+    setSideDrawerOpen(true);
+  };
   useEffect(() => {
     if (sideDrawerOpen) {
       cartListRefetch?.();
     }
   }, [sideDrawerOpen, cartListRefetch]);
-  const handleIconClick = () => {
-    setSideDrawerOpen(true);
-  };
+
   return (
     <>
       <NavBarIcon
@@ -107,11 +119,7 @@ const Cart = ({ isLoading, cartListRefetch }) => {
         label={t("Cart")}
         user="false"
         handleClick={handleIconClick}
-        badgeCount={
-          getCartListModuleWise(cartList)?.length > 0
-            ? getCartListModuleWise(cartList).length
-            : null // or use `0` if you want the badge to show as "0"
-        }
+        badgeCount={totalCartCount > 0 ? totalCartCount : null}
       />
       {!!sideDrawerOpen && (
         <CardView
@@ -246,6 +254,7 @@ const getOtherModuleVariation = (itemVariations, selectedVariation) => {
 const SecondNavBar = ({ configData }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { cartList } = useSelector((state) => state.cart);
   const { selectedModule } = useSelector((state) => state.utilsData);
@@ -364,44 +373,32 @@ const SecondNavBar = ({ configData }) => {
   } = useGetBookingList(guestId);
 
   useEffect(() => {
-    if (moduleType) {
-      if (moduleType === "rental") {
-        bookingRefetch();
-      } else {
-        cartListRefetch();
-      }
-    }
-  }, [moduleType]);
-
-  useEffect(() => {
-    const syncCartAfterLogin = () => {
-      if (!hasValidAuthToken(getToken())) return;
-      if (moduleType === "rental") {
-        bookingRefetch();
-      } else if (moduleType) {
-        cartListRefetch();
-      }
-    };
-    window.addEventListener(HEADER_SESSION_SYNC_EVENT, syncCartAfterLogin);
-    return () =>
-      window.removeEventListener(HEADER_SESSION_SYNC_EVENT, syncCartAfterLogin);
-  }, [moduleType, cartListRefetch, bookingRefetch]);
-
-  const setItemIntoCart = () => {
-    return mapApiCartRowsToReduxItems(getCartsFromResponse(data));
-  };
-
-  useEffect(() => {
     if (moduleType === "rental") {
-      dispatch(setCartList(bookingLists));
-      if (bookingLists?.carts?.length > 0) {
-        cookie.set("cart-list", bookingLists?.carts?.length);
+      if (bookingLists) {
+        dispatch(setCartList(bookingLists));
+        if (bookingLists?.carts?.length > 0) {
+          cookie.set("cart-list", bookingLists?.carts?.length);
+        }
       }
+      bookingRefetch();
     } else {
-      dispatch(setCartMeta(getCartMetaFromResponse(data)));
-      dispatch(setCartList(setItemIntoCart()));
+      if (data) {
+        const apiRows = mapApiCartRowsToReduxItems(getCartsFromResponse(data));
+        dispatch(setCartMeta(getCartMetaFromResponse(data)));
+        dispatch(setCartList(apiRows));
+      }
     }
-  }, [data, moduleType, bookingLists]);
+  }, [
+    selectedModule?.id,
+    router.pathname,
+    data,
+    moduleType,
+    bookingLists,
+    cartListRefetch,
+    bookingRefetch,
+    dispatch,
+    queryClient,
+  ]);
 
   useEffect(() => {
     if (offlineInfoStep !== 0) {
@@ -410,6 +407,27 @@ const SecondNavBar = ({ configData }) => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    const syncCartAfterLogin = async () => {
+      if (!hasValidAuthToken(getToken())) return;
+      if (moduleType === "rental") {
+        await bookingRefetch();
+      } else {
+        // Remove ALL cart-itemss queries (prefix match) then force fresh fetch with auth token
+        queryClient.removeQueries({ queryKey: ["cart-itemss"], exact: false });
+        const result = await cartListRefetch();
+        if (result?.data) {
+          const apiRows = mapApiCartRowsToReduxItems(getCartsFromResponse(result.data));
+          dispatch(setCartMeta(getCartMetaFromResponse(result.data)));
+          dispatch(setCartList(apiRows));
+        }
+      }
+    };
+    window.addEventListener(HEADER_SESSION_SYNC_EVENT, syncCartAfterLogin);
+    return () =>
+      window.removeEventListener(HEADER_SESSION_SYNC_EVENT, syncCartAfterLogin);
+  }, [moduleType, cartListRefetch, bookingRefetch, queryClient, dispatch]);
 
   useEffect(() => {
     SetModuleType(selectedModule?.module_type);

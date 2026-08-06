@@ -12,7 +12,7 @@ const SignUpValidation = () => {
       .required(t("Email is required")),
     phone: Yup.string()
       .required(t("Please give a phone number"))
-      .min(10, "Number must be 10 digits"),
+      .matches(/^\+[1-9]\d{9,14}$/, t("Please give a valid phone number")),
     password: Yup.string()
       .required(t("Password is required"))
       .min(6, t("Password is too short - should be 6 chars minimum.")),

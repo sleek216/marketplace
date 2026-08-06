@@ -2,180 +2,229 @@ import React from "react";
 import {
   alpha,
   Box,
-  List,
-  ListItem,
+  Button,
+  Chip,
+  Divider,
+  Stack,
   styled,
   Typography,
   useTheme,
 } from "@mui/material";
 import { t } from "i18next";
 import { getAmountWithSign } from "helper-functions/CardHelpers";
-import { Check } from "lucide-react";
+import { CheckCircle2, XCircle, Sparkles } from "lucide-react";
 
-const PlanCard = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "isActive",
-})(({ theme, isActive }) => ({
+const CardWrapper = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "isActive" && prop !== "isPopular",
+})(({ theme, isActive, isPopular }) => ({
   position: "relative",
   height: "100%",
-  minHeight: "300px",
-  padding: "20px 16px 16px",
-  borderRadius: "12px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
+  padding: "24px 20px",
+  borderRadius: "16px",
   cursor: "pointer",
   backgroundColor: theme.palette.background.paper,
-  border: `1.5px solid ${
-    isActive
-      ? theme.palette.primary.main
-      : alpha(theme.palette.neutral[400], 0.28)
-  }`,
+  border: isActive
+    ? `2.5px solid ${theme.palette.primary.main}`
+    : `1px solid ${alpha(theme.palette.neutral[300] || "#cbd5e1", 0.7)}`,
   boxShadow: isActive
-    ? `0 4px 20px ${alpha(theme.palette.primary.main, 0.12)}`
-    : "none",
-  transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+    ? `0 12px 30px ${alpha(theme.palette.primary.main, 0.2)}`
+    : `0 4px 18px ${alpha(theme.palette.neutral[900] || "#000", 0.05)}`,
+  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   overflow: "hidden",
   "&:hover": {
     borderColor: theme.palette.primary.main,
+    transform: "translateY(-6px)",
+    boxShadow: `0 16px 36px ${alpha(theme.palette.primary.main, 0.16)}`,
   },
 }));
 
-const ActiveCorner = styled(Box)(({ theme }) => ({
+const PopularBadge = styled(Box)(({ theme }) => ({
   position: "absolute",
   top: 0,
-  right: 0,
-  width: "52px",
-  height: "52px",
-  background: theme.palette.primary.main,
-  clipPath: "polygon(100% 0, 0 0, 100% 100%)",
+  right: 20,
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark || theme.palette.primary.main} 100%)`,
+  color: "#ffffff",
+  borderBottomLeftRadius: "10px",
+  borderBottomRightRadius: "10px",
+  padding: "4px 12px",
+  fontSize: "11px",
+  fontWeight: 700,
+  letterSpacing: "0.5px",
+  textTransform: "uppercase",
   display: "flex",
-  alignItems: "flex-start",
-  justifyContent: "flex-end",
-  padding: "6px 7px 0 0",
-  zIndex: 1,
+  alignItems: "center",
+  gap: "4px",
+  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.35)}`,
+  zIndex: 2,
 }));
 
-const FeatureList = styled(List, {
-  shouldForwardProp: (prop) => prop !== "isScrollable",
-})(({ theme, isScrollable }) => ({
-  padding: 0,
-  marginTop: "14px",
-  maxHeight: "140px",
-  overflowY: isScrollable ? "scroll" : "auto",
-  paddingRight: isScrollable ? "6px" : 0,
-  scrollbarWidth: "thin",
-  scrollbarColor: `${alpha(theme.palette.primary.main, 0.55)} ${alpha(
-    theme.palette.neutral[300],
-    0.45
-  )}`,
-  "&::-webkit-scrollbar": {
-    width: "6px",
-  },
-  "&::-webkit-scrollbar-track": {
-    background: alpha(theme.palette.neutral[300], 0.4),
-    borderRadius: "8px",
-  },
-  "&::-webkit-scrollbar-thumb": {
-    background: alpha(theme.palette.primary.main, 0.55),
-    borderRadius: "8px",
-    border: `1px solid ${alpha(theme.palette.neutral[300], 0.3)}`,
-    "&:hover": {
-      background: theme.palette.primary.main,
-    },
-  },
-}));
-
-const FeatureItem = styled(ListItem)(({ theme }) => ({
-  padding: "5px 0",
-  gap: "8px",
-  fontSize: "12px",
-  color: theme.palette.text.secondary,
-  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-  "&:last-child": { borderBottom: "none" },
-}));
-
-const Plan = ({ setSelectedPackage, selectedPackage, item }) => {
+const Plan = ({ setSelectedPackage, selectedPackage, item, isPopular }) => {
   const theme = useTheme();
-  const isActive = selectedPackage === item?.id;
+  const isActive =
+    selectedPackage != null && String(selectedPackage) === String(item?.id);
 
-  const features = [
-    { label: `${t("Max order")} (${item?.max_order})`, show: true },
-    { label: `${t("Max product")} (${item?.max_product})`, show: true },
-    { label: t("Pos"), show: item?.pos === 1 },
-    { label: t("Mobile app"), show: item?.mobile_app === 1 },
-    { label: t("Chat"), show: item?.chat === 1 },
-    { label: t("Review"), show: item?.review === 1 },
-    { label: t("Self delivery"), show: item?.self_delivery === 1 },
-  ].filter((f) => f.show);
-  const isScrollable = features.length > 4;
+  const featureList = [
+    {
+      key: "max_order",
+      label: `${t("Max Order")}: ${item?.max_order ?? t("Unlimited")}`,
+      active: true,
+    },
+    {
+      key: "max_product",
+      label: `${t("Max Product")}: ${item?.max_product ?? t("Unlimited")}`,
+      active: true,
+    },
+    {
+      key: "pos",
+      label: t("POS System"),
+      active: item?.pos === 1,
+    },
+    {
+      key: "mobile_app",
+      label: t("Mobile App Access"),
+      active: item?.mobile_app === 1,
+    },
+    {
+      key: "chat",
+      label: t("Live Chat Support"),
+      active: item?.chat === 1,
+    },
+    {
+      key: "review",
+      label: t("Store Reviews & Ratings"),
+      active: item?.review === 1,
+    },
+    {
+      key: "self_delivery",
+      label: t("Self Delivery Option"),
+      active: item?.self_delivery === 1,
+    },
+  ];
 
   return (
-    <Box sx={{ px: "6px", py: "4px", height: "100%" }}>
-      <PlanCard
+    <Box sx={{ height: "100%", py: 1.5, px: 1, width: "100%" }}>
+      <CardWrapper
         isActive={isActive}
-        className="plan-item"
+        isPopular={isPopular}
         onClick={() => setSelectedPackage(item.id)}
       >
-        {isActive && (
-          <ActiveCorner>
-            <Check size={14} color="#fff" strokeWidth={3} />
-          </ActiveCorner>
+        {isPopular && (
+          <PopularBadge>
+            <Sparkles size={12} />
+            {t("Popular")}
+          </PopularBadge>
         )}
 
-        <Typography
-          fontSize="14px"
-          fontWeight={600}
-          color="text.primary"
-          textAlign="center"
-          sx={{ pr: isActive ? 2 : 0 }}
-        >
-          {item?.package_name}
-        </Typography>
-
-        <Typography
-          fontSize="28px"
-          fontWeight={700}
-          color="primary.main"
-          textAlign="center"
-          lineHeight={1.2}
-          mt={0.5}
-        >
-          {getAmountWithSign(item?.price)}
-        </Typography>
-
-        <Typography
-          fontSize="12px"
-          color="text.secondary"
-          textAlign="center"
-          mt={0.5}
-          pb={1.5}
-          borderBottom={`1px solid ${alpha(theme.palette.divider, 0.12)}`}
-        >
-          {item?.validity} {t("Days")}
-        </Typography>
-
-        <FeatureList isScrollable={isScrollable}>
-          {features.map((feature) => (
-            <FeatureItem key={feature.label}>
-              <Check
-                size={14}
-                color={theme.palette.primary.main}
-                strokeWidth={2.5}
-              />
-              <span>{feature.label}</span>
-            </FeatureItem>
-          ))}
-        </FeatureList>
-        {isScrollable && (
+        <Box>
+          {/* Header */}
           <Typography
-            variant="caption"
-            display="block"
-            textAlign="center"
-            mt={0.75}
-            fontSize="10px"
-            color="text.secondary"
+            fontSize="18px"
+            fontWeight={700}
+            color={isActive ? "primary.main" : "text.primary"}
+            mb={0.5}
+            sx={{ pt: isPopular ? 1.5 : 0 }}
           >
-            {t("Scroll for more features")}
+            {item?.package_name}
           </Typography>
-        )}
-      </PlanCard>
+
+          {/* Price */}
+          <Stack direction="row" alignItems="baseline" spacing={0.5} mt={1.5} mb={1}>
+            <Typography
+              fontSize="28px"
+              fontWeight={800}
+              color="primary.main"
+              lineHeight={1}
+            >
+              {getAmountWithSign(item?.price)}
+            </Typography>
+          </Stack>
+
+          {/* Validity Chip */}
+          <Chip
+            label={`${item?.validity} ${t("Days Validity")}`}
+            size="small"
+            sx={{
+              bgcolor: isActive
+                ? alpha(theme.palette.primary.main, 0.15)
+                : alpha(theme.palette.neutral[400] || "#94a3b8", 0.12),
+              color: isActive ? "primary.main" : "text.secondary",
+              fontWeight: 700,
+              fontSize: "12px",
+              height: "26px",
+              mb: 1.5,
+            }}
+          />
+
+          <Divider sx={{ my: 1.5, borderColor: alpha(theme.palette.divider, 0.6) }} />
+
+          {/* Feature List */}
+          <Stack spacing={1.25} sx={{ my: 1.5 }}>
+            {featureList.map((feature) => (
+              <Stack
+                key={feature.key}
+                direction="row"
+                alignItems="center"
+                spacing={1.25}
+              >
+                {feature.active ? (
+                  <CheckCircle2
+                    size={17}
+                    color={theme.palette.primary.main}
+                    strokeWidth={2.2}
+                  />
+                ) : (
+                  <XCircle
+                    size={17}
+                    color={alpha(theme.palette.neutral[400] || "#cbd5e1", 0.6)}
+                    strokeWidth={1.8}
+                  />
+                )}
+                <Typography
+                  fontSize="13px"
+                  fontWeight={feature.active ? 600 : 400}
+                  color={
+                    feature.active
+                      ? theme.palette.neutral[900] || "text.primary"
+                      : theme.palette.neutral[400] || "text.disabled"
+                  }
+                >
+                  {feature.label}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+
+        {/* Selection Button */}
+        <Button
+          fullWidth
+          variant={isActive ? "contained" : "outlined"}
+          color="primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedPackage(item.id);
+          }}
+          sx={{
+            mt: 2,
+            py: 1.2,
+            borderRadius: "10px",
+            fontWeight: 700,
+            fontSize: "14px",
+            textTransform: "none",
+            boxShadow: isActive
+              ? `0 6px 18px ${alpha(theme.palette.primary.main, 0.3)}`
+              : "none",
+            "&:hover": {
+              boxShadow: `0 8px 22px ${alpha(theme.palette.primary.main, 0.4)}`,
+            },
+          }}
+        >
+          {isActive ? t("Selected") : t("Select Package")}
+        </Button>
+      </CardWrapper>
     </Box>
   );
 };

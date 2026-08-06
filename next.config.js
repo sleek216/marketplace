@@ -17,6 +17,7 @@ function getImageRemotePatterns() {
     "testmarketplace.aibitsoft.cloud",
     "localhost",
     "127.0.0.1",
+    "172.31.3.97",
   ]);
 
   const fromEnv = hostnameFromUrl(process.env.NEXT_PUBLIC_BASE_URL);
@@ -50,6 +51,9 @@ function getImageRemotePatterns() {
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
+  allowedDevOrigins: ["172.31.3.97:3000", "localhost:3000"],
   // Stable Turbopack config (Next.js 15+). Pins project root so Windows /
   // multi-lockfile setups don't pick the wrong workspace root.
   turbopack: {

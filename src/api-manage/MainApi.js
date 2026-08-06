@@ -24,6 +24,12 @@ MainApi.interceptors.request.use(function (config) {
     language = JSON.parse(localStorage.getItem("language-setting"));
     currentLocation = JSON.parse(localStorage.getItem("currentLatLng"));
     moduleid = JSON.parse(localStorage.getItem("module"))?.id;
+    const guestId = localStorage.getItem("guest_id");
+    if (guestId && guestId !== "null" && guestId !== "undefined") {
+      config.headers.guest_id = guestId;
+      config.headers["guest-id"] = guestId;
+      config.headers["X-guest-id"] = guestId;
+    }
   }
   // Customer coupon list matches Postman: Bearer (+ localization) only.
   // moduleId / zoneid / geo headers often filter the list to [] when they
@@ -38,17 +44,21 @@ MainApi.interceptors.request.use(function (config) {
   if (!isCustomerCouponList) {
     if (currentLocation) config.headers.latitude = currentLocation.lat;
     if (currentLocation) config.headers.longitude = currentLocation.lng;
+    // Always send zoneid - backend requires it to identify location context.
+    // omitModuleId: cross-module reads (landing catalog & all-module cart list).
+    // moduleIdOverride: force a specific module (e.g. add-to-cart from marketplace card).
     if (zoneid) {
       config.headers.zoneid = zoneid;
-      // Backend docs use zoneId — send both for marketplace APIs.
       config.headers.zoneId = zoneid;
     }
-    // omitModuleId: cross-module reads (landing catalog).
-    // moduleIdOverride: force a specific module (e.g. add-to-cart from marketplace card).
-    if (config.moduleIdOverride) {
-      config.headers.moduleId = config.moduleIdOverride;
-    } else if (moduleid && !config.omitModuleId) {
-      config.headers.moduleId = moduleid;
+    if (!config.omitModuleId) {
+      if (config.moduleIdOverride) {
+        config.headers.moduleId = config.moduleIdOverride;
+      } else if (moduleid) {
+        config.headers.moduleId = moduleid;
+      } else if (url.includes("customer/cart") || url.includes("cart")) {
+        config.headers.moduleId = 1;
+      }
     }
   }
   if (hasValidAuthToken(token)) {

@@ -230,7 +230,7 @@ const FoodDetailModal = ({
           itemBasePrice: item?.item?.price,
         };
       });
-      dispatch(setCart(product));
+      dispatch(setCart({ ...product, isUpdate: true }));
       handleClose();
       //dispatch()
     }
@@ -276,6 +276,9 @@ const FoodDetailModal = ({
       toast.error(t(out_of_stock));
       return;
     }
+    if (!productUpdate) {
+      setQuantity(1);
+    }
     if (productUpdate) {
       //for updating
 
@@ -316,6 +319,49 @@ const FoodDetailModal = ({
         onError: onErrorResponse,
       });
     } else {
+      const existingCartItem = cartList?.find((cItem) => {
+        return (
+          String(cItem?.id) === String(modalData?.[0]?.id || product?.id) &&
+          JSON.stringify(cItem?.selectedOption || []) === JSON.stringify(selectedOptions || [])
+        );
+      });
+
+      if (existingCartItem) {
+        const accumulatedQty = (existingCartItem?.quantity || 1) + quantity;
+        const itemObject = {
+          cart_id: existingCartItem?.cartItemId || existingCartItem?.id,
+          guest_id: guestId,
+          model: modalData[0]?.available_date_starts ? "ItemCampaign" : "Item",
+          add_on_ids:
+            selectedAddons?.length > 0
+              ? selectedAddons?.map((add) => add.id)
+              : [],
+          add_on_qtys:
+            selectedAddons?.length > 0
+              ? selectedAddons.map((add) => add.quantity)
+              : [],
+          item_id: modalData[0]?.id,
+          price: (totalPrice / (quantity || 1)) * accumulatedQty,
+          quantity: accumulatedQty,
+          variation:
+            getNewVariationForDispatch()?.length > 0
+              ? getNewVariationForDispatch()?.map((variation) => ({
+                  name: variation.name,
+                  values: {
+                    label: handleValuesFromCartItems(variation.values),
+                  },
+                }))
+              : [],
+          moduleIdOverride: productModuleId,
+        };
+
+        updateMutate(itemObject, {
+          onSuccess: updateCartSuccessHandler,
+          onError: onErrorResponse,
+        });
+        return;
+      }
+
       let totalQty = 0;
       const itemObject = {
         guest_id: guestId,

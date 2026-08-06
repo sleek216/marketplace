@@ -1,10 +1,33 @@
+import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+
 /**
- * Unified marketplace cart — all modules and stores in one list.
- * (Previously filtered to the active module only.)
+ * Returns the cart items for the currently selected module.
+ * Falls back to the full list only when no module is selected yet.
  */
 export const getCartListModuleWise = (cartList) => {
   if (!Array.isArray(cartList)) return [];
-  return cartList;
+
+  const currentModuleType = getCurrentModuleType();
+  const currentModuleId = getCurrentModuleId();
+
+  if (!currentModuleType && !currentModuleId) {
+    return cartList;
+  }
+
+  return cartList.filter((item) => {
+    const itemModuleType = item?.module_type || item?.module?.module_type;
+    const itemModuleId = item?.module_id || item?.module?.id;
+
+    if (currentModuleId != null && String(itemModuleId) === String(currentModuleId)) {
+      return true;
+    }
+
+    if (currentModuleType && itemModuleType === currentModuleType) {
+      return true;
+    }
+
+    return false;
+  });
 };
 
 /** module_id for add/update/delete when the active sidebar module differs. */

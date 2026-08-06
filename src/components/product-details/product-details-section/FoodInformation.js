@@ -204,7 +204,7 @@ const FoodInformation = ({
           itemBasePrice: item?.item?.price,
         };
       });
-      dispatch(setCart(product));
+        dispatch(setCart({ ...product, isUpdate: true }));
       toast.success(t("Item added to cart"));
     }
   };

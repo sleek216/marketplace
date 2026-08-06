@@ -1,11 +1,11 @@
 import { alpha, Skeleton, styled, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Box, Stack } from "@mui/system";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { setSelectedModule } from "redux/slices/utils";
 import CustomImageContainer from "../CustomImageContainer";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
-import { setFeaturedCategories, setRecommendedStores } from "redux/slices/storedData";
+import { setFeaturedCategories, setRecommendedStores, setResetStoredData } from "redux/slices/storedData";
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "lucide-react";
 import useGetModule from "api-manage/hooks/react-query/useGetModule";
 
@@ -215,6 +215,8 @@ const ModuleSelect = ({
   dispatch: propDispatch,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
+  // Track in-flight navigation to prevent double clicks
+  const navigating = useRef(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const router = useRouter();
@@ -236,17 +238,19 @@ const ModuleSelect = ({
   const isOnModuleHome = router.pathname === "/home";
   const activeModule = isOnModuleHome ? selectedModule : null;
 
-  const handleModuleSelect = async (item) => {
+  const handleModuleSelect = (item) => {
+    // Prevent double-fire while navigation is in progress
+    if (navigating.current) return;
+    navigating.current = true;
+
+    // ── 1. Instant Redux update (0 ms — UI reacts before network) ──
     if (dispatch) {
-      dispatch(setFeaturedCategories([]));
-      dispatch(setRecommendedStores([]));
+      dispatch(setResetStoredData());
       dispatch(setSelectedModule(item));
     }
 
-    // Fix ZoneGuard issue: if zoneid/location is missing on landing page, ZoneGuard kicks user back to "/"!
+    // ── 2. Persist to localStorage synchronously ──
     if (typeof window !== "undefined") {
-      // The stored zone must be one the module actually serves; otherwise the
-      // module-list API on /home returns [] and MainLayout bounces back to "/".
       const moduleZoneIds = item?.zones?.map((zone) => zone.id) || [];
       let currentZone = null;
       try {
@@ -271,24 +275,42 @@ const ModuleSelect = ({
       localStorage.setItem("module", JSON.stringify(item));
     }
 
-    if (propModuleSelectHandler) {
-      propModuleSelectHandler(item);
-    } else {
-      if (router.query.search) {
-        await router.replace("/home");
-      } else if (router.pathname !== "/home") {
-        await router.push("/home");
-      }
-    }
+    // ── 3. Navigate (fire-and-forget — no await so UI isn't blocked) ──
+    const navigate = () => {
+      const isModuleExist = existingModuleId?.includes(item?.id);
+      const doInterest =
+        interestId?.length > 0 &&
+        !isModuleExist &&
+        item.module_type !== "parcel" &&
+        item?.module !== "rental";
 
-    const isModuleExist = existingModuleId?.includes(item?.id);
-    if (
-      interestId?.length > 0 &&
-      !isModuleExist &&
-      item.module_type !== "parcel" &&
-      item?.module !== "rental"
-    ) {
-      router.push("/interest", undefined, { shallow: true });
+      if (propModuleSelectHandler) {
+        propModuleSelectHandler(item);
+        navigating.current = false;
+      } else if (router.query.search) {
+        router.replace("/home").then(() => {
+          navigating.current = false;
+          if (doInterest) router.push("/interest", undefined, { shallow: true });
+        });
+      } else if (router.pathname !== "/home") {
+        router.push("/home").then(() => {
+          navigating.current = false;
+          if (doInterest) router.push("/interest", undefined, { shallow: true });
+        });
+      } else {
+        // Already on /home — just a shallow state update, resolve immediately
+        navigating.current = false;
+        if (doInterest) router.push("/interest", undefined, { shallow: true });
+      }
+    };
+
+    navigate();
+  };
+
+  /** Prefetch /home on hover so the page bundle is ready before the click. */
+  const handleModuleHover = (item) => {
+    if (router.pathname !== "/home") {
+      router.prefetch("/home");
     }
   };
 
@@ -337,6 +359,7 @@ const ModuleSelect = ({
                 }
                 id={item?.id}
                 onClick={() => handleModuleSelect(item)}
+                onMouseEnter={() => handleModuleHover(item)}
               >
                 <Box
                   sx={{

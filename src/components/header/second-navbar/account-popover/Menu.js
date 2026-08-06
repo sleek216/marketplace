@@ -19,6 +19,7 @@ import { logoutSuccessFull } from "utils/toasterMessages";
 import { menuData } from "./menuData";
 import { useRouter } from "next/router";
 import { setWelcomeModal } from "redux/slices/utils";
+import { resetEntireCart } from "redux/slices/cart";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
 
 const Menu = ({ onClose, cartListRefetch }) => {
@@ -34,9 +35,11 @@ const Menu = ({ onClose, cartListRefetch }) => {
     dispatch(setWelcomeModal(false));
     try {
       setTimeout(() => {
-        cartListRefetch();
         dispatch(setLogoutUser(null));
+        dispatch(resetEntireCart());
         localStorage.removeItem("token");
+        localStorage.removeItem("cartList");
+        cartListRefetch?.();
         notifyHeaderSessionSync();
         onClose?.();
         toast.success(t(logoutSuccessFull));

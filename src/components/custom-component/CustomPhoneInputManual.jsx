@@ -43,9 +43,14 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput)(
 
     "&.react-tel-input .selected-flag": {
       backgroundColor: theme.palette.neutral[100],
-      borderRadius: "10px 0px 0px 10px !important",
-      width: "58px !important",
+      borderRadius: borderRadius
+        ? `${borderRadius} 0px 0px ${borderRadius} !important`
+        : "10px 0px 0px 10px !important",
+      width: "64px !important",
       paddingLeft: "10px !important",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       "&:hover": {
         backgroundColor: theme.palette.background.custom2,
       },
@@ -89,7 +94,8 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput)(
       color: theme.palette.neutral[1000],
       borderRadius: borderRadius ?? "5px",
       paddingLeft: languageDirection === "rtl" ? "66px" : "66px",
-      marginRight: languageDirection === "rtl" ? "66px" : "66px",
+      marginRight: 0,
+      boxSizing: "border-box",
       ...(languageDirection === "rtl" && {
         textAlign: "left",
         direction: "ltr",
@@ -154,8 +160,6 @@ const CustomPhoneInputManual = ({
     const nationalNumber = getLocalNumber(currentValue, dialCode);
     setSelectedDialCode(dialCode);
     setPhoneNumber(nationalNumber);
-    // space between phone number and country code
-    // onHandleChange(`${dialCode} ${nationalNumber}`.trim());
     onHandleChange(`${dialCode}${nationalNumber}`);
   };
   useEffect(() => {
@@ -169,8 +173,6 @@ const CustomPhoneInputManual = ({
   }, [value, selectedDialCode]);
 
   const displayValue = useMemo(
-    // space between phone number and country code
-    // () => `${selectedDialCode} ${phoneNumber}`.trim(),
     () => `${selectedDialCode}${phoneNumber}`,
     [selectedDialCode, phoneNumber]
   );

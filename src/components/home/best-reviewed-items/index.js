@@ -63,14 +63,10 @@ const BestReviewedItems = (props) => {
   const uniqueCategories = [
     ...new Set(getCategoryIds().map((item) => JSON.stringify(item))),
   ].map(JSON.parse);
+  const selectedModule = useSelector((state) => state.utilsData.selectedModule);
   useEffect(() => {
-    if (bestReviewedItems.products.length === 0) {
-      refetch();
-    }
-    // Intentionally mount-only: refetching whenever bestReviewedItems is empty
-    // caused an infinite loop when the API returns zero products.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    refetch();
+  }, [selectedModule?.id]);
   useEffect(() => {
     if (data) {
       dispatch(setBestReviewedItems(data));

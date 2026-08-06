@@ -66,6 +66,7 @@ import ForgotPassword from "../ForgotPassword/ForgotPassword";
 import { setOpenForgotPasswordModal } from "redux/slices/utils";
 import useMergeRecentlyViewed from "api-manage/hooks/react-query/recently-viewed/useMergeRecentlyViewed";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { useQueryClient } from "react-query";
 
 const SignIn = ({
   modalFor,
@@ -88,6 +89,7 @@ const SignIn = ({
   const { openForgotPasswordModal } = useSelector((state) => state.utilsData);
   const guestId = getGuestId();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const [openModuleSelection, setOpenModuleSelection] = useState(false);
   const [openOtpModal, setOpenOtpModal] = useState(false);
   const [loginValue, setLoginValue] = useState(null);
@@ -237,26 +239,27 @@ const SignIn = ({
       notifyHeaderSessionSync();
       handleClose();
 
-      try {
-        await mergeRecentlyViewed();
-      } catch (error) {}
+      // Clear stale cart cache
+      queryClient.removeQueries({ queryKey: ["cart-itemss"], exact: false });
 
-      try {
-        if (moduleType === "rental") {
-          await bookingRefetch();
-          await rentalWishlistRefetch();
-        } else {
-          await cartListRefetch();
-          await wishlistRefetch();
-        }
-      } catch (error) {
-        console.error("Error refetching cart/wishlist:", error);
-      }
+      // Fire ALL post-login fetches in PARALLEL for maximum speed
+      const [cartData] = await Promise.allSettled([
+        cartListRefetch(),
+        profileRefetch(),
+        mergeRecentlyViewed().catch(() => {}),
+        moduleType === "rental"
+          ? Promise.all([bookingRefetch(), rentalWishlistRefetch()])
+          : wishlistRefetch(),
+      ]);
 
-      try {
-        await profileRefetch();
-      } catch (error) {
-        console.error("Error refetching profile:", error);
+      // Sync cart to Redux immediately
+      if (cartData?.status === "fulfilled" && cartData?.value?.data) {
+        dispatch(setCartMeta(getCartMetaFromResponse(cartData.value.data)));
+        dispatch(
+          setCartList(
+            mapApiCartRowsToReduxItems(getCartsFromResponse(cartData.value.data))
+          )
+        );
       }
 
       toast.success(t(loginSuccessFull));

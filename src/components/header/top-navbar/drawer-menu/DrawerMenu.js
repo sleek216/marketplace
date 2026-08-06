@@ -15,15 +15,18 @@ import { setClearCart } from "redux/slices/cart";
 import { OPEN_AUTH_MODAL_EVENT } from "../../second-navbar/SecondNavbar";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
 
-const DrawerMenu = ({ setToggled, openDrawer, setOpenDrawer }) => {
+import { resetEntireCart } from "redux/slices/cart";
+
+const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
   const { t } = useTranslation();
-  const router = useRouter();
   const dispatch = useDispatch();
+  const router = useRouter();
   const [openModal, setOpenModal] = useState(false);
   const [isLogoutLoading, setIsLogoutLoading] = useState(false);
-  const toggleDrawer = (openDrawer) => (event) => {
-    setToggled(openDrawer);
-    setOpenDrawer(openDrawer);
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  const toggleDrawer = () => {
+    setOpenDrawer(false);
   };
   const handleRoute = (path) => {
     router.push(`/${path}`, undefined, { shallow: true });
@@ -38,7 +41,9 @@ const DrawerMenu = ({ setToggled, openDrawer, setOpenDrawer }) => {
     try {
       setTimeout(() => {
         dispatch(setLogoutUser(null));
+        dispatch(resetEntireCart());
         localStorage.removeItem("token");
+        localStorage.removeItem("cartList");
         notifyHeaderSessionSync();
         setOpenDrawer(false);
         toast.success(t(logoutSuccessFull));

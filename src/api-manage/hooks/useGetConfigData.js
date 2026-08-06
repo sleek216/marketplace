@@ -11,6 +11,7 @@ export const useGetConfigData = (handleSuccess) => {
     enabled: false,
     onError: onSingleErrorResponse,
     retry: 1,
-    cacheTime: 400,
+    staleTime: 1000 * 60 * 5,
+    cacheTime: 1000 * 60 * 10,
   });
 };

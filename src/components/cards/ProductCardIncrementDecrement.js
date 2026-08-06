@@ -31,12 +31,24 @@ const ProductCardIncrementDecrement = ({ isInCart, modalData }) => {
     if (hasFiniteStock && getQuantity(modalData?.id) >= resolvedStock) {
       toast.error(t(out_of_stock));
     } else {
-      reduxDispatch(setIncrementToCartItem(isInCart));
+      reduxDispatch(
+        setIncrementToCartItem({
+          ...isInCart,
+          quantity: getQuantity(modalData?.id) + 1,
+          isUpdate: true,
+        })
+      );
     }
   };
   const handleDecrement = (e) => {
     e.stopPropagation();
-    reduxDispatch(setDecrementToCartItem(isInCart));
+    reduxDispatch(
+      setDecrementToCartItem({
+        ...isInCart,
+        quantity: Math.max(getQuantity(modalData?.id) - 1, 1),
+        isUpdate: true,
+      })
+    );
   };
   const handleRemove = (e) => {
     e.stopPropagation();

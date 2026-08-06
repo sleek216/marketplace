@@ -134,7 +134,9 @@ export const ModuleSelection = ({
   } = useGetAllCartList(getGuestId(),cartListSuccessHandler);
 
   const bookingSuccess = (res) => {
-    dispatch(setCartList(res));
+    if (res && Array.isArray(res)) {
+      dispatch(setCartList(res));
+    }
     safeRouterPush(router, "/home");
     setOpenModal(false);
     closeModal?.(selectedModule);

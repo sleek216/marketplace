@@ -213,13 +213,14 @@ const StoreRegistration = () => {
   }, [flag]);
 
   useEffect(() => {
-    if (active === "active") {
+    if (active === "active" || activeStep === null || activeStep === undefined) {
       dispatch(setActiveStep(0));
     }
-  }, [active]);
+  }, [active, activeStep]);
 
   const handleActiveStep = () => {
-    if (activeStep === 0) {
+    const step = (activeStep === null || activeStep === undefined) ? 0 : activeStep;
+    if (step === 0) {
       return (
         <StoreRegistrationForm
           setActiveStep={setActiveStep}
@@ -230,7 +231,7 @@ const StoreRegistration = () => {
           }}
         />
       );
-    } else if (activeStep === 1) {
+    } else if (step === 1) {
       return (
         <BusinessPlan
           setActiveStep={setActiveStep}
@@ -246,11 +247,11 @@ const StoreRegistration = () => {
         />
       );
     } else if (
-      (activeStep === 3 && flag === "success") ||
-      (activeStep === 3 && flag === "fail")
+      (step === 3 && flag === "success") ||
+      (step === 3 && flag === "fail")
     ) {
       return <SuccessStoreRegistration flag={flag} />;
-    } else if (activeStep === 2) {
+    } else if (step === 2) {
       return (
         <PaymentSelect
           isLoading={isLoading || regIsloading}

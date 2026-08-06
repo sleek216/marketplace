@@ -1,5 +1,6 @@
 import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Box } from "@mui/system";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,15 +25,9 @@ import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import PushNotificationLayout from "../PushNotificationLayout";
 import CustomModal from "../modal";
 import LastOrderReview from "./LastOrderReview";
-import Grocery from "./module-wise-components/Grocery";
-import Shop from "./module-wise-components/ecommerce";
-import FoodModule from "./module-wise-components/food";
-import Parcel from "./module-wise-components/parcel/Index";
-import Pharmacy from "./module-wise-components/pharmacy/Pharmacy";
-import SearchResult from "./search";
-import TaxiSearchPanel from "components/home/module-wise-components/rental/components/global/search/TaxiSearchPanel";
+import SharedProductDeepLink from "./SharedProductDeepLink";
+import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import { useGetWishList } from "api-manage/hooks/react-query/rental-wishlist/useGetWishlist";
-import Rental from "components/home/module-wise-components/rental/Rental";
 import { useGetFailedPayment } from "api-manage/hooks/react-query/useGetFailedPayment";
 import IncompleteOrderModal from "components/home/IncompleteOrderModal";
 import PaymentMethod from "components/checkout/PaymentMethod";
@@ -42,8 +37,17 @@ import { useQuery } from "react-query";
 import { GoogleApi } from "api-manage/hooks/react-query/googleApi";
 import { useUpdatePaymentMethod } from "api-manage/hooks/react-query/payment-method/useUpdatePaymentMethod";
 import { useUpdatePaymentByWallet } from "api-manage/hooks/react-query/useUpdatePaymentByWallet";
-import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
-import SharedProductDeepLink from "./SharedProductDeepLink";
+
+const Grocery = dynamic(() => import("./module-wise-components/Grocery"));
+const Shop = dynamic(() => import("./module-wise-components/ecommerce"));
+const FoodModule = dynamic(() => import("./module-wise-components/food"));
+const Pharmacy = dynamic(() => import("./module-wise-components/pharmacy/Pharmacy"));
+const Parcel = dynamic(() => import("./module-wise-components/parcel/Index"));
+const Rental = dynamic(() => import("./module-wise-components/rental/Rental"));
+const SearchResult = dynamic(() => import("./search"));
+const TaxiSearchPanel = dynamic(() =>
+  import("components/home/module-wise-components/rental/components/global/search/TaxiSearchPanel")
+);
 
 export const HomeComponentsWrapper = styled(Box)(() => ({
   width: "100%",
@@ -76,14 +80,17 @@ const HomePageComponents = ({ configData, landingPageData }) => {
         }
       }
     });
-  const currentLatLng = JSON.parse(
-    window.localStorage.getItem("currentLatLng")
-  );
+  const currentLatLng =
+    typeof window !== "undefined"
+      ? JSON.parse(window.localStorage.getItem("currentLatLng") || "null")
+      : null;
   const { data: zoneData } = useQuery(
-    ["zoneId", location],
+    ["zoneId", currentLatLng?.lat, currentLatLng?.lng],
     async () => GoogleApi.getZoneId(currentLatLng),
     {
       retry: 1,
+      enabled: Boolean(token && currentLatLng && failPayment?.zone_id),
+      staleTime: 1000 * 60 * 10,
     }
   );
   const { mutate: paymentMethodUpdateMutation, isLoading: repayOrderLoading } =
@@ -99,9 +106,11 @@ const HomePageComponents = ({ configData, landingPageData }) => {
     zoneData?.data
   );
   useEffect(() => {
-    refetchFailedPayment();
-    refetchOfflinePaymentOptions()
-  }, []);
+    if (token) {
+      refetchFailedPayment();
+      refetchOfflinePaymentOptions();
+    }
+  }, [token]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [router.query.search]);

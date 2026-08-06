@@ -32,17 +32,21 @@ const getOtherModuleVariation = (itemVariations, selectedVariation) => {
   return selectedItem;
 };
 
+import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+
 const resolveCartRowModuleType = (cartRow, product) =>
   product?.module_type ||
   product?.module?.module_type ||
   cartRow?.module_type ||
-  cartRow?.module?.module_type;
+  cartRow?.module?.module_type ||
+  getCurrentModuleType();
 
 const resolveCartRowModuleId = (cartRow, product) =>
   product?.module_id ||
   product?.module?.id ||
   cartRow?.module_id ||
-  cartRow?.module?.id;
+  cartRow?.module?.id ||
+  getCurrentModuleId();
 
 /**
  * Cart list API may return a flat array (legacy) or a grouped payload:
@@ -63,6 +67,7 @@ export const getCartMetaFromResponse = (res) => {
       grand_subtotal: null,
       grand_total: null,
       is_multi_store: false,
+      selection_applied: false,
     };
   }
 
@@ -78,6 +83,7 @@ export const getCartMetaFromResponse = (res) => {
         ? null
         : Number(res.grand_total),
     is_multi_store: Boolean(res.is_multi_store),
+    selection_applied: Boolean(res.selection_applied),
   };
 };
 
@@ -113,6 +119,7 @@ export const mapApiCartRowsToReduxItems = (carts) => {
               }
             : product?.module,
       cartItemId: cartRow?.id,
+      is_selected: cartRow?.is_selected !== undefined ? Boolean(cartRow.is_selected) : true,
       totalPrice:
         handleProductValueWithOutDiscount({
           ...product,
@@ -130,7 +137,9 @@ export const mapApiCartRowsToReduxItems = (carts) => {
 export const getCustomerLatLng = () => {
   if (typeof window === "undefined") return { lat: null, lng: null };
   try {
-    const loc = JSON.parse(localStorage.getItem("currentLatLng"));
+    const rawCurrent = localStorage.getItem("currentLatLng");
+    const rawLoc = localStorage.getItem("location");
+    const loc = rawCurrent ? JSON.parse(rawCurrent) : rawLoc ? JSON.parse(rawLoc) : null;
     const lat = loc?.lat ?? loc?.latitude ?? null;
     const lng = loc?.lng ?? loc?.longitude ?? null;
     return { lat, lng };
