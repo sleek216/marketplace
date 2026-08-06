@@ -100,6 +100,14 @@ export const mapApiCartRowsToReduxItems = (carts) => {
       ? getSelectedVariations(product?.food_variations)
       : getOtherModuleVariation(product?.variations, cartRow?.variation);
 
+    const rowUnitPrice =
+      Number(cartRow?.price) > 0
+        ? Number(cartRow.price)
+        : handleProductValueWithOutDiscount({
+            ...product,
+            selectedOption,
+          });
+
     return {
       ...product,
       module_id: moduleId ?? product?.module_id,
@@ -120,15 +128,12 @@ export const mapApiCartRowsToReduxItems = (carts) => {
             : product?.module,
       cartItemId: cartRow?.id,
       is_selected: cartRow?.is_selected !== undefined ? Boolean(cartRow.is_selected) : true,
-      totalPrice:
-        handleProductValueWithOutDiscount({
-          ...product,
-          selectedOption,
-        }) * cartRow?.quantity,
+      price: rowUnitPrice,
+      totalPrice: rowUnitPrice * (cartRow?.quantity || 1),
       selectedAddons: product?.addons,
       quantity: cartRow?.quantity,
       food_variations: product?.food_variations,
-      itemBasePrice: product?.price,
+      itemBasePrice: rowUnitPrice,
       selectedOption,
     };
   });

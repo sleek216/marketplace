@@ -49,25 +49,31 @@ const CartTotalPrice = ({ cartList }) => {
   }, [cartList, selectedCount]);
 
   // When 0 items are checked, everything is 0.
-  // When items are checked, use backend's total_delivery_charge, grand_subtotal & grand_total directly.
+  // When items are checked, use backend's total_delivery_charge, grand_subtotal & grand_total directly if selection_applied is true.
   const grandSubtotal =
     selectedCount === 0
       ? 0
-      : cartMeta?.grand_subtotal != null && Number(cartMeta.grand_subtotal) >= 0
+      : cartMeta?.selection_applied &&
+        cartMeta?.grand_subtotal != null &&
+        Number(cartMeta.grand_subtotal) >= 0
       ? Number(cartMeta.grand_subtotal)
       : localSubtotal;
 
   const deliveryCharge =
     selectedCount === 0
       ? 0
-      : cartMeta?.total_delivery_charge != null && Number(cartMeta.total_delivery_charge) >= 0
+      : cartMeta?.selection_applied &&
+        cartMeta?.total_delivery_charge != null &&
+        Number(cartMeta.total_delivery_charge) >= 0
       ? Number(cartMeta.total_delivery_charge)
       : localDeliveryFee;
 
   const grandTotal =
     selectedCount === 0
       ? 0
-      : cartMeta?.grand_total != null && Number(cartMeta.grand_total) >= 0
+      : cartMeta?.selection_applied &&
+        cartMeta?.grand_total != null &&
+        Number(cartMeta.grand_total) >= 0
       ? Number(cartMeta.grand_total)
       : grandSubtotal + deliveryCharge;
 

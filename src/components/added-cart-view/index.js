@@ -16,7 +16,10 @@ import { useTheme } from "@emotion/react";
 import { alpha, Box, Stack, Typography } from "@mui/material";
 import DotSpin from "../DotSpin";
 import useDeleteCartItem from "../../api-manage/hooks/react-query/add-cart/useDeleteCartItem";
-import { setCartList, clearCartMeta } from "redux/slices/cart";
+import useGetAllCartList from "../../api-manage/hooks/react-query/add-cart/useGetAllCartList";
+import { setCartList, clearCartMeta, setCartMeta } from "redux/slices/cart";
+import { getCartMetaFromResponse } from "helper-functions/normalizeCartListResponse";
+import { getGuestId } from "helper-functions/getToken";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import {
@@ -38,6 +41,15 @@ const CardView = (props) => {
   const [selectedCartIds, setSelectedCartIds] = useState([]);
   const { mutateAsync: removeCartItemMutate, isLoading: removeSelectedLoading } =
     useDeleteCartItem();
+
+  // Fire server API request with selected_cart_ids on every checkbox selection change
+  const cartListSuccessHandler = (res) => {
+    if (res) {
+      dispatch(setCartMeta(getCartMetaFromResponse(res)));
+    }
+  };
+
+  useGetAllCartList(getGuestId(), cartListSuccessHandler, selectedCartIds);
 
   // Landing page: show modules first, then drill into a selected module
   const isLandingPage =
@@ -88,9 +100,9 @@ const CardView = (props) => {
   }, [isLandingPage, selectedModuleGroup, visibleCartList]);
 
   useEffect(() => {
-    const currentIds = activeCartList?.map((item) => item?.cartItemId) || [];
+    const currentIds = activeCartList?.map((item) => item?.cartItemId || item?.id).filter(Boolean) || [];
     setSelectedCartIds((prev) => {
-      const validPrev = prev.filter((id) => currentIds.includes(id));
+      const validPrev = prev.filter((id) => currentIds.some((cId) => String(cId) === String(id)));
       if (validPrev.length > 0) return validPrev;
       return currentIds;
     });
@@ -99,7 +111,7 @@ const CardView = (props) => {
   const selectedCartList = useMemo(
     () =>
       activeCartList.filter((item) =>
-        selectedCartIds.includes(item?.cartItemId)
+        selectedCartIds.some((id) => String(id) === String(item?.cartItemId || item?.id))
       ),
     [activeCartList, selectedCartIds]
   );
@@ -119,11 +131,15 @@ const CardView = (props) => {
   }, [cartSubtotal, storeData]);
 
   const handleToggleSelect = (cartItem) => {
-    const id = cartItem?.cartItemId;
+    const id = cartItem?.cartItemId || cartItem?.id;
     if (!id) return;
-    setSelectedCartIds((prev) =>
-      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
-    );
+    const targetStr = String(id);
+    setSelectedCartIds((prev) => {
+      const exists = prev.some((itemId) => String(itemId) === targetStr);
+      return exists
+        ? prev.filter((itemId) => String(itemId) !== targetStr)
+        : [...prev, id];
+    });
   };
 
   const handleDeleteSelected = async () => {

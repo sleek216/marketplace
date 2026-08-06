@@ -71,7 +71,8 @@ const CartContents = (props) => {
 
       // Only count selected items in this store for real-time store totals
       const selectedGroupItems = group.items.filter(({ item }) =>
-        Array.isArray(selectedCartIds) && selectedCartIds.includes(item?.cartItemId)
+        Array.isArray(selectedCartIds) &&
+        selectedCartIds.some((id) => String(id) === String(item?.cartItemId || item?.id))
       );
 
       const hasSelected = selectedGroupItems.length > 0;
@@ -119,12 +120,19 @@ const CartContents = (props) => {
         ? fallbackDeliveryCharge
         : 60;
 
-      const storeTotal = itemsSubtotal + deliveryCharge;
+      const subtotal =
+        cartMeta?.selection_applied && apiGroup?.subtotal != null
+          ? Number(apiGroup.subtotal)
+          : itemsSubtotal;
+      const storeTotal =
+        cartMeta?.selection_applied && apiGroup?.store_total != null
+          ? Number(apiGroup.store_total)
+          : subtotal + deliveryCharge;
 
       return {
         ...group,
         storeName: apiGroup?.store_name || group.storeName,
-        subtotal: itemsSubtotal,
+        subtotal,
         deliveryCharge,
         storeTotal,
         hasApiTotals: Boolean(apiGroup),
@@ -175,7 +183,7 @@ const CartContents = (props) => {
                   cartItem={item}
                   imageBaseUrl={imageBaseUrl}
                   refetch={refetch}
-                  isSelected={selectedCartIds?.includes(item?.cartItemId)}
+                  isSelected={selectedCartIds?.some((id) => String(id) === String(item?.cartItemId || item?.id))}
                   onToggleSelect={onToggleSelect}
                 />
               ))}

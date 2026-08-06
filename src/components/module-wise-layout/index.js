@@ -39,6 +39,14 @@ const ModuleWiseLayout = ({ configData, landingPageData }) => {
 		}
 		localStorage.setItem("module", JSON.stringify(item));
 		dispatch(setSelectedModule(item));
+		router.push(
+			{
+				pathname: "/home",
+				query: { module_id: item.id },
+			},
+			undefined,
+			{ shallow: true }
+		);
 	};
 
 	return (

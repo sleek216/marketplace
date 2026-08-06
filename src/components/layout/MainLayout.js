@@ -52,16 +52,24 @@ const MainLayout = ({ children, configData }) => {
 			return;
 		}
 
-		let storedModuleType;
+		let storedModule;
 		try {
-			storedModuleType = JSON.parse(localStorage.getItem("module"))?.module_type;
+			storedModule = JSON.parse(localStorage.getItem("module"));
 		} catch (e) {
-			storedModuleType = undefined;
+			storedModule = null;
 		}
+
+		const queryModuleId = router.query.module_id;
 		const currentModule =
-			data.find((item) => item.module_type === storedModuleType) || data[0];
-		if (currentModule.module_type !== storedModuleType) {
-			localStorage.setItem("module", JSON.stringify(currentModule));
+			(queryModuleId && data.find((item) => String(item.id) === String(queryModuleId))) ||
+			(storedModule?.id && data.find((item) => String(item.id) === String(storedModule.id))) ||
+			(storedModule?.module_type && data.find((item) => item.module_type === storedModule.module_type)) ||
+			data[0];
+
+		if (currentModule) {
+			if (storedModule?.id !== currentModule.id) {
+				localStorage.setItem("module", JSON.stringify(currentModule));
+			}
 			dispatch(setSelectedModule(currentModule));
 		}
 
