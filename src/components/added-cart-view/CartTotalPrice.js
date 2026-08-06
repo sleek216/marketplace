@@ -6,18 +6,19 @@ import { getAmountWithSign } from "../../helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "../../utils/CustomFunctions";
 import { useSelector } from "react-redux";
 
-const CartTotalPrice = ({ cartList, allCartList }) => {
+const CartTotalPrice = ({ cartList }) => {
   const { cartMeta } = useSelector((state) => state.cart);
 
-  // Always compute subtotal locally from the SELECTED items (real-time, no API needed)
-  const grandSubtotal = React.useMemo(
+  const localSubtotal = React.useMemo(
     () => cartItemsTotalAmount(cartList),
     [cartList]
   );
 
-  // Compute local delivery fee from selected items' stores
+  const selectedCount = Array.isArray(cartList) ? cartList.length : 0;
+
+  // Compute local fallback delivery fee from selected items' stores
   const localDeliveryFee = React.useMemo(() => {
-    if (!Array.isArray(cartList) || cartList.length === 0) return 0;
+    if (selectedCount === 0) return 0;
     const storeMap = new Map();
     cartList.forEach((cartRow) => {
       const item = cartRow?.item || cartRow || {};
@@ -44,31 +45,31 @@ const CartTotalPrice = ({ cartList, allCartList }) => {
     storeMap.forEach((val) => {
       totalFee += val;
     });
-    return totalFee > 0 ? totalFee : cartList.length > 0 ? 60 : 0;
-  }, [cartList]);
+    return totalFee > 0 ? totalFee : 60;
+  }, [cartList, selectedCount]);
 
-  // If backend has delivery charge scale proportionally to selected items
-  const deliveryCharge = React.useMemo(() => {
-    const backendDelivery = Number(cartMeta?.total_delivery_charge) || 0;
-    if (backendDelivery > 0) {
-      const allSubtotal = cartItemsTotalAmount(
-        Array.isArray(allCartList) && allCartList.length > 0
-          ? allCartList
-          : cartList
-      );
-      if (allSubtotal > 0 && grandSubtotal < allSubtotal) {
-        // Scale delivery proportionally to selected items ratio
-        return (
-          Math.round(((backendDelivery * grandSubtotal) / allSubtotal) * 100) /
-          100
-        );
-      }
-      return backendDelivery;
-    }
-    return localDeliveryFee;
-  }, [cartMeta, grandSubtotal, allCartList, cartList, localDeliveryFee]);
+  // When 0 items are checked, everything is 0.
+  // When items are checked, use backend's total_delivery_charge, grand_subtotal & grand_total directly.
+  const grandSubtotal =
+    selectedCount === 0
+      ? 0
+      : cartMeta?.grand_subtotal != null && Number(cartMeta.grand_subtotal) >= 0
+      ? Number(cartMeta.grand_subtotal)
+      : localSubtotal;
 
-  const grandTotal = grandSubtotal + deliveryCharge;
+  const deliveryCharge =
+    selectedCount === 0
+      ? 0
+      : cartMeta?.total_delivery_charge != null && Number(cartMeta.total_delivery_charge) >= 0
+      ? Number(cartMeta.total_delivery_charge)
+      : localDeliveryFee;
+
+  const grandTotal =
+    selectedCount === 0
+      ? 0
+      : cartMeta?.grand_total != null && Number(cartMeta.grand_total) >= 0
+      ? Number(cartMeta.grand_total)
+      : grandSubtotal + deliveryCharge;
 
   return (
     <>

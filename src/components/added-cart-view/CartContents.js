@@ -113,7 +113,7 @@ const CartContents = (props) => {
 
       const deliveryCharge = isFreeDelivery
         ? 0
-        : allSelected && apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) > 0
+        : apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) >= 0
         ? Number(apiGroup.delivery_charge)
         : fallbackDeliveryCharge > 0
         ? fallbackDeliveryCharge
