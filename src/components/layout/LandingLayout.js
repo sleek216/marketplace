@@ -25,6 +25,7 @@ export const LandingLayout = ({ children, configData, landingPageData }) => {
           flexGrow: 1,
         }}
       >
+
         {children}
       </Stack>
       <footer>
