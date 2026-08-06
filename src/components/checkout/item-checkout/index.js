@@ -714,16 +714,16 @@ const ItemCheckout = (props) => {
 	const prevCouponRef = useRef(null);
 
 	useEffect(() => {
-		if ((!cartList || !storeData) && !storeId) return;
+		if ((!checkoutCartList || !storeData) && !storeId) return;
 
-		const cartChanged = !deepEqual(prevCartRef.current, cartList);
+		const cartChanged = !deepEqual(prevCartRef.current, checkoutCartList);
 		const couponChanged = !deepEqual(prevCouponRef.current, couponDiscount);
 
 		if (cartChanged || couponChanged) {
-			prevCartRef.current = cartList;
+			prevCartRef.current = checkoutCartList;
 			prevCouponRef.current = couponDiscount;
 
-			const productList = page === "campaign" ? campaignItemList : cartList;
+			const productList = checkoutCartList;
 			const totalQty = 0;
 			const carts = handleProductList(productList, totalQty);
 			const orderObject = handleOrderMutationObject(carts, productList);
@@ -731,7 +731,7 @@ const ItemCheckout = (props) => {
 				// onError: onErrorResponse,
 			});
 		}
-	}, [cartList, campaignItemList, couponDiscount, storeData]);
+	}, [checkoutCartList, campaignItemList, couponDiscount, storeData]);
 
 	const handlePlaceOrder = () => {
 		const itemsList = page === "campaign" ? campaignItemList : cartList;
@@ -945,7 +945,16 @@ const ItemCheckout = (props) => {
 			return isOpen; // Add this line to return true or false based on whether the store is open.
 		}
 	};
-	const checkoutCartList = page === "campaign" ? campaignItemList : cartList;
+	const checkoutCartList =
+		page === "campaign"
+			? campaignItemList
+			: isSelectedCartCheckout && Array.isArray(cartList)
+			? cartList.filter((item) =>
+					selectedCartIdsFromQuery.some(
+						(id) => String(id) === String(item?.cartItemId || item?.id)
+					)
+			  )
+			: cartList;
 	const minimumOrderBlocked = isBelowStoreMinimumOrder(
 		checkoutCartList,
 		storeData
