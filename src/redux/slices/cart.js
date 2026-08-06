@@ -204,6 +204,7 @@ export const cartSlice = createSlice({
         });
       }
       state.cartList = newData;
+      saveCartToStorage(state.cartList);
     },
     setDecrementToCartItem: (state = initialState, action) => {
       let newData;
@@ -254,6 +255,7 @@ export const cartSlice = createSlice({
         });
       }
       state.cartList = newData;
+      saveCartToStorage(state.cartList);
     },
     setRemoveItemFromCart: (state = initialState, action) => {
       state.cartList = state.cartList.filter((cartItem) =>
@@ -264,6 +266,7 @@ export const cartSlice = createSlice({
             : true
           : true
       );
+      saveCartToStorage(state.cartList);
     },
     setCampaignItemList: (state = initialState, action) => {
       state.campaignItemList = [action.payload];

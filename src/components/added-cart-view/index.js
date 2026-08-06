@@ -318,6 +318,7 @@ const CardView = (props) => {
             )}
             <CartTotalPrice
               cartList={selectedCartList}
+              selectedCartIds={selectedCartIds}
               allCartList={activeCartList}
               isFetchingApi={isCartApiFetching}
             />

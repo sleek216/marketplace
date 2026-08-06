@@ -118,21 +118,29 @@ const CartContents = ({
 
       const isFreeDelivery = storeObj?.free_delivery || firstItem?.free_delivery;
 
-      const fallbackDeliveryCharge =
-        Number(storeObj?.minimum_shipping_charge) ||
-        Number(storeObj?.minimum_delivery_charge) ||
-        Number(storeObj?.delivery_charge) ||
-        Number(firstItem?.minimum_shipping_charge) ||
-        Number(firstItem?.minimum_delivery_charge) ||
-        Number(firstItem?.delivery_charge) ||
-        0;
+      // For multi-product stores: pick the MAX delivery charge across all items
+      // (matches backend behavior)
+      let maxFallbackCharge = 0;
+      group.items.forEach(({ item }) => {
+        const itm = item?.item || item || {};
+        const store = itm?.store || itm?.store_details || itm;
+        const charge =
+          Number(store?.minimum_shipping_charge) ||
+          Number(store?.minimum_delivery_charge) ||
+          Number(store?.delivery_charge) ||
+          Number(itm?.minimum_shipping_charge) ||
+          Number(itm?.minimum_delivery_charge) ||
+          Number(itm?.delivery_charge) ||
+          0;
+        if (charge > maxFallbackCharge) maxFallbackCharge = charge;
+      });
 
       const deliveryCharge = isFreeDelivery
         ? 0
         : apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) >= 0
         ? Number(apiGroup.delivery_charge)
-        : fallbackDeliveryCharge > 0
-        ? fallbackDeliveryCharge
+        : maxFallbackCharge > 0
+        ? maxFallbackCharge
         : 60;
 
       const subtotal = itemsSubtotal;

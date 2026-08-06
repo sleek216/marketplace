@@ -94,9 +94,13 @@ const BottomNav = () => {
   };
 
   const isLandingPage = router.pathname === "/" || router.pathname === "" || !selectedModule?.id;
+  const calculateTotalCartCount = (items) => {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((acc, item) => acc + (Number(item?.quantity) || 1), 0);
+  };
   const bottomCartBadgeCount = isLandingPage
-    ? (cartList?.length || 0)
-    : (getCartListModuleWise(cartList)?.length || 0);
+    ? calculateTotalCartCount(cartList)
+    : calculateTotalCartCount(getCartListModuleWise(cartList));
 
   return (
     <CustomStackFullWidth>

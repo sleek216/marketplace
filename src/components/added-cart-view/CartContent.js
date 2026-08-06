@@ -54,6 +54,16 @@ const CartContent = (props) => {
   const guestId = localStorage.getItem("guest_id");
   const { mutate, isLoading: removeIsLoading } = useDeleteCartItem();
   const { mutate: updateMutate, isLoading } = useCartItemUpdate();
+  const updateTimerRef = React.useRef(null);
+  const latestRequestVersionRef = React.useRef(0);
+
+  React.useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleSyncFromApi = (res) => {
     if (!res) return;
@@ -82,19 +92,68 @@ const CartContent = (props) => {
     handleSyncFromApi(res);
     refetch?.();
   };
-  const cartUpdateHandleSuccessDecrement = (res) => {
-    handleSyncFromApi(res);
-    refetch?.();
-  };
+
+  /**
+   * Resolve the authoritative per-unit price for a cart item.
+   * Priority (per API doc: cartRow.price = unit price):
+   * 1. itemBasePrice  — set from cartRow.price by normalizeCartListResponse
+   * 2. price          — top-level price field (also from API)
+   * 3. totalPrice÷qty — derive from what we know
+   * 4. selectedOption[0].price — last resort for variation-only items
+   */
   const getSingleUnitPrice = (item) => {
+    if (Number(item?.itemBasePrice) > 0) return Number(item.itemBasePrice);
+    if (Number(item?.price) > 0) return Number(item.price);
+    const qty = Number(item?.quantity);
+    if (qty > 0 && Number(item?.totalPrice) > 0) {
+      return Number(item.totalPrice) / qty;
+    }
     if (item?.selectedOption?.length > 0 && Number(item?.selectedOption?.[0]?.price) > 0) {
       return Number(item.selectedOption[0].price);
     }
-    if (Number(item?.itemBasePrice) > 0) return Number(item.itemBasePrice);
-    if (Number(item?.quantity) > 0 && Number(item?.totalPrice) > 0) {
-      return Number(item.totalPrice) / Number(item.quantity);
+    return Number(item?.item?.price || 0);
+  };
+
+  /**
+   * Sync quantity change to backend.
+   * IMPORTANT: API POST /cart/update-quantity expects `price` = UNIT price (not total).
+   * cartRow.price in GET response is also unit price — they must match.
+   */
+  const syncQuantityWithApi = (targetItem, targetQuantity, targetTotalPrice, targetUnitPrice) => {
+    latestRequestVersionRef.current += 1;
+    const currentVersion = latestRequestVersionRef.current;
+
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current);
     }
-    return Number(item?.price || item?.item?.price || 0);
+
+    updateTimerRef.current = setTimeout(() => {
+      // Send unit price to backend (NOT total price). Backend stores this as cartRow.price.
+      const priceForApi = targetUnitPrice ?? targetTotalPrice;
+      const itemObject = {
+        ...getItemDataForAddToCart(
+          targetItem,
+          targetQuantity,
+          priceForApi,
+          guestId
+        ),
+        moduleIdOverride: resolveCartItemModuleId(targetItem),
+      };
+
+      updateMutate(itemObject, {
+        onSuccess: (res) => {
+          if (currentVersion === latestRequestVersionRef.current) {
+            cartUpdateHandleSuccess(res);
+          }
+        },
+        onError: (err) => {
+          if (currentVersion === latestRequestVersionRef.current) {
+            refetch?.();
+            onErrorResponse(err);
+          }
+        },
+      });
+    }, 1200);
   };
 
   const handleIncrement = (cartItem) => {
@@ -102,15 +161,6 @@ const CartContent = (props) => {
     const unitPrice = getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
 
-    const itemObject = {
-      ...getItemDataForAddToCart(
-        cartItem,
-        updateQuantity,
-        mainPrice,
-        guestId
-      ),
-      moduleIdOverride: resolveCartItemModuleId(cartItem),
-    };
     const isFoodItem =
       cartItem?.module_type === "food" ||
       cartItem?.module?.module_type === "food";
@@ -118,9 +168,6 @@ const CartContent = (props) => {
     const itemStock = Number(cartItem?.stock);
     const hasOptionStock = Number.isFinite(optionStock);
     const hasItemStock = Number.isFinite(itemStock);
-    // Food cart rows may not always carry reliable `stock` at item level.
-    // Prefer variation stock if present; otherwise only enforce stock guard
-    // for non-food items and let backend validate final limits.
     const effectiveStock = hasOptionStock
       ? optionStock
       : !isFoodItem && hasItemStock
@@ -146,13 +193,8 @@ const CartContent = (props) => {
     };
     dispatch(setIncrementToCartItem({ ...product, isUpdate: true }));
 
-    updateMutate(itemObject, {
-      onSuccess: cartUpdateHandleSuccess,
-      onError: (err) => {
-        refetch?.();
-        onErrorResponse(err);
-      },
-    });
+    // Debounce server API sync — send UNIT PRICE (not total) to backend
+    syncQuantityWithApi(cartItem, updateQuantity, mainPrice, unitPrice);
   };
 
   const handleDecrement = () => {
@@ -160,15 +202,6 @@ const CartContent = (props) => {
     if (updateQuantity < 1) return;
     const unitPrice = getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
-    const itemObject = {
-      ...getItemDataForAddToCart(
-        cartItem,
-        updateQuantity,
-        mainPrice,
-        guestId
-      ),
-      moduleIdOverride: resolveCartItemModuleId(cartItem),
-    };
 
     // Optimistically update Redux store immediately for 0ms UI response
     const decProduct = {
@@ -178,13 +211,8 @@ const CartContent = (props) => {
     };
     dispatch(setDecrementToCartItem({ ...decProduct, isUpdate: true }));
 
-    updateMutate(itemObject, {
-      onSuccess: cartUpdateHandleSuccessDecrement,
-      onError: (err) => {
-        refetch?.();
-        onErrorResponse(err);
-      },
-    });
+    // Debounce server API sync — send UNIT PRICE (not total) to backend
+    syncQuantityWithApi(cartItem, updateQuantity, mainPrice, unitPrice);
   };
 
   const handleSuccess = () => {
@@ -319,24 +347,50 @@ const CartContent = (props) => {
             </Typography>
           )}
           <VariationContent cartItem={cartItem} />
+          {/* ── Item price: discount → unit price → × qty → addons ── */}
           <Typography
             fontWeight={700}
             fontSize={{ xs: "14px", sm: "15px" }}
             color="primary.main"
             lineHeight={1.2}
           >
-            {getAmountWithSign(
-              handleTotalAmountWithAddons(
-                getDiscountedAmount(
-                  cartItem?.totalPrice,
-                  cartItem?.discount,
-                  cartItem?.discount_type,
-                  cartItem?.store_discount,
-                  cartItem?.quantity
-                ),
-                cartItem?.selectedAddons
-              )
-            )}
+            {(() => {
+              const qty = cartItem?.quantity || 1;
+              /**
+               * Unit price priority (same as getSingleUnitPrice):
+               * 1. itemBasePrice (API cartRow.price — authoritative)
+               * 2. price field
+               * 3. totalPrice÷qty
+               * 4. selectedOption[0].price (variation fallback)
+               */
+              const unitPrice =
+                Number(cartItem?.itemBasePrice) > 0
+                  ? Number(cartItem.itemBasePrice)
+                  : Number(cartItem?.price) > 0
+                  ? Number(cartItem.price)
+                  : qty > 0 && Number(cartItem?.totalPrice) > 0
+                  ? Number(cartItem.totalPrice) / qty
+                  : Number(cartItem?.selectedOption?.[0]?.price) > 0
+                  ? Number(cartItem.selectedOption[0].price)
+                  : 0;
+
+              // Apply per-unit discount (amount OR percent/fixed)
+              let discountedUnitPrice = unitPrice;
+              const discount = Number(cartItem?.discount);
+              const discountType = cartItem?.discount_type;
+              if (discount > 0) {
+                if (discountType === "amount") {
+                  discountedUnitPrice = Math.max(0, unitPrice - discount);
+                } else if (discountType === "percent" || discountType === "fixed") {
+                  discountedUnitPrice = unitPrice - (discount / 100) * unitPrice;
+                }
+              }
+
+              // Total for all units + addons
+              const lineTotal = discountedUnitPrice * qty;
+              const addonsTotal = handleTotalAmountWithAddons(0, cartItem?.selectedAddons);
+              return getAmountWithSign(lineTotal + addonsTotal);
+            })()}
           </Typography>
         </Stack>
         <CartIncrementStack>

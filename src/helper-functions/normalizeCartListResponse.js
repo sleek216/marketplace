@@ -110,6 +110,13 @@ export const mapApiCartRowsToReduxItems = (carts) => {
 
     return {
       ...product,
+      // Preserve store-level delivery fields from the cart row (not just item)
+      store_id: cartRow?.store_id || product?.store_id,
+      store_name: cartRow?.store_name || product?.store_name,
+      delivery_charge: cartRow?.delivery_charge ?? product?.delivery_charge,
+      minimum_shipping_charge: cartRow?.minimum_shipping_charge ?? product?.minimum_shipping_charge,
+      minimum_delivery_charge: cartRow?.minimum_delivery_charge ?? product?.minimum_delivery_charge,
+      free_delivery: cartRow?.free_delivery ?? product?.free_delivery,
       module_id: moduleId ?? product?.module_id,
       module_type: moduleType ?? product?.module_type,
       module:

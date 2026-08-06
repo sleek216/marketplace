@@ -93,9 +93,13 @@ const Cart = ({ isLoading, cartListRefetch }) => {
   const dispatch = useDispatch();
 
   const isLandingPage = router.pathname === "/" || router.pathname === "" || !selectedModule?.id;
+  const calculateTotalCartCount = (items) => {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((acc, item) => acc + (Number(item?.quantity) || 1), 0);
+  };
   const totalCartCount = isLandingPage
-    ? (cartList?.length || 0)
-    : (getCartListModuleWise(cartList)?.length || 0);
+    ? calculateTotalCartCount(cartList)
+    : calculateTotalCartCount(getCartListModuleWise(cartList));
 
   useEffect(() => {
     const open = () => setSideDrawerOpen(true);

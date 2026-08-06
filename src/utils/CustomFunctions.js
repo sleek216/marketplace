@@ -655,16 +655,38 @@ export const cartItemsTotalAmount = (cartList) => {
   let totalAmount = 0;
   if (cartList?.length > 0) {
     cartList?.forEach((item) => {
-      totalAmount += handleTotalAmountWithAddons(
-        getDiscountedAmount(
-          item?.totalPrice,
-          item?.discount,
-          item?.discount_type,
-          item?.store_discount,
-          item?.quantity
-        ),
-        item?.selectedAddons
-      );
+      const qty = item?.quantity || 1;
+
+      // Resolve per-unit price — same priority as getSingleUnitPrice in CartContent:
+      // 1. itemBasePrice (from API cartRow.price — authoritative)
+      // 2. price field
+      // 3. totalPrice ÷ qty (derive)
+      // 4. selectedOption[0].price (last resort)
+      const unitPrice =
+        Number(item?.itemBasePrice) > 0
+          ? Number(item.itemBasePrice)
+          : Number(item?.price) > 0
+          ? Number(item.price)
+          : qty > 0 && Number(item?.totalPrice) > 0
+          ? Number(item.totalPrice) / qty
+          : Number(item?.selectedOption?.[0]?.price) > 0
+          ? Number(item.selectedOption[0].price)
+          : 0;
+
+      // Apply per-unit discount (amount OR percent/fixed)
+      let discountedUnit = unitPrice;
+      const discount = Number(item?.discount);
+      const discountType = item?.discount_type;
+      if (discount > 0) {
+        if (discountType === "amount") {
+          discountedUnit = Math.max(0, unitPrice - discount);
+        } else if (discountType === "percent" || discountType === "fixed") {
+          discountedUnit = unitPrice - (discount / 100) * unitPrice;
+        }
+      }
+
+      const lineTotal = discountedUnit * qty;
+      totalAmount += handleTotalAmountWithAddons(lineTotal, item?.selectedAddons);
     });
   }
   return totalAmount;
