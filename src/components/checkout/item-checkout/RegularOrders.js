@@ -1,9 +1,9 @@
 import { alpha, Box, Grid, Stack, Typography } from "@mui/material";
 import Skeleton from "@mui/material/Skeleton";
 import { useTheme } from "@mui/material/styles";
-import { getAmountWithSign } from "../../../helper-functions/CardHelpers";
+import { getAmountWithSign, getDiscountedAmount } from "../../../helper-functions/CardHelpers";
 import { CustomStackFullWidth } from "../../../styled-components/CustomStyles.style";
-import { handleProductValueWithOutDiscount, getDiscountedAmount } from "../../../utils/CustomFunctions";
+import { handleProductValueWithOutDiscount } from "../../../utils/CustomFunctions";
 import CustomImageContainer from "../../CustomImageContainer";
 import VariationContent from "../../added-cart-view/VariationContent";
 import ManualExpectedDeliveryInfo from "../../product-details/ManualExpectedDeliveryInfo";
