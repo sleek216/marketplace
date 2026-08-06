@@ -86,17 +86,20 @@ const CartContent = (props) => {
     handleSyncFromApi(res);
     refetch?.();
   };
+  const getSingleUnitPrice = (item) => {
+    if (item?.selectedOption?.length > 0 && Number(item?.selectedOption?.[0]?.price) > 0) {
+      return Number(item.selectedOption[0].price);
+    }
+    if (Number(item?.itemBasePrice) > 0) return Number(item.itemBasePrice);
+    if (Number(item?.quantity) > 0 && Number(item?.totalPrice) > 0) {
+      return Number(item.totalPrice) / Number(item.quantity);
+    }
+    return Number(item?.price || item?.item?.price || 0);
+  };
+
   const handleIncrement = (cartItem) => {
     const updateQuantity = (cartItem?.quantity || 1) + 1;
-    const basePrice = Number(
-      cartItem?.price ??
-      cartItem?.item?.price ??
-      (cartItem?.quantity > 0 ? cartItem?.totalPrice / cartItem?.quantity : 0)
-    ) || 0;
-    const unitPrice =
-      cartItem?.selectedOption?.length > 0
-        ? Number(cartItem?.selectedOption?.[0]?.price) || basePrice
-        : basePrice;
+    const unitPrice = getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
 
     const itemObject = {
@@ -155,15 +158,7 @@ const CartContent = (props) => {
   const handleDecrement = () => {
     const updateQuantity = cartItem?.quantity - 1;
     if (updateQuantity < 1) return;
-    const basePrice = Number(
-      cartItem?.price ??
-      cartItem?.item?.price ??
-      (cartItem?.quantity > 0 ? cartItem?.totalPrice / cartItem?.quantity : 0)
-    ) || 0;
-    const unitPrice =
-      cartItem?.selectedOption?.length > 0
-        ? Number(cartItem?.selectedOption?.[0]?.price) || basePrice
-        : basePrice;
+    const unitPrice = getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
     const itemObject = {
       ...getItemDataForAddToCart(

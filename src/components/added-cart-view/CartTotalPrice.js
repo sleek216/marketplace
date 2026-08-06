@@ -30,14 +30,14 @@ const CartTotalPrice = ({ cartList, isFetchingApi }) => {
           storeMap.set(storeId, 0);
         } else {
           const fee =
+            Number(storeObj?.delivery_charge) ||
             Number(storeObj?.minimum_shipping_charge) ||
             Number(storeObj?.minimum_delivery_charge) ||
-            Number(storeObj?.delivery_charge) ||
+            Number(item?.delivery_charge) ||
             Number(item?.minimum_shipping_charge) ||
             Number(item?.minimum_delivery_charge) ||
-            Number(item?.delivery_charge) ||
             0;
-          storeMap.set(storeId, fee > 0 ? fee : 60);
+          storeMap.set(storeId, fee);
         }
       }
     });
@@ -45,7 +45,7 @@ const CartTotalPrice = ({ cartList, isFetchingApi }) => {
     storeMap.forEach((val) => {
       totalFee += val;
     });
-    return totalFee > 0 ? totalFee : 60;
+    return totalFee;
   }, [cartList, selectedCount]);
 
   // Exact math: Grand Subtotal + Total Delivery Fee
