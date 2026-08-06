@@ -207,6 +207,7 @@ const CardView = (props) => {
         refetch={refetch}
         selectedCartIds={selectedCartIds}
         onToggleSelect={handleToggleSelect}
+        isFetchingApi={isCartApiFetching}
       />
     );
   };

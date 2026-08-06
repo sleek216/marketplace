@@ -153,7 +153,7 @@ export const getItemDataForAddToCart = (
   let totalQty = 0;
   return {
     guest_id: guest_id,
-    cart_id: values?.cartItemId,
+    cart_id: values?.cartItemId || values?.id,
     model: values?.available_date_starts ? "ItemCampaign" : "Item",
     add_on_ids:
       values?.add_ons?.length > 0

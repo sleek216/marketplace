@@ -12,7 +12,9 @@ import { t } from "i18next";
 import { getAmountWithSign } from "helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "utils/CustomFunctions";
 
-const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal }) => {
+import { CircularProgress } from "@mui/material";
+
+const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal, isFetchingApi }) => {
   const theme = useTheme();
   return (
     <Stack
@@ -26,7 +28,7 @@ const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal }) => {
         bgcolor: alpha(theme.palette.primary.main, 0.03),
       }}
     >
-      <Stack direction="row" justifyContent="space-between">
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography fontSize="13px" color="text.secondary">
           {t("Subtotal")}
         </Typography>
@@ -34,18 +36,28 @@ const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal }) => {
           {getAmountWithSign(subtotal)}
         </Typography>
       </Stack>
-      <Stack direction="row" justifyContent="space-between">
-        <Typography fontSize="13px" color="text.secondary">
-          {t("Delivery Fee")}
-        </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" alignItems="center" spacing={0.75}>
+          <Typography fontSize="13px" color="text.secondary">
+            {t("Delivery Fee")}
+          </Typography>
+          {isFetchingApi && (
+            <CircularProgress size={11} thickness={5} color="primary" />
+          )}
+        </Stack>
         <Typography fontSize="13px" fontWeight={600}>
           {getAmountWithSign(deliveryCharge)}
         </Typography>
       </Stack>
-      <Stack direction="row" justifyContent="space-between">
-        <Typography fontSize="13px" fontWeight={600}>
-          {t("Store Total")}
-        </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" alignItems="center" spacing={0.75}>
+          <Typography fontSize="13px" fontWeight={600}>
+            {t("Store Total")}
+          </Typography>
+          {isFetchingApi && (
+            <CircularProgress size={12} thickness={5} color="primary" />
+          )}
+        </Stack>
         <Typography fontSize="13px" fontWeight={700} color="primary.main">
           {getAmountWithSign(storeTotal)}
         </Typography>
@@ -54,9 +66,14 @@ const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal }) => {
   );
 };
 
-const CartContents = (props) => {
-  const { cartList, imageBaseUrl, refetch, selectedCartIds, onToggleSelect } =
-    props;
+const CartContents = ({
+  cartList,
+  imageBaseUrl,
+  refetch,
+  selectedCartIds,
+  onToggleSelect,
+  isFetchingApi,
+}) => {
   const { cartMeta } = useSelector((state) => state.cart);
   const theme = useTheme();
 
@@ -191,6 +208,7 @@ const CartContents = (props) => {
                 subtotal={group.subtotal}
                 deliveryCharge={group.deliveryCharge}
                 storeTotal={group.storeTotal}
+                isFetchingApi={isFetchingApi}
               />
             </Box>
           </Box>
