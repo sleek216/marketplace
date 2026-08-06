@@ -44,7 +44,7 @@ const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal }) => {
       </Stack>
       <Stack direction="row" justifyContent="space-between">
         <Typography fontSize="13px" fontWeight={600}>
-          {t("Total")}
+          {t("Store Total")}
         </Typography>
         <Typography fontSize="13px" fontWeight={700} color="primary.main">
           {getAmountWithSign(storeTotal)}
@@ -69,12 +69,24 @@ const CartContents = (props) => {
         (sg) => String(sg?.store_id) === String(group.storeId)
       );
 
-      // Only count selected items for real-time totals
+      // Only count selected items in this store for real-time store totals
       const selectedGroupItems = group.items.filter(({ item }) =>
-        !selectedCartIds || selectedCartIds.length === 0
-          ? true
-          : selectedCartIds.includes(item?.cartItemId)
+        Array.isArray(selectedCartIds) && selectedCartIds.includes(item?.cartItemId)
       );
+
+      const hasSelected = selectedGroupItems.length > 0;
+      const allSelected = selectedGroupItems.length === group.items.length;
+
+      if (!hasSelected) {
+        return {
+          ...group,
+          storeName: apiGroup?.store_name || group.storeName,
+          subtotal: 0,
+          deliveryCharge: 0,
+          storeTotal: 0,
+          hasApiTotals: Boolean(apiGroup),
+        };
+      }
 
       const itemsSubtotal = cartItemsTotalAmount(
         selectedGroupItems.map(({ item }) => item)
@@ -88,6 +100,8 @@ const CartContents = (props) => {
         firstItem?.item?.store_details ||
         firstItem;
 
+      const isFreeDelivery = storeObj?.free_delivery || firstItem?.free_delivery;
+
       const fallbackDeliveryCharge =
         Number(storeObj?.minimum_shipping_charge) ||
         Number(storeObj?.minimum_delivery_charge) ||
@@ -97,25 +111,20 @@ const CartContents = (props) => {
         Number(firstItem?.delivery_charge) ||
         0;
 
-      const deliveryCharge =
-        apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) > 0
-          ? Number(apiGroup.delivery_charge)
-          : storeObj?.free_delivery || firstItem?.free_delivery
-          ? 0
-          : fallbackDeliveryCharge > 0
-          ? fallbackDeliveryCharge
-          : 60;
+      const deliveryCharge = isFreeDelivery
+        ? 0
+        : allSelected && apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) > 0
+        ? Number(apiGroup.delivery_charge)
+        : fallbackDeliveryCharge > 0
+        ? fallbackDeliveryCharge
+        : 60;
 
-      const storeTotal =
-        apiGroup?.store_total != null && Number(apiGroup.store_total) > 0
-          ? Number(apiGroup.store_total)
-          : itemsSubtotal + deliveryCharge;
+      const storeTotal = itemsSubtotal + deliveryCharge;
 
       return {
         ...group,
         storeName: apiGroup?.store_name || group.storeName,
-        subtotal:
-          apiGroup?.subtotal != null ? Number(apiGroup.subtotal) : itemsSubtotal,
+        subtotal: itemsSubtotal,
         deliveryCharge,
         storeTotal,
         hasApiTotals: Boolean(apiGroup),
