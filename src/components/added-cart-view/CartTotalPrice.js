@@ -50,14 +50,7 @@ const CartTotalPrice = ({ cartList }) => {
 
   // When 0 items are checked, everything is 0.
   // When items are checked, use backend's total_delivery_charge, grand_subtotal & grand_total directly if selection_applied is true.
-  const grandSubtotal =
-    selectedCount === 0
-      ? 0
-      : cartMeta?.selection_applied &&
-        cartMeta?.grand_subtotal != null &&
-        Number(cartMeta.grand_subtotal) >= 0
-      ? Number(cartMeta.grand_subtotal)
-      : localSubtotal;
+  const grandSubtotal = selectedCount === 0 ? 0 : localSubtotal;
 
   const deliveryCharge =
     selectedCount === 0

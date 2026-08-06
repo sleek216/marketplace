@@ -120,14 +120,8 @@ const CartContents = (props) => {
         ? fallbackDeliveryCharge
         : 60;
 
-      const subtotal =
-        cartMeta?.selection_applied && apiGroup?.subtotal != null
-          ? Number(apiGroup.subtotal)
-          : itemsSubtotal;
-      const storeTotal =
-        cartMeta?.selection_applied && apiGroup?.store_total != null
-          ? Number(apiGroup.store_total)
-          : subtotal + deliveryCharge;
+      const subtotal = itemsSubtotal;
+      const storeTotal = subtotal + deliveryCharge;
 
       return {
         ...group,
