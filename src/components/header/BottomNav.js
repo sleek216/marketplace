@@ -171,7 +171,8 @@ const BottomNav = () => {
                   }
               />)}
 
-            {selectedModule?.module_type !== "parcel" &&
+            {!isLandingPage &&
+              selectedModule?.module_type !== "parcel" &&
               selectedModule?.module_type !== "rental" && (
                 <CustomBottomNavigationAction
                   onClick={() => handleCartDrawerOpen()}

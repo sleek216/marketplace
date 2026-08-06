@@ -308,6 +308,7 @@ const SecondNavBar = ({ configData }) => {
   let zoneId = undefined;
   let guestId = undefined;
   const currentModuleType = getCurrentModuleType();
+  const isLandingPage = router.pathname === "/" || router.pathname === "" || !selectedModule?.id;
 
   let totalWishList = undefined;
   if (currentModuleType === "rental") {
@@ -751,7 +752,8 @@ const SecondNavBar = ({ configData }) => {
             <WishListSideBar totalWishList={totalWishList} />
           )}
 
-          {moduleType !== "parcel" &&
+          {!isLandingPage &&
+            moduleType !== "parcel" &&
             moduleType !== "rental" && (
               <Cart isLoading={isLoading} cartListRefetch={cartListRefetch} />
             )}
