@@ -87,17 +87,17 @@ const CartContent = (props) => {
     refetch?.();
   };
   const handleIncrement = (cartItem) => {
-    const updateQuantity = cartItem?.quantity + 1;
-    const price =
-      cartItem?.price + getTotalVariationsPrice(cartItem?.food_variations);
-    //here quantity is incremented with number 1
-    const productPrice = price * updateQuantity;
-    const mainPrice =
-      cartItem?.module_type === "food" || cartItem?.module?.module_type === "food"
-        ? productPrice
-        : (cartItem?.selectedOption?.length > 0
-            ? cartItem?.selectedOption?.[0]?.price
-            : cartItem?.price) * updateQuantity;
+    const updateQuantity = (cartItem?.quantity || 1) + 1;
+    const basePrice = Number(
+      cartItem?.price ??
+      cartItem?.item?.price ??
+      (cartItem?.quantity > 0 ? cartItem?.totalPrice / cartItem?.quantity : 0)
+    ) || 0;
+    const unitPrice =
+      cartItem?.selectedOption?.length > 0
+        ? Number(cartItem?.selectedOption?.[0]?.price) || basePrice
+        : basePrice;
+    const mainPrice = unitPrice * updateQuantity;
 
     const itemObject = {
       ...getItemDataForAddToCart(
@@ -155,16 +155,16 @@ const CartContent = (props) => {
   const handleDecrement = () => {
     const updateQuantity = cartItem?.quantity - 1;
     if (updateQuantity < 1) return;
-    const price =
-      cartItem?.price + getTotalVariationsPrice(cartItem?.food_variations);
-    //here quantity is decremented with number 1
-    const productPrice = price * updateQuantity;
-    const mainPrice =
-      cartItem?.module_type === "food" || cartItem?.module?.module_type === "food"
-        ? productPrice
-        : (cartItem?.selectedOption?.length > 0
-            ? cartItem?.selectedOption?.[0]?.price
-            : cartItem?.price) * updateQuantity;
+    const basePrice = Number(
+      cartItem?.price ??
+      cartItem?.item?.price ??
+      (cartItem?.quantity > 0 ? cartItem?.totalPrice / cartItem?.quantity : 0)
+    ) || 0;
+    const unitPrice =
+      cartItem?.selectedOption?.length > 0
+        ? Number(cartItem?.selectedOption?.[0]?.price) || basePrice
+        : basePrice;
+    const mainPrice = unitPrice * updateQuantity;
     const itemObject = {
       ...getItemDataForAddToCart(
         cartItem,

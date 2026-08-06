@@ -152,6 +152,7 @@ export const cartSlice = createSlice({
     },
     setIncrementToCartItem: (state = initialState, action) => {
       let newData;
+      const targetId = action.payload?.cartItemId || action.payload?.id;
       if (getCurrentModuleType() === "food") {
         if (action.payload.food_variations?.length > 0) {
           let index = state.cartList.findIndex((item) =>
@@ -170,6 +171,7 @@ export const cartSlice = createSlice({
           );
         } else {
           newData = state.cartList.map((item) =>
+            String(item?.cartItemId || item?.id) === String(targetId) ||
             String(item?.id) === String(action.payload?.id)
               ? {
                   ...item,
@@ -183,14 +185,14 @@ export const cartSlice = createSlice({
         }
       } else {
         newData = state.cartList.map((stateItem) => {
-          if (
-            String(stateItem?.id) === String(action.payload?.id) &&
-            JSON.stringify(stateItem?.selectedOption || []) ===
-              JSON.stringify(action.payload?.selectedOption || [])
-          ) {
+          const isItemMatch =
+            (targetId && String(stateItem?.cartItemId || stateItem?.id) === String(targetId)) ||
+            (stateItem?.id && action.payload?.id && String(stateItem.id) === String(action.payload.id));
+          if (isItemMatch) {
             return {
+              ...stateItem,
               ...action.payload,
-              price: action.payload.price,
+              price: action.payload.price ?? stateItem.price,
               quantity: action.payload.isUpdate
                 ? action.payload.quantity
                 : (stateItem.quantity || 0) + (action.payload.quantity || 1),
@@ -205,6 +207,7 @@ export const cartSlice = createSlice({
     },
     setDecrementToCartItem: (state = initialState, action) => {
       let newData;
+      const targetId = action.payload?.cartItemId || action.payload?.id;
       if (getCurrentModuleType() === "food") {
         if (action.payload.food_variations?.length > 0) {
           let index = state.cartList.findIndex((item) =>
@@ -222,6 +225,7 @@ export const cartSlice = createSlice({
           );
         } else {
           newData = state.cartList.map((item) =>
+            String(item?.cartItemId || item?.id) === String(targetId) ||
             String(item?.id) === String(action.payload?.id)
               ? {
                   ...item,
@@ -233,14 +237,14 @@ export const cartSlice = createSlice({
         }
       } else {
         newData = state.cartList.map((stateItem) => {
-          if (
-            String(stateItem?.id) === String(action.payload?.id) &&
-            JSON.stringify(stateItem?.selectedOption || []) ===
-              JSON.stringify(action.payload?.selectedOption || [])
-          ) {
+          const isItemMatch =
+            (targetId && String(stateItem?.cartItemId || stateItem?.id) === String(targetId)) ||
+            (stateItem?.id && action.payload?.id && String(stateItem.id) === String(action.payload.id));
+          if (isItemMatch) {
             return {
+              ...stateItem,
               ...action.payload,
-              price: action.payload.price,
+              price: action.payload.price ?? stateItem.price,
               quantity: action.payload.quantity,
               totalPrice: action.payload.totalPrice,
             };
@@ -249,7 +253,6 @@ export const cartSlice = createSlice({
           }
         });
       }
-
       state.cartList = newData;
     },
     setRemoveItemFromCart: (state = initialState, action) => {
