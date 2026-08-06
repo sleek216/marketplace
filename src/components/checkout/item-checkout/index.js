@@ -200,6 +200,16 @@ const ItemCheckout = (props) => {
 		.filter((id) => Number.isFinite(id));
 	const isSelectedCartCheckout =
 		page === "cart" && selectedCartIdsFromQuery.length > 0;
+	const checkoutCartList =
+		page === "campaign"
+			? campaignItemList
+			: isSelectedCartCheckout && Array.isArray(cartList)
+			? cartList.filter((item) =>
+					selectedCartIdsFromQuery.some(
+						(id) => String(id) === String(item?.cartItemId || item?.id)
+					)
+			  )
+			: cartList;
 	const formik = useFormik({
 		initialValues: {
 			password: "",
@@ -945,16 +955,6 @@ const ItemCheckout = (props) => {
 			return isOpen; // Add this line to return true or false based on whether the store is open.
 		}
 	};
-	const checkoutCartList =
-		page === "campaign"
-			? campaignItemList
-			: isSelectedCartCheckout && Array.isArray(cartList)
-			? cartList.filter((item) =>
-					selectedCartIdsFromQuery.some(
-						(id) => String(id) === String(item?.cartItemId || item?.id)
-					)
-			  )
-			: cartList;
 	const minimumOrderBlocked = isBelowStoreMinimumOrder(
 		checkoutCartList,
 		storeData
