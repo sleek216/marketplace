@@ -149,11 +149,12 @@ export const getItemDataForAddToCart = (
   mainPrice,
   guest_id
 ) => {
-  const resolvedPrice = Number(mainPrice ?? values?.price ?? values?.unit_price ?? values?.item?.price ?? 0) || 0;
+  const cartRowId = values?.cartItemId || values?.id;
+  const productId = values?.item?.id || values?.item_id || (values?.cartItemId ? values?.id : null);
   let totalQty = 0;
   return {
     guest_id: guest_id,
-    cart_id: values?.cartItemId || values?.id,
+    cart_id: cartRowId,
     model: values?.available_date_starts ? "ItemCampaign" : "Item",
     add_on_ids:
       values?.add_ons?.length > 0
@@ -165,7 +166,7 @@ export const getItemDataForAddToCart = (
       values?.add_ons?.length > 0
         ? values?.addons?.map((add) => add.quantity)
         : [],
-    item_id: values?.id || values?.item?.id,
+    item_id: productId || cartRowId,
     price: resolvedPrice,
     quantity: updateQuantity,
     variation:

@@ -83,16 +83,15 @@ const CartTotalPrice = ({ cartList, isFetchingApi }) => {
         alignItems="center"
         sx={{ px: 1.75, py: 0.35 }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontSize="14px" color="text.secondary">
-            {t("Total Delivery Fee")}
-          </Typography>
-          {isFetchingApi && (
-            <CircularProgress size={12} thickness={5} color="primary" />
-          )}
-        </Stack>
+        <Typography fontSize="14px" color="text.secondary">
+          {t("Total Delivery Fee")}
+        </Typography>
         <Typography fontSize="14px" fontWeight={600}>
-          {getAmountWithSign(deliveryCharge)}
+          {isFetchingApi ? (
+            <CircularProgress size={13} thickness={5} color="primary" />
+          ) : (
+            getAmountWithSign(deliveryCharge)
+          )}
         </Typography>
       </CustomStackFullWidth>
       <CustomStackFullWidth
@@ -101,16 +100,15 @@ const CartTotalPrice = ({ cartList, isFetchingApi }) => {
         alignItems="center"
         sx={{ px: 1.75, pt: 0.5, pb: 1.25 }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontSize="15px" fontWeight={700}>
-            {t("Grand Total")}
-          </Typography>
-          {isFetchingApi && (
-            <CircularProgress size={14} thickness={5} color="primary" />
-          )}
-        </Stack>
+        <Typography fontSize="15px" fontWeight={700}>
+          {t("Grand Total")}
+        </Typography>
         <Typography fontSize="15px" fontWeight={700} color="primary.main">
-          {getAmountWithSign(grandTotal)}
+          {isFetchingApi ? (
+            <CircularProgress size={14} thickness={5} color="primary" />
+          ) : (
+            getAmountWithSign(grandTotal)
+          )}
         </Typography>
       </CustomStackFullWidth>
     </>
