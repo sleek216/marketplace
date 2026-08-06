@@ -13,13 +13,18 @@ const ZoneGuard = (props) => {
     try {
       const zoneId = JSON.parse(localStorage.getItem("zoneid") || "null");
       const location = localStorage.getItem("location");
-      if (zoneId?.length > 0 && location) {
+      if ((zoneId?.length > 0 && location) || (Array.isArray(zoneId) && zoneId.length > 0)) {
         setChecked(true);
       } else {
-        router.push("/", undefined, { shallow: true });
+        // Fallback: If no location/zone set yet, assign default zone so user can browse modules
+        const defaultZone = [1, 2];
+        const defaultLoc = JSON.stringify({ lat: "23.8103", lng: "90.4125", address: "Default Location" });
+        localStorage.setItem("zoneid", JSON.stringify(defaultZone));
+        localStorage.setItem("location", defaultLoc);
+        setChecked(true);
       }
     } catch {
-      router.push("/", undefined, { shallow: true });
+      setChecked(true);
     }
   }, [router.isReady]);
 

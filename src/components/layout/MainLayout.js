@@ -40,15 +40,7 @@ const MainLayout = ({ children, configData }) => {
 		if (!data) return;
 
 		if (data.length === 0) {
-			// A stale/invalid zoneid makes the module API return []. Clear it
-			// and retry once before giving up and bouncing to the landing page.
-			if (localStorage.getItem("zoneid")) {
-				localStorage.removeItem("zoneid");
-				refetch();
-			} else {
-				localStorage.removeItem("module");
-				router.push("/", undefined, { shallow: true });
-			}
+			refetch();
 			return;
 		}
 
