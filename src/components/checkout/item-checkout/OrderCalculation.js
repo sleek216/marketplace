@@ -69,8 +69,11 @@ const OrderCalculation = (props) => {
   const [freeDelivery, setFreeDelivery] = useState("false");
   const { profileInfo } = useSelector((state) => state.profileInfo);
   const tempExtraCharge = extraCharge ?? 0;
+  const { cartMeta } = useSelector((state) => state.cart);
   const parsedBackendDeliveryCharge = Number(
-    taxAmount?.delivery_charge ?? taxAmount?.delivery_fee
+    cartMeta?.selection_applied && cartMeta?.total_delivery_charge != null
+      ? cartMeta.total_delivery_charge
+      : taxAmount?.delivery_charge ?? taxAmount?.delivery_fee
   );
   const backendDeliveryCharge =
     Number.isFinite(parsedBackendDeliveryCharge) &&
