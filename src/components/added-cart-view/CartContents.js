@@ -185,13 +185,11 @@ const CartContents = (props) => {
                   variant="footer"
                 />
               )}
-              {storeGroups.length > 1 && (
-                <StoreGroupTotals
-                  subtotal={group.subtotal}
-                  deliveryCharge={group.deliveryCharge}
-                  storeTotal={group.storeTotal}
-                />
-              )}
+              <StoreGroupTotals
+                subtotal={group.subtotal}
+                deliveryCharge={group.deliveryCharge}
+                storeTotal={group.storeTotal}
+              />
             </Box>
           </Box>
         ))}

@@ -79,7 +79,7 @@ const CartTotalPrice = ({ cartList }) => {
         sx={{ px: 1.75, pt: 1, pb: 0.35 }}
       >
         <Typography fontSize="14px" color="text.secondary">
-          {t("Subtotal")}
+          {t("Grand Subtotal")}
         </Typography>
         <Typography fontSize="14px" fontWeight={600}>
           {getAmountWithSign(grandSubtotal)}
@@ -91,7 +91,7 @@ const CartTotalPrice = ({ cartList }) => {
         sx={{ px: 1.75, py: 0.35 }}
       >
         <Typography fontSize="14px" color="text.secondary">
-          {t("Delivery Fee")}
+          {t("Total Delivery Fee")}
         </Typography>
         <Typography fontSize="14px" fontWeight={600}>
           {getAmountWithSign(deliveryCharge)}
@@ -103,7 +103,7 @@ const CartTotalPrice = ({ cartList }) => {
         sx={{ px: 1.75, pt: 0.5, pb: 1.25 }}
       >
         <Typography fontSize="15px" fontWeight={700}>
-          {t("Total")}
+          {t("Grand Total")}
         </Typography>
         <Typography fontSize="15px" fontWeight={700} color="primary.main">
           {getAmountWithSign(grandTotal)}
