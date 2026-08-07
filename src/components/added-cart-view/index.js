@@ -18,7 +18,11 @@ import DotSpin from "../DotSpin";
 import useDeleteCartItem from "../../api-manage/hooks/react-query/add-cart/useDeleteCartItem";
 import useGetAllCartList from "../../api-manage/hooks/react-query/add-cart/useGetAllCartList";
 import { setCartList, clearCartMeta, setCartMeta } from "redux/slices/cart";
-import { getCartMetaFromResponse } from "helper-functions/normalizeCartListResponse";
+import {
+  getCartMetaFromResponse,
+  getCartsFromResponse,
+  mapApiCartRowsToReduxItems,
+} from "helper-functions/normalizeCartListResponse";
 import { getGuestId } from "helper-functions/getToken";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
@@ -38,13 +42,23 @@ const CardView = (props) => {
   const { configData } = useSelector((state) => state.configData);
   const imageBaseUrl = configData?.base_urls?.item_image_url;
   const router = useRouter();
-  const [selectedCartIds, setSelectedCartIds] = useState([]);
+
+  const initialCartIds = useMemo(() => {
+    const list = Array.isArray(cartList) ? cartList : [];
+    return list.map((item) => item?.cartItemId || item?.id).filter(Boolean);
+  }, [cartList]);
+
+  const [selectedCartIds, setSelectedCartIds] = useState(initialCartIds);
   const { mutateAsync: removeCartItemMutate, isLoading: removeSelectedLoading } =
     useDeleteCartItem();
 
   // Fire server API request with selected_cart_ids on every checkbox selection change
   const cartListSuccessHandler = (res) => {
     if (res) {
+      const apiRows = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+      if (Array.isArray(apiRows)) {
+        dispatch(setCartList(apiRows));
+      }
       dispatch(setCartMeta(getCartMetaFromResponse(res)));
     }
   };
@@ -54,6 +68,12 @@ const CardView = (props) => {
     cartListSuccessHandler,
     selectedCartIds
   );
+
+  useEffect(() => {
+    if (sideDrawerOpen) {
+      refetch?.();
+    }
+  }, [sideDrawerOpen, refetch]);
 
   // Landing page: show modules first, then drill into a selected module
   const isLandingPage =

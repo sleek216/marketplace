@@ -102,12 +102,16 @@ const Cart = ({ isLoading, cartListRefetch }) => {
     : calculateTotalCartCount(getCartListModuleWise(cartList));
 
   useEffect(() => {
-    const open = () => setSideDrawerOpen(true);
+    const open = () => {
+      cartListRefetch?.();
+      setSideDrawerOpen(true);
+    };
     window.addEventListener(OPEN_CART_DRAWER_EVENT, open);
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
-  }, []);
+  }, [cartListRefetch]);
 
   const handleIconClick = () => {
+    cartListRefetch?.();
     setSideDrawerOpen(true);
   };
   useEffect(() => {

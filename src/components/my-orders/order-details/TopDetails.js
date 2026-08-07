@@ -241,6 +241,12 @@ const TopDetails = (props) => {
     }
   };
   const handleTime = () => {
+    if (trackData?.processing_time != null && trackData?.processing_time !== "") {
+      return trackData.processing_time;
+    }
+    if (trackData?.store?.processing_time != null && trackData?.store?.processing_time !== "") {
+      return trackData.store.processing_time;
+    }
     if (differenceInMinutes() > 5) {
       return `${differenceInMinutes() - 5} - ${differenceInMinutes()} `;
     } else {
@@ -480,39 +486,42 @@ const TopDetails = (props) => {
             </Typography>
           </Typography>
 
-          {trackData?.module_type === "food" && (
-            <Stack
-              direction="row"
-              borderLeft={!isSmall && `2px solid ${theme.palette.neutral[400]}`}
-              paddingLeft={!isSmall && "1rem"}
-              alignItems="center"
-              spacing={1}
-            >
-              {" "}
-              <TrackSvg />
-              <Typography
-                color={theme.palette.primary.main}
-                fontSize={{ xs: "10px", md: "12px" }}
-                fontWeight="500"
+          {trackData?.module_type === "food" &&
+            ["pending", "confirmed", "processing", "accepted"].includes(
+              trackData?.order_status?.toLowerCase()
+            ) && (
+              <Stack
+                direction="row"
+                borderLeft={!isSmall && `2px solid ${theme.palette.neutral[400]}`}
+                paddingLeft={!isSmall && "1rem"}
+                alignItems="center"
+                spacing={1}
               >
-                {t("Estimated delivery:")}{" "}
+                {" "}
+                <TrackSvg />
                 <Typography
-                  fontSize={{ xs: "10px", md: "12px" }}
-                  fontWeight="500"
-                  component="span"
-                >
-                  {handleTime()}
-                </Typography>
-                <Typography
-                  color="primary"
+                  color={theme.palette.primary.main}
                   fontSize={{ xs: "10px", md: "12px" }}
                   fontWeight="500"
                 >
-                  {t("min")}
+                  {t("Processing time:")}{" "}
+                  <Typography
+                    fontSize={{ xs: "10px", md: "12px" }}
+                    fontWeight="500"
+                    component="span"
+                  >
+                    {handleTime()}
+                  </Typography>
+                  <Typography
+                    color="primary"
+                    fontSize={{ xs: "10px", md: "12px" }}
+                    fontWeight="500"
+                  >
+                    {t("min")}
+                  </Typography>
                 </Typography>
-              </Typography>
-            </Stack>
-          )}
+              </Stack>
+            )}
         </Stack>
         {configData?.order_delivery_verification ? (
           <Typography

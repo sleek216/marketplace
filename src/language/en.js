@@ -437,6 +437,7 @@ export const english = {
   "Enter your trip id": "Enter your trip id",
   "Estimated": "Estimated",
   "Estimated delivery:": "Estimated delivery:",
+  "Processing time:": "Processing time:",
   "Ex: Please provide good conditioned vehicle": "Ex: Please provide good conditioned vehicle",
   "Exclusive collection for everyone": "Exclusive collection for everyone",
   "Expired on": "Expired on",

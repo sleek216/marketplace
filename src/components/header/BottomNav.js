@@ -72,19 +72,24 @@ const BottomNav = () => {
     }
   }, [cartListData]);
   const handleCartDrawerOpen = () => {
+    cartListRefetch?.();
     setSideDrawerOpen(true);
   };
 
   useEffect(() => {
-    const open = () => setSideDrawerOpen(true);
+    const open = () => {
+      cartListRefetch?.();
+      setSideDrawerOpen(true);
+    };
     window.addEventListener(OPEN_CART_DRAWER_EVENT, open);
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
-  }, []);
+  }, [cartListRefetch]);
+
   useEffect(() => {
-    if (sideDrawerOpen && cartList?.length === 0 && cartListData == null) {
+    if (sideDrawerOpen) {
       cartListRefetch?.();
     }
-  }, [sideDrawerOpen, cartListRefetch, cartList?.length, cartListData]);
+  }, [sideDrawerOpen, cartListRefetch]);
   const handleWishListsDrawerOpen = () => {
     if (getToken()) {
       setWishListSideDrawerOpen(true);
