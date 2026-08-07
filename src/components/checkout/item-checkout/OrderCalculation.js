@@ -35,6 +35,8 @@ import { CalculationGrid, TotalGrid } from "../CheckOut.style";
 import {useGetSurgePrice} from "api-manage/hooks/react-query/order-place/useGetSurgePrice";
 import {onErrorResponse} from "api-manage/api-error-response/ErrorResponses";
 
+import OrderCalculationShimmer from "./OrderCalculationShimmer";
+
 const OrderCalculation = (props) => {
   const {
     cartList,
@@ -209,6 +211,10 @@ const OrderCalculation = (props) => {
       ? `. ${surgePrice?.customer_note} `
       : ""
   }`;
+  if (isLoading || !storeData) {
+    return <OrderCalculationShimmer />;
+  }
+
   return (
     <>
       <CalculationGrid container item xs={12} spacing={1} mt="1rem">
