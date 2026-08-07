@@ -39,7 +39,7 @@ const ImageSection = ({
 								color: theme.palette.neutral[1000],
 							}}
 						>
-							{t("Seller Cover")}<span style={{ color: "red" }}>*</span>
+							{t("Business Cover")}<span style={{ color: "red" }}>*</span>
 						</InputLabel>
 						<Typography fontSize="10px" mt={.25}>
 							{t("JPG, JPEG, PNG, WEBP Less Than 2MB (Ratio 2:1)")}
@@ -92,7 +92,7 @@ const ImageSection = ({
 								color: (theme) => theme.palette.neutral[1000],
 							}}
 						>
-							{t("Seller Logo")}<span style={{ color: "red" }}>*</span>
+							{t("Business Logo")}<span style={{ color: "red" }}>*</span>
 						</InputLabel>
 						<Typography fontSize="10px" mt={.25}>
 							{t("JPG, JPEG, PNG, WEBP Less Than 2MB (Ratio 1:1)")}
