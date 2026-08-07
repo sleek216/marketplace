@@ -53,13 +53,17 @@ const AddressReselectPopover = (props) => {
         },
         (error) => {
           setIsGettingLocation(false);
-          toast.error(t("Could not access location. Please grant permission or pick from map."));
+          toast.error(
+            t("Location permission is off in your browser. Opening map to pick location...")
+          );
+          setOpenMapModal(true);
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       setIsGettingLocation(false);
-      toast.error(t("Geolocation is not supported by your browser."));
+      toast.error(t("Geolocation is not supported by your browser. Opening map..."));
+      setOpenMapModal(true);
     }
   };
 
@@ -141,7 +145,7 @@ const AddressReselectPopover = (props) => {
         {...other}
       >
         <Stack justifyContent="center" textAlign="center" spacing={2}>
-          {savedLocation && (
+          {savedLocation && savedLocation !== "Default Location" && (
             <Typography
               fontSize="14px"
               textAlign="left"
