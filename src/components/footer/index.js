@@ -5,6 +5,7 @@ import { StyledFooterBackground } from "./Footer.style";
 import FooterBottom from "./FooterBottom";
 import FooterMiddle from "./footer-middle/FooterMiddle";
 import FooterTop from "./footer-top/FooterTop";
+import AppAndSellerBanner from "./AppAndSellerBanner";
 
 const FooterComponent = (props) => {
   const { configData, landingPageData } = props;
@@ -20,6 +21,7 @@ const FooterComponent = (props) => {
         },
       }}
     >
+      <AppAndSellerBanner configData={configData} landingPageData={landingPageData} />
       <FooterTop landingPageData={landingPageData} />
       <StyledFooterBackground nobottommargin={isLandingPage}>
         <CustomStackFullWidth
