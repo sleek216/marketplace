@@ -67,6 +67,36 @@ const RestaurantDetailsForm = ({
   const persistedTinFile = RestaurantJoinFormik?.values?.tin_certificate_image;
   const tinFileToShow = file || persistedTinFile;
 
+  const handleViewFile = (e) => {
+    e?.stopPropagation?.();
+    const currentFile = file || RestaurantJoinFormik?.values?.tin_certificate_image;
+    if (preview && typeof preview === "string") {
+      window.open(preview, "_blank");
+      return;
+    }
+    if (currentFile instanceof File) {
+      const url = URL.createObjectURL(currentFile);
+      window.open(url, "_blank");
+      return;
+    }
+    if (typeof currentFile === "string" && currentFile) {
+      window.open(currentFile, "_blank");
+      return;
+    }
+    const fileUrl = currentFile?.url || currentFile?.path || currentFile?.file_url;
+    if (fileUrl) {
+      window.open(fileUrl, "_blank");
+    }
+  };
+
+  const handleRemoveFile = (e) => {
+    e?.stopPropagation?.();
+    setFile?.(null);
+    setPreview?.("");
+    RestaurantJoinFormik.setFieldValue("tin_certificate_image", null);
+    RestaurantJoinFormik.setFieldTouched("tin_certificate_image", true, false);
+  };
+
   const handleOnlyNumberInputKeyDown = (event) => {
     const allowedControlKeys = [
       "Backspace",
