@@ -83,8 +83,35 @@ const Root = () => {
 };
 
 export const getServerSideProps = async (context) => {
+  try {
+    const configRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/config`,
+      {
+        method: "GET",
+        headers: {
+          "X-software-id": 33571750,
+          "X-server": "server",
+          origin: process.env.NEXT_CLIENT_HOST_URL || "http://localhost:3000",
+        },
+      }
+    );
+
+    if (configRes.ok) {
+      const config = await configRes.json();
+      return {
+        props: {
+          configData: config,
+        },
+      };
+    }
+  } catch (error) {
+    // console.error("Error fetching config in getServerSideProps:", error);
+  }
+
   return {
-    props: {},
+    props: {
+      configData: null,
+    },
   };
 };
 
