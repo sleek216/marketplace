@@ -32,9 +32,9 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       fontWeight: "500 !important",
       color: alpha(theme.palette.neutral[1000], 0.7),
       left: languageDirection === "rtl" ? "80%" : alignWithMuiField ? "14px !important" : "10px",
-      // Keep the label visible in dense layouts (sign-up modal).
-      top: alignWithMuiField ? "-4px !important" : undefined,
+      top: alignWithMuiField ? "-7px !important" : "-8px !important",
       backgroundColor: background || theme.palette.background.paper,
+      padding: "0 4px !important",
       zIndex: 9999,
       display: "inline-block",
       whiteSpace: "nowrap",
@@ -72,8 +72,10 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       borderRadius: borderRadius
         ? `${borderRadius} 0px 0px ${borderRadius} !important`
         : "2px 0px 0px 2px !important",
-      width: "64px !important",
-      paddingLeft: "10px !important",
+      width: "auto !important",
+      minWidth: "85px !important",
+      paddingLeft: "8px !important",
+      paddingRight: "8px !important",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -121,7 +123,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       border: `1px solid ${theme.palette.neutral[200]}`,
       backgroundColor: theme.palette.background.paper,
       color: theme.palette.neutral[1000],
-      paddingLeft: languageDirection === "rtl" ? "72px" : "72px",
+      paddingLeft: languageDirection === "rtl" ? "92px !important" : "92px !important",
       marginRight: 0,
       boxSizing: "border-box",
       ...(alignWithMuiField && {
@@ -252,6 +254,7 @@ const CustomPhoneInput = ({
               required: true,
               autoFocus: false,
               disabled,
+              placeholder: t("Enter phone number"),
               onKeyDown: (e) => {
                 if (["+", "-", "e", "E"].includes(e.key)) {
                   e.preventDefault();
