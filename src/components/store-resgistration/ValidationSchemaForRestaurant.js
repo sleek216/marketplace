@@ -37,11 +37,9 @@ const ValidationSchemaForRestaurant = () => {
 		f_name: Yup.string().required(t("Name is required")),
 		l_name: Yup.string().required(t("Last name required")),
 		phone: Yup.string().required(t("Phone number required")),
-		min_delivery_time: Yup.string().required(t("Minimum Delivery Time")),
-		max_delivery_time: Yup.string().required(t("Maximum Delivery Time")),
-		delivery_time_type: Yup.string().required(
-			t("Delivery Time is required")
-		),
+		min_delivery_time: Yup.string().nullable(),
+		max_delivery_time: Yup.string().nullable(),
+		delivery_time_type: Yup.string().nullable(),
 		lat: Yup.string().required(t("Latitude is required")),
 		lng: Yup.string().required(t("Longitude is required")),
 		logo: Yup.mixed()
