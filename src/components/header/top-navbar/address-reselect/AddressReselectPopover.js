@@ -44,26 +44,30 @@ const AddressReselectPopover = (props) => {
       setZoneIdEnabled(true);
     };
 
-    if (coords?.latitude && coords?.longitude) {
-      applyCoords(coords.latitude, coords.longitude);
-    } else if (typeof window !== "undefined" && navigator.geolocation) {
+    if (typeof window !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           applyCoords(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           setIsGettingLocation(false);
-          toast.error(
-            t("Location permission is off in your browser. Opening map to pick location...")
-          );
-          setOpenMapModal(true);
+          if (error?.code === 1) {
+            toast.error(
+              t("Location permission is blocked. Please allow location access in your browser settings.")
+            );
+          } else {
+            toast.error(
+              t("Unable to get current location. Please turn on location services.")
+            );
+          }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
+    } else if (coords?.latitude && coords?.longitude) {
+      applyCoords(coords.latitude, coords.longitude);
     } else {
       setIsGettingLocation(false);
-      toast.error(t("Geolocation is not supported by your browser. Opening map..."));
-      setOpenMapModal(true);
+      toast.error(t("Geolocation is not supported by your browser."));
     }
   };
 
