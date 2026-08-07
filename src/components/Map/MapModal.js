@@ -208,6 +208,7 @@ const MapModal = ({
           "location",
           geoCodeResults?.results[0]?.formatted_address
         );
+        localStorage.removeItem("locationLabel");
         localStorage.setItem("currentLatLng", JSON.stringify(location));
       } else {
         toast.success(t("New location has been set."));

@@ -109,10 +109,10 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
                 // width: "210px",
               }}
             >
-              {locationLabel
+              {locationLabel && locationLabel !== "Current location"
                 ? t(locationLabel)
                 : location
-                  ? t("Current location")
+                  ? location
                   : t("Select location")}
             </Typography>
           </CustomStackFullWidth>

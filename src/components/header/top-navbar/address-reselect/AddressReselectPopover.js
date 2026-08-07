@@ -46,7 +46,7 @@ const AddressReselectPopover = (props) => {
   const handleSetLocation = async () => {
     if (currentLocation && location) {
       localStorage.setItem("location", currentLocation);
-      localStorage.setItem("locationLabel", "Current location");
+      localStorage.removeItem("locationLabel");
       localStorage.setItem("currentLatLng", JSON.stringify(location));
       notifyHeaderSessionSync();
     }
