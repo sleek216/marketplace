@@ -98,7 +98,7 @@ const AddressReselectPopover = (props) => {
           localStorage.setItem("zoneid", formattedZoneId);
         }
 
-        notifyHeaderSessionSync();
+        notifyHeaderSessionSync(true);
         toast.success(t("Current location selected successfully."));
         setShowCurrentLocation(false);
         setIsGettingLocation(false);

@@ -4,9 +4,14 @@ import { t } from "i18next";
 export const HEADER_SESSION_SYNC_EVENT = "gift-marketplace-header-session-sync";
 export const OPEN_LOCATION_POPOVER_EVENT = "gift-marketplace-open-location-popover";
 
-export const notifyHeaderSessionSync = () => {
+export const notifyHeaderSessionSync = (shouldReload = false) => {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(HEADER_SESSION_SYNC_EVENT));
+  if (shouldReload) {
+    setTimeout(() => {
+      window.location.reload();
+    }, 400);
+  }
 };
 
 export const notifyOpenLocationPopover = () => {

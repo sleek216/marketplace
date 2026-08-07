@@ -48,7 +48,7 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
       );
       const values = { lat: address?.lat, lng: address?.lng };
       localStorage.setItem("currentLatLng", JSON.stringify(values));
-      notifyHeaderSessionSync();
+      notifyHeaderSessionSync(true);
       if (address.zone_ids && address.zone_ids.length > 0) {
         const value = [address.zone_ids];
 
