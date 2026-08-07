@@ -61,11 +61,11 @@ const LandingPage = ({ configData, landingPageData }) => {
         {/* High-Impact Promotional Grocery Showcase Banner */}
         <LandingPromotionalBannerSection />
 
+        {/* E-Commerce Value Propositions & Platform Features ("Why Shop On Our Marketplace?") */}
+        <LandingFeaturesSection />
+
         {/* Doorstep Delivery Banner (Delivery Guy + Spinning Same Day Delivery Stamp) */}
         <LandingDoorstepDeliveryBanner />
-
-        {/* E-Commerce Value Propositions & Platform Features */}
-        <LandingFeaturesSection />
 
         {/* Simple 3-Step How It Works Guide */}
         <LandingHowItWorksSection />

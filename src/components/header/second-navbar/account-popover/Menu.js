@@ -20,7 +20,7 @@ import { menuData } from "./menuData";
 import { useRouter } from "next/router";
 import { setWelcomeModal } from "redux/slices/utils";
 import { resetEntireCart } from "redux/slices/cart";
-import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { notifyHeaderSessionSync, clearUserSessionData } from "helper-functions/headerSessionSync";
 
 const Menu = ({ onClose, cartListRefetch }) => {
   const { t } = useTranslation();
@@ -37,10 +37,8 @@ const Menu = ({ onClose, cartListRefetch }) => {
       setTimeout(() => {
         dispatch(setLogoutUser(null));
         dispatch(resetEntireCart());
-        localStorage.removeItem("token");
-        localStorage.removeItem("cartList");
+        clearUserSessionData();
         cartListRefetch?.();
-        notifyHeaderSessionSync();
         onClose?.();
         toast.success(t(logoutSuccessFull));
 

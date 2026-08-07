@@ -13,7 +13,7 @@ import { logoutSuccessFull } from "utils/toasterMessages";
 import { clearWishList } from "redux/slices/wishList";
 import { setClearCart } from "redux/slices/cart";
 import { OPEN_AUTH_MODAL_EVENT } from "../../second-navbar/SecondNavbar";
-import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { notifyHeaderSessionSync, clearUserSessionData } from "helper-functions/headerSessionSync";
 
 import { resetEntireCart } from "redux/slices/cart";
 
@@ -42,9 +42,7 @@ const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
       setTimeout(() => {
         dispatch(setLogoutUser(null));
         dispatch(resetEntireCart());
-        localStorage.removeItem("token");
-        localStorage.removeItem("cartList");
-        notifyHeaderSessionSync();
+        clearUserSessionData();
         setOpenDrawer(false);
         toast.success(t(logoutSuccessFull));
         setOpenModal(false);

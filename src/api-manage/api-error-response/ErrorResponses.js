@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { t } from "i18next";
 import Router from "next/router";
+import { clearUserSessionData } from "helper-functions/headerSessionSync";
 
 // Format error messages: round off "X.XXXXXX Seconds" to whole seconds
 const formatErrorMessage = (message) => {
@@ -24,7 +25,7 @@ export const handleTokenExpire = (item, status) => {
   if (status === 401) {
     if (typeof window !== "undefined" && window.localStorage.getItem("token")) {
       toast.error(t("Your account is inactive or Your token has been expired"));
-      window?.localStorage.removeItem("token");
+      clearUserSessionData();
       Router.push("/home", undefined, { shallow: true });
     } else if (item?.message) {
       // Sign-in / guest: show API message (e.g. invalid credentials)
