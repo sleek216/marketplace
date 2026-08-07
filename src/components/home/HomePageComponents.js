@@ -28,6 +28,7 @@ import LastOrderReview from "./LastOrderReview";
 import SharedProductDeepLink from "./SharedProductDeepLink";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import { useGetWishList } from "api-manage/hooks/react-query/rental-wishlist/useGetWishlist";
+import PromoDealsBanner from "../footer/PromoDealsBanner";
 import { useGetFailedPayment } from "api-manage/hooks/react-query/useGetFailedPayment";
 import IncompleteOrderModal from "components/home/IncompleteOrderModal";
 import PaymentMethod from "components/checkout/PaymentMethod";
@@ -251,7 +252,10 @@ const HomePageComponents = ({ configData, landingPageData }) => {
             setCurrentTab={setCurrentTab}
           />
         ) : (
-          <Box width="100%">{getModuleWiseComponents()}</Box>
+          <Box width="100%">
+            {getModuleWiseComponents()}
+            <PromoDealsBanner />
+          </Box>
         )}
       </CustomStackFullWidth>
       {open && (
