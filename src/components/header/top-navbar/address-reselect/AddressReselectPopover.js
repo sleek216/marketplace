@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {Button, Popover, Stack, Typography, useTheme} from "@mui/material";
+import { Button, CircularProgress, Popover, Stack, Typography, useTheme } from "@mui/material";
+import toast from "react-hot-toast";
 
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
@@ -23,6 +24,8 @@ const AddressReselectPopover = (props) => {
   const [showCurrentLocation, setShowCurrentLocation] = useState(false);
   const [geoLocationEnable, setGeoLocationEnable] = useState(false);
   const [zoneIdEnabled, setZoneIdEnabled] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
   const { coords } = useGeolocated({
     positionOptions: {
       enableHighAccuracy: false,
@@ -32,48 +35,82 @@ const AddressReselectPopover = (props) => {
   });
 
   const handleAgreeLocation = () => {
-    // e.stopPropagation();
-    if (coords) {
-      setLocation({ lat: coords?.latitude, lng: coords?.longitude });
+    setIsGettingLocation(true);
+
+    const applyCoords = (lat, lng) => {
+      setLocation({ lat, lng });
       setShowCurrentLocation(true);
       setGeoLocationEnable(true);
       setZoneIdEnabled(true);
+    };
+
+    if (coords?.latitude && coords?.longitude) {
+      applyCoords(coords.latitude, coords.longitude);
+    } else if (typeof window !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          applyCoords(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          setIsGettingLocation(false);
+          toast.error(t("Could not access location. Please grant permission or pick from map."));
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setIsGettingLocation(false);
+      toast.error(t("Geolocation is not supported by your browser."));
     }
-    setGeoLocationEnable(true);
-    setZoneIdEnabled(true);
   };
 
-  const handleSetLocation = async () => {
-    if (currentLocation && location) {
-      localStorage.setItem("location", currentLocation);
-      localStorage.removeItem("locationLabel");
-      localStorage.setItem("currentLatLng", JSON.stringify(location));
-      notifyHeaderSessionSync();
-    }
-  };
   const { data: geoCodeResults, isLoading: isLoadingGeoCode } = useGetGeoCode(
     location,
     geoLocationEnable
   );
 
-  useEffect(() => {
-    handleSetLocation();
-  }, [currentLocation, location,address?.address]);
-  useEffect(() => {
-    if (geoCodeResults?.results && showCurrentLocation) {
-      setCurrentLocation(geoCodeResults?.results[0]?.formatted_address);
-    }
-  }, [geoCodeResults, location]);
-
   const { data: zoneData } = useGetZoneId(location, zoneIdEnabled);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (zoneData) {
-        localStorage.setItem("zoneid", zoneData?.zone_id);
+    if (geoCodeResults && showCurrentLocation && location) {
+      const formattedAddress =
+        geoCodeResults.results?.[0]?.formatted_address ||
+        `${Number(location.lat).toFixed(4)}, ${Number(location.lng).toFixed(4)}`;
+      if (formattedAddress) {
+        setCurrentLocation(formattedAddress);
+        localStorage.setItem("location", formattedAddress);
+        localStorage.removeItem("locationLabel");
+        localStorage.setItem("currentLatLng", JSON.stringify(location));
+
+        if (zoneData?.zone_id) {
+          const formattedZoneId = Array.isArray(zoneData.zone_id)
+            ? JSON.stringify(zoneData.zone_id)
+            : typeof zoneData.zone_id === "string" && zoneData.zone_id.startsWith("[")
+              ? zoneData.zone_id
+              : JSON.stringify([zoneData.zone_id]);
+          localStorage.setItem("zoneid", formattedZoneId);
+        }
+
+        notifyHeaderSessionSync();
+        toast.success(t("Current location selected successfully."));
+        setShowCurrentLocation(false);
+        setIsGettingLocation(false);
+        onClose();
       }
     }
+  }, [geoCodeResults, location, showCurrentLocation, zoneData]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && zoneData?.zone_id) {
+      const formattedZoneId = Array.isArray(zoneData.zone_id)
+        ? JSON.stringify(zoneData.zone_id)
+        : typeof zoneData.zone_id === "string" && zoneData.zone_id.startsWith("[")
+          ? zoneData.zone_id
+          : JSON.stringify([zoneData.zone_id]);
+      localStorage.setItem("zoneid", formattedZoneId);
+      notifyHeaderSessionSync();
+    }
   }, [zoneData]);
+
   const handleCloseMapModal = () => {
     setOpenMapModal(false);
     onClose();
@@ -157,23 +194,27 @@ const AddressReselectPopover = (props) => {
               )}
             </Stack>
           </SimpleBar>
-         <Button
-           fullWidth
-              onClick={handleAgreeLocation}
-              startIcon={
+          <Button
+            fullWidth
+            disabled={isGettingLocation}
+            onClick={handleAgreeLocation}
+            startIcon={
+              isGettingLocation ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
                 <ControlPointOutlinedIcon sx={{ color: theme.palette.primary.main }} />
-              }
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-              }}
-            >
-              {t("Use Current Location")}
-            </Button>
+              )
+            }
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 600,
+              color: theme.palette.primary.main,
+            }}
+          >
+            {isGettingLocation ? t("Fetching location...") : t("Use Current Location")}
+          </Button>
           <Stack width="100%" justifyContent="center" alignItems="center">
             <CustomButtonPrimary onClick={() => setOpenMapModal(true)}>
               {t("Pick from map")}
