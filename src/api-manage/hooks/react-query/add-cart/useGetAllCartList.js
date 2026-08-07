@@ -70,10 +70,13 @@ const onCartListError = (error) => {
 
 export default function useGetAllCartList(_guestId, cartListSuccessHandler, selectedCartIds) {
   const moduleId = getCurrentModuleId();
+  // selectedCartIds=null means "not yet initialized" — skip API call to avoid delivery_charge: 0
+  const isInitialized = selectedCartIds !== null;
   return useQuery(
-    ["cart-itemss", moduleId || "all-modules", selectedCartIds ? selectedCartIds.join(",") : "all"],
+    ["cart-itemss", moduleId || "all-modules", isInitialized ? (selectedCartIds?.join(",") ?? "all") : "__pending__"],
     () => getData(selectedCartIds),
     {
+      enabled: isInitialized,
       onSuccess: cartListSuccessHandler,
       onError: onCartListError,
       staleTime: 0,
