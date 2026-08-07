@@ -70,15 +70,10 @@ const OrderCalculation = (props) => {
   const { profileInfo } = useSelector((state) => state.profileInfo);
   const tempExtraCharge = extraCharge ?? 0;
   const { cartMeta } = useSelector((state) => state.cart);
-  // On checkout page: prefer the checkout-specific taxAmount delivery over cartMeta
-  // (cartMeta comes from cart drawer API which may return 0 when selectedCartIds mismatch)
-  const taxDelivery = taxAmount?.delivery_charge ?? taxAmount?.delivery_fee;
   const parsedBackendDeliveryCharge = Number(
-    taxDelivery != null
-      ? taxDelivery
-      : cartMeta?.selection_applied && cartMeta?.total_delivery_charge != null
-        ? cartMeta.total_delivery_charge
-        : 0
+    cartMeta?.selection_applied && cartMeta?.total_delivery_charge != null
+      ? cartMeta.total_delivery_charge
+      : taxAmount?.delivery_charge ?? taxAmount?.delivery_fee
   );
   const backendDeliveryCharge =
     Number.isFinite(parsedBackendDeliveryCharge) &&

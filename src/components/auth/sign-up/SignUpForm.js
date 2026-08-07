@@ -126,7 +126,7 @@ const SignUpForm = ({
 
         {/* Phone */}
         <Grid item xs={12}>
-          <Box sx={{ width: "100%", overflowX: "hidden", paddingTop: "2px" }}>
+          <Box sx={{ width: "100%", overflow: "visible", paddingTop: "6px" }}>
             <CustomPhoneInput
               alignWithMuiField
               required

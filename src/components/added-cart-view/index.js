@@ -38,8 +38,7 @@ const CardView = (props) => {
   const { configData } = useSelector((state) => state.configData);
   const imageBaseUrl = configData?.base_urls?.item_image_url;
   const router = useRouter();
-  // null = not yet initialized, [] = initialized but none selected
-  const [selectedCartIds, setSelectedCartIds] = useState(null);
+  const [selectedCartIds, setSelectedCartIds] = useState([]);
   const { mutateAsync: removeCartItemMutate, isLoading: removeSelectedLoading } =
     useDeleteCartItem();
 
@@ -50,11 +49,10 @@ const CardView = (props) => {
     }
   };
 
-  // Only call the cart API once selectedCartIds is initialized (not null)
   const { isFetching: isCartApiFetching } = useGetAllCartList(
     getGuestId(),
     cartListSuccessHandler,
-    selectedCartIds  // null = skip API until IDs ready
+    selectedCartIds
   );
 
   // Landing page: show modules first, then drill into a selected module
@@ -115,8 +113,6 @@ const CardView = (props) => {
   useEffect(() => {
     const currentIds = activeCartList?.map((item) => item?.cartItemId || item?.id).filter(Boolean) || [];
     setSelectedCartIds((prev) => {
-      // First-time initialization: select all items so API returns real delivery charges
-      if (prev === null) return currentIds;
       const validPrev = prev.filter((id) => currentIds.some((cId) => String(cId) === String(id)));
       if (validPrev.length > 0) return validPrev;
       return currentIds;

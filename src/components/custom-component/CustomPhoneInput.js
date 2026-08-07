@@ -32,7 +32,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       fontWeight: "500 !important",
       color: alpha(theme.palette.neutral[1000], 0.7),
       left: languageDirection === "rtl" ? "80%" : alignWithMuiField ? "14px !important" : "10px",
-      top: alignWithMuiField ? "-7px !important" : "-8px !important",
+      top: alignWithMuiField ? "-9px !important" : "-8px !important",
       backgroundColor: background || theme.palette.background.paper,
       padding: "0 4px !important",
       zIndex: 9999,
@@ -44,9 +44,12 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       }),
     },
     "&.react-tel-input .flag-dropdown": {
-      backgroundColor: theme.palette.background.custom2,
-      border: `1px solid ${theme.palette.neutral[200]}`,
-      borderRadius: borderRadius,
+      backgroundColor: "transparent",
+      border: "none",
+      height: "100% !important",
+      borderRadius: borderRadius
+        ? `${borderRadius} 0px 0px ${borderRadius} !important`
+        : "2px 0px 0px 2px !important",
     },
     "&.react-tel-input .selected-flag .flag": {
       right: languageDirection === "rtl" && "11px",
@@ -64,11 +67,12 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
     "&.react-tel-input .country-list .search .search-box": {
       height: "36px !important",
     },
-    "&.react-tel-input .country-list .search .search-emoji": {
+    "&.react-tel-input .country-list .search-emoji": {
       display: "none",
     },
     "&.react-tel-input .selected-flag": {
       backgroundColor: theme.palette.neutral[100],
+      height: "100% !important",
       borderRadius: borderRadius
         ? `${borderRadius} 0px 0px ${borderRadius} !important`
         : "2px 0px 0px 2px !important",
