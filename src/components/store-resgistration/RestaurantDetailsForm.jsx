@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
-import { alpha, Grid, InputAdornment, useTheme, Stack, TextField, Box, Typography } from "@mui/material";
+import { alpha, Grid, InputAdornment, useTheme, Stack, TextField, Box, Typography, IconButton, Tooltip } from "@mui/material";
 import CustomTextFieldWithFormik from "../form-fields/CustomTextFieldWithFormik";
 import { useTranslation } from "react-i18next";
 import { Briefcase as WorkIcon, MapPin as RoomIcon, Mountain as LandslideIcon } from "lucide-react";
@@ -10,7 +10,7 @@ import LangTab from "components/store-resgistration/LanTab";
 import { useSelector } from "react-redux";
 import CustomMultiSelect from "components/custom-multi-select/CustomMultiSelect";
 import { Hand as HailIcon } from "lucide-react";
-import { UserCircle as AccountCircle, UploadCloud as CloudUploadIcon, FileText as DescriptionIcon } from "lucide-react";
+import { UserCircle as AccountCircle, UploadCloud as CloudUploadIcon, FileText as DescriptionIcon, Eye, X } from "lucide-react";
 
 export const checkTaxiModule = (value, moduleOption) => {
   const moduleObj = moduleOption?.find((item) => item.value === value);
@@ -404,6 +404,38 @@ const RestaurantDetailsForm = ({
                             >
                               {t("File uploaded")}
                             </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Tooltip title={t("View Document")}>
+                              <IconButton
+                                size="small"
+                                onClick={handleViewFile}
+                                sx={{
+                                  color: theme.palette.primary.main,
+                                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                  "&:hover": {
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.18),
+                                  },
+                                }}
+                              >
+                                <Eye size={18} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t("Remove File")}>
+                              <IconButton
+                                size="small"
+                                onClick={handleRemoveFile}
+                                sx={{
+                                  color: theme.palette.error.main,
+                                  backgroundColor: alpha(theme.palette.error.main, 0.08),
+                                  "&:hover": {
+                                    backgroundColor: alpha(theme.palette.error.main, 0.18),
+                                  },
+                                }}
+                              >
+                                <X size={18} />
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
                         </Stack>
                       </Box>
