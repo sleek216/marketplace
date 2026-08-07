@@ -11,6 +11,7 @@ import { useSelector } from "react-redux";
 import CustomMultiSelect from "components/custom-multi-select/CustomMultiSelect";
 import { Hand as HailIcon } from "lucide-react";
 import { UserCircle as AccountCircle, UploadCloud as CloudUploadIcon, FileText as DescriptionIcon, Eye, X } from "lucide-react";
+import ImageViewModal from "components/single-file-uploader-with-preview/ImageViewModal";
 
 export const checkTaxiModule = (value, moduleOption) => {
   const moduleObj = moduleOption?.find((item) => item.value === value);
@@ -67,25 +68,49 @@ const RestaurantDetailsForm = ({
   const persistedTinFile = RestaurantJoinFormik?.values?.tin_certificate_image;
   const tinFileToShow = file || persistedTinFile;
 
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [imageModalSrc, setImageModalSrc] = useState("");
+
   const handleViewFile = (e) => {
     e?.stopPropagation?.();
     const currentFile = file || RestaurantJoinFormik?.values?.tin_certificate_image;
+
+    const isImageFile = (fileOrUrl) => {
+      if (!fileOrUrl) return false;
+      if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+        return fileOrUrl.type?.startsWith("image/");
+      }
+      if (typeof fileOrUrl === "string") {
+        return /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(fileOrUrl) || fileOrUrl.startsWith("data:image/") || fileOrUrl.startsWith("blob:");
+      }
+      if (fileOrUrl?.type) {
+        return fileOrUrl.type.startsWith("image/");
+      }
+      if (fileOrUrl?.name || fileOrUrl?.file_name) {
+        const name = fileOrUrl.name || fileOrUrl.file_name;
+        return /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(name);
+      }
+      return false;
+    };
+
+    let targetUrl = "";
     if (preview && typeof preview === "string") {
-      window.open(preview, "_blank");
-      return;
+      targetUrl = preview;
+    } else if (currentFile instanceof File || currentFile instanceof Blob) {
+      targetUrl = URL.createObjectURL(currentFile);
+    } else if (typeof currentFile === "string") {
+      targetUrl = currentFile;
+    } else {
+      targetUrl = currentFile?.url || currentFile?.path || currentFile?.file_url || "";
     }
-    if (currentFile instanceof File) {
-      const url = URL.createObjectURL(currentFile);
-      window.open(url, "_blank");
-      return;
-    }
-    if (typeof currentFile === "string" && currentFile) {
-      window.open(currentFile, "_blank");
-      return;
-    }
-    const fileUrl = currentFile?.url || currentFile?.path || currentFile?.file_url;
-    if (fileUrl) {
-      window.open(fileUrl, "_blank");
+
+    if (!targetUrl) return;
+
+    if (isImageFile(currentFile || targetUrl)) {
+      setImageModalSrc(targetUrl);
+      setViewModalOpen(true);
+    } else {
+      window.open(targetUrl, "_blank");
     }
   };
 
@@ -541,6 +566,11 @@ const RestaurantDetailsForm = ({
           </CustomStackFullWidth>
         </CustomStackFullWidth>
       </Grid>
+      <ImageViewModal
+        open={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        imageSrc={imageModalSrc}
+      />
     </CustomStackFullWidth>
   );
 };
