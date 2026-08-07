@@ -31,7 +31,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       fontSize: "12px !important",
       fontWeight: "500 !important",
       color: alpha(theme.palette.neutral[1000], 0.7),
-      left: languageDirection === "rtl" ? "80%" : alignWithMuiField ? "14px !important" : "10px",
+      left: languageDirection === "rtl" ? "80%" : alignWithMuiField ? "12px !important" : "10px",
       top: alignWithMuiField ? "-9px !important" : "-8px !important",
       backgroundColor: background || theme.palette.background.paper,
       padding: "0 4px !important",
@@ -71,20 +71,21 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       display: "none",
     },
     "&.react-tel-input .selected-flag": {
-      backgroundColor: theme.palette.neutral[100],
+      backgroundColor: "transparent",
       height: "100% !important",
       borderRadius: borderRadius
         ? `${borderRadius} 0px 0px ${borderRadius} !important`
         : "2px 0px 0px 2px !important",
       width: "auto !important",
       minWidth: "85px !important",
-      paddingLeft: "8px !important",
+      paddingLeft: "10px !important",
       paddingRight: "8px !important",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      borderRight: `1px solid ${theme.palette.neutral[200]}`,
       "&:hover": {
-        backgroundColor: theme.palette.background.custom2,
+        backgroundColor: alpha(theme.palette.neutral[500], 0.08),
       },
     },
     "&.react-tel-input .selected-dial-code": {
