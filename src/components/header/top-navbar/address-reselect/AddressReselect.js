@@ -67,6 +67,19 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
   const handleClosePopover = () => {
     setOpenPopover(false);
   };
+  const formatLocationText = (loc) => {
+    if (!loc) return "";
+    if (typeof loc === "string" && loc.trim().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(loc);
+        if (parsed?.address) return parsed.address;
+      } catch {
+        return loc;
+      }
+    }
+    return loc;
+  };
+
   return (
     <>
       <Grid
@@ -112,7 +125,7 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
               {locationLabel && locationLabel !== "Current location"
                 ? t(locationLabel)
                 : location
-                  ? location
+                  ? formatLocationText(location)
                   : t("Select location")}
             </Typography>
           </CustomStackFullWidth>

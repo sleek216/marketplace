@@ -18,9 +18,11 @@ const ZoneGuard = (props) => {
       } else {
         // Fallback: If no location/zone set yet, assign default zone so user can browse modules
         const defaultZone = [1, 2];
-        const defaultLoc = JSON.stringify({ lat: "23.8103", lng: "90.4125", address: "Default Location" });
+        const defaultLoc = "Default Location";
+        const defaultLatLng = JSON.stringify({ lat: "23.8103", lng: "90.4125" });
         localStorage.setItem("zoneid", JSON.stringify(defaultZone));
         localStorage.setItem("location", defaultLoc);
+        localStorage.setItem("currentLatLng", defaultLatLng);
         setChecked(true);
       }
     } catch {
