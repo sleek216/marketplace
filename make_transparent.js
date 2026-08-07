@@ -17,7 +17,7 @@ const processImage = (fileName) => {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        if (r > 215 && g > 215 && b > 215) {
+        if (r > 220 && g > 220 && b > 220) {
           data[i + 3] = 0;
         }
       }
@@ -39,5 +39,7 @@ const processImage = (fileName) => {
 
 Promise.all([
   processImage('iphone_mockup_center.png'),
-  processImage('seller_store_3d.png')
+  processImage('seller_store_3d.png'),
+  processImage('fresh_deals_basket.png'),
+  processImage('delivery_rider_scooter.png')
 ]).catch(err => console.error(err));

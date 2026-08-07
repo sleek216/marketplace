@@ -6,6 +6,7 @@ import FooterBottom from "./FooterBottom";
 import FooterMiddle from "./footer-middle/FooterMiddle";
 import FooterTop from "./footer-top/FooterTop";
 import AppAndSellerBanner from "./AppAndSellerBanner";
+import PromoDealsBanner from "./PromoDealsBanner";
 
 const FooterComponent = (props) => {
   const { configData, landingPageData } = props;
@@ -21,6 +22,7 @@ const FooterComponent = (props) => {
         },
       }}
     >
+      <PromoDealsBanner />
       <AppAndSellerBanner configData={configData} landingPageData={landingPageData} />
       <FooterTop landingPageData={landingPageData} />
       <StyledFooterBackground nobottommargin={isLandingPage}>
