@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { CustomStackFullWidth } from "../../../../styled-components/CustomStyles.style";
 import AddressReselectPopover from "./AddressReselectPopover";
 import { getModule } from "helper-functions/getLanguage";
-import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
+import { notifyHeaderSessionSync, OPEN_LOCATION_POPOVER_EVENT } from "helper-functions/headerSessionSync";
 
 const AddressReselect = ({ location, setOpenDrawer }) => {
   const theme = useTheme();
@@ -58,6 +58,16 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
       }
     }
   }, [address]);
+  useEffect(() => {
+    const handleOpenPopover = () => {
+      setOpenPopover(true);
+    };
+    window.addEventListener(OPEN_LOCATION_POPOVER_EVENT, handleOpenPopover);
+    return () => {
+      window.removeEventListener(OPEN_LOCATION_POPOVER_EVENT, handleOpenPopover);
+    };
+  }, []);
+
   const handleClickToLandingPage = () => {
     setOpenPopover(true);
     setOpenDrawer(false);

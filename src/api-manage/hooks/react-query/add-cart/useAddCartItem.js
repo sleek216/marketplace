@@ -3,6 +3,7 @@ import { item_add_to_cart } from "../../../ApiRoutes";
 import { useMutation, useQueryClient } from "react-query";
 import { getGuestId } from "helper-functions/getToken";
 import { getCurrentModuleId } from "helper-functions/getCurrentModuleType";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
 
 const sanitizeGuestId = (id) => {
   if (typeof id !== "string") return null;
@@ -11,6 +12,9 @@ const sanitizeGuestId = (id) => {
 };
 
 const addData = async (postData) => {
+  if (!checkLocationBeforeCart()) {
+    throw new Error("Location not set");
+  }
   const { moduleIdOverride, ...body } = postData || {};
   const guest_id = sanitizeGuestId(body.guest_id) || sanitizeGuestId(getGuestId());
   const price = Number(body.price) || 0;

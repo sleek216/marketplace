@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import { getAmountWithSign } from "helper-functions/CardHelpers";
 import { getStoreMinimumOrderAmount } from "utils/CustomFunctions";
 import MinimumOrderNotice from "components/checkout/item-checkout/MinimumOrderNotice";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
 import { setClearCart } from "redux/slices/cart";
 import GuestCheckoutModal from "../cards/GuestCheckoutModal";
 import dynamic from "next/dynamic";
@@ -66,6 +67,9 @@ const CartActions = (props) => {
     });
   };
   const handleCheckout = () => {
+    if (!checkLocationBeforeCart()) {
+      return;
+    }
     if (minimumOrderBlocked) {
       showMinimumOrderToast();
       return;

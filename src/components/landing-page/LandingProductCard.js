@@ -16,7 +16,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import toast from "react-hot-toast";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
 import { useDispatch, useSelector } from "react-redux";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import useAddCartItem from "api-manage/hooks/react-query/add-cart/useAddCartItem";
@@ -297,6 +297,9 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+    if (!checkLocationBeforeCart()) {
+      return;
+    }
     if (isOutOfStock) {
       toast.error(t(out_of_stock));
       return;
