@@ -44,7 +44,6 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
         sx={{
           position: "relative",
           borderRadius: { xs: "16px", md: "22px" },
-          overflow: { xs: "hidden", md: "visible" },
           border: `1px solid ${alpha(theme.palette.neutral[300], 0.6)}`,
           boxShadow: `0 12px 35px ${alpha(theme.palette.neutral[900], 0.07)}`,
           backgroundColor: "#ffffff",
@@ -56,7 +55,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             flexDirection: { xs: "column", md: "row" },
             borderRadius: { xs: "16px", md: "22px" },
             overflow: "hidden",
-            minHeight: { md: "220px" },
+            minHeight: { md: "210px" },
           }}
         >
           {/* LEFT HALF: Download Our App */}
@@ -65,8 +64,8 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               flex: 1,
               background: `linear-gradient(135deg, #053ca8 0%, #032475 100%)`,
               color: "#ffffff",
-              p: { xs: "28px 20px", sm: "32px 28px", md: "36px 40px" },
-              pr: { md: "90px" }, // Leave room for overlapping phone
+              p: { xs: "28px 20px", sm: "32px 28px", md: "32px 36px" },
+              pr: { md: "85px", lg: "100px" },
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
@@ -93,7 +92,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               textAlign={{ xs: "center", md: "left" }}
             >
               <Typography
-                fontSize={{ xs: "22px", sm: "25px", md: "28px" }}
+                fontSize={{ xs: "22px", sm: "24px", md: "26px" }}
                 fontWeight="800"
                 sx={{ color: "#ffffff", lineHeight: 1.2, letterSpacing: "-0.01em" }}
               >
@@ -101,12 +100,12 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               </Typography>
 
               <Typography
-                fontSize={{ xs: "13px", sm: "14px" }}
+                fontSize={{ xs: "12.5px", sm: "13.5px" }}
                 fontWeight="400"
                 sx={{
                   color: "rgba(255, 255, 255, 0.85)",
                   lineHeight: 1.45,
-                  maxWidth: "280px",
+                  maxWidth: "270px",
                 }}
               >
                 {t("For a better shopping experience & exclusive app offers!")}
@@ -116,9 +115,10 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               <Stack
                 direction="row"
                 spacing={1.25}
-                pt={1}
+                pt={0.75}
                 flexWrap="wrap"
                 justifyContent={{ xs: "center", md: "flex-start" }}
+                useFlexGap
               >
                 {/* Google Play Badge */}
                 <Box
@@ -157,7 +157,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
                     >
                       GET IT ON
                     </Typography>
-                    <Typography fontSize="12.5px" fontWeight="700" sx={{ lineHeight: 1.1 }}>
+                    <Typography fontSize="12px" fontWeight="700" sx={{ lineHeight: 1.1 }}>
                       Google Play
                     </Typography>
                   </Stack>
@@ -197,7 +197,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
                     >
                       Download on the
                     </Typography>
-                    <Typography fontSize="12.5px" fontWeight="700" sx={{ lineHeight: 1.1 }}>
+                    <Typography fontSize="12px" fontWeight="700" sx={{ lineHeight: 1.1 }}>
                       App Store
                     </Typography>
                   </Stack>
@@ -211,8 +211,8 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             sx={{
               flex: 1,
               background: `linear-gradient(135deg, #f2f5fd 0%, #ffffff 100%)`,
-              p: { xs: "28px 20px", sm: "32px 28px", md: "36px 40px" },
-              pl: { md: "90px" }, // Leave room for overlapping phone
+              p: { xs: "28px 20px", sm: "32px 28px", md: "32px 36px" },
+              pl: { md: "85px", lg: "100px" },
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -226,7 +226,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               sx={{ zIndex: 1, maxWidth: { sm: "280px" } }}
             >
               <Typography
-                fontSize={{ xs: "22px", sm: "25px", md: "28px" }}
+                fontSize={{ xs: "22px", sm: "24px", md: "26px" }}
                 fontWeight="800"
                 sx={{ color: "#062b88", lineHeight: 1.2, letterSpacing: "-0.01em" }}
               >
@@ -234,7 +234,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               </Typography>
 
               <Typography
-                fontSize={{ xs: "13px", sm: "14px" }}
+                fontSize={{ xs: "12.5px", sm: "13.5px" }}
                 fontWeight="400"
                 sx={{ color: "#4b5563", lineHeight: 1.45 }}
               >
@@ -253,8 +253,8 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
                     borderWidth: "1.5px",
                     borderRadius: "9px",
                     px: 3,
-                    py: 1,
-                    fontSize: "13.5px",
+                    py: 0.9,
+                    fontSize: "13px",
                     fontWeight: "700",
                     textTransform: "none",
                     boxShadow: "0 3px 10px rgba(5, 60, 168, 0.08)",
@@ -276,7 +276,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             {/* 3D Store Illustration on Far Right */}
             <Box
               sx={{
-                width: { xs: "110px", sm: "140px", md: "160px" },
+                width: { xs: "110px", sm: "135px", md: "150px" },
                 height: "auto",
                 flexShrink: 0,
                 display: { xs: "none", sm: "block" },
@@ -294,7 +294,7 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
           </Box>
         </Box>
 
-        {/* CENTER PHONE MOCKUP (Bridging Left & Right Banner) */}
+        {/* CENTER TRANSPARENT PHONE MOCKUP (Bridging Left & Right Banner) */}
         {!isMobile && (
           <Box
             sx={{
@@ -303,10 +303,10 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 3,
-              width: "195px",
-              height: "265px",
+              width: { md: "175px", lg: "195px" },
+              height: { md: "245px", lg: "265px" },
               pointerEvents: "none",
-              filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.22))",
+              filter: "drop-shadow(0 10px 20px rgba(0, 0, 0, 0.18))",
             }}
           >
             <CustomImageContainer
