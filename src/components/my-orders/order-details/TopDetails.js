@@ -247,11 +247,7 @@ const TopDetails = (props) => {
     if (trackData?.store?.processing_time != null && trackData?.store?.processing_time !== "") {
       return trackData.store.processing_time;
     }
-    if (differenceInMinutes() > 5) {
-      return `${differenceInMinutes() - 5} - ${differenceInMinutes()} `;
-    } else {
-      return `1-5`;
-    }
+    return null;
   };
 
   const handleOfflineClose = () => {
@@ -487,9 +483,10 @@ const TopDetails = (props) => {
           </Typography>
 
           {trackData?.module_type === "food" &&
-            ["pending", "confirmed", "processing", "accepted"].includes(
+            ["confirmed", "processing", "accepted"].includes(
               trackData?.order_status?.toLowerCase()
-            ) && (
+            ) &&
+            Boolean(handleTime()) && (
               <Stack
                 direction="row"
                 borderLeft={!isSmall && `2px solid ${theme.palette.neutral[400]}`}
