@@ -390,16 +390,16 @@ const StoreRegistrationForm = ({
   const singleFileUploadHandlerForImage = (value) => {
     const file = value?.currentTarget?.files?.[0];
     if (!file) return;
-    if (file.size > 1048576) {
-      toast.error(t("Image size must be less than 1MB"));
+    if (file.size > 5242880) {
+      toast.error(t("Image size must be less than 5MB"));
       return;
     }
     applyValidImageField("logo", file);
   };
   const imageOnchangeHandlerForImage = (value) => {
     if (!value) return;
-    if (value.size > 1048576) {
-      toast.error(t("Image size must be less than 1MB"));
+    if (value.size > 5242880) {
+      toast.error(t("Image size must be less than 5MB"));
       return;
     }
     applyValidImageField("logo", value);
@@ -407,8 +407,8 @@ const StoreRegistrationForm = ({
   const singleFileUploadHandlerForCoverPhoto = (value) => {
     const file = value?.currentTarget?.files?.[0];
     if (!file) return;
-    if (file.size > 1048576) {
-      toast.error(t("Image size must be less than 1MB"));
+    if (file.size > 5242880) {
+      toast.error(t("Image size must be less than 5MB"));
       return;
     }
     applyValidImageField("cover_photo", file);
@@ -423,8 +423,8 @@ const StoreRegistrationForm = ({
   };
   const imageOnchangeHandlerForCoverPhoto = (value) => {
     if (!value) return;
-    if (value.size > 1048576) {
-      toast.error(t("Image size must be less than 1MB"));
+    if (value.size > 5242880) {
+      toast.error(t("Image size must be less than 5MB"));
       return;
     }
     applyValidImageField("cover_photo", value);

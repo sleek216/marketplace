@@ -247,10 +247,13 @@ const StoreRegistration = () => {
         />
       );
     } else if (
+      step === 3 ||
       (step === 3 && flag === "success") ||
-      (step === 3 && flag === "fail")
+      (step === 3 && flag === "fail") ||
+      flag === "success" ||
+      flag === "fail"
     ) {
-      return <SuccessStoreRegistration flag={flag} />;
+      return <SuccessStoreRegistration flag={flag || "success"} />;
     } else if (step === 2) {
       return (
         <PaymentSelect
