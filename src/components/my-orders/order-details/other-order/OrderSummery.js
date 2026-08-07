@@ -252,48 +252,54 @@ const OrderSummery = (props) => {
                         alignItems="flex-start"
                         paddingBottom={{ xs: "4px", md: "0px" }}
                       >
-                        <Stack flex={1} mr={1}>
-                          <CustomTypographyEllipsis
+                        <Stack flex={1} mr={1} minWidth={0}>
+                          <Typography
                             fontWeight="500"
                             fontSize="13px"
+                            lineHeight={1.4}
+                            sx={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              wordBreak: "break-word",
+                            }}
                           >
-                            <Stack flexDirection={"row"} gap={"4px"}>
-                              {t(product?.item_details?.name)}
-                              {product?.item_details?.halal_tag_status &&
-                                product?.item_details?.is_halal ? (
-                                <FoodHalalHaram
-                                  position="relative"
-                                  width={23}
-                                />
-                              ) : (
-                                ""
-                              )}
-                            </Stack>
-                          </CustomTypographyEllipsis>
-                          <Typography variant="body2" mt="3px">
-                            {t(product?.item_details?.unit_type)}
+                            {t(product?.item_details?.name)}
+                            {product?.item_details?.halal_tag_status &&
+                              product?.item_details?.is_halal ? (
+                              <FoodHalalHaram
+                                position="relative"
+                                width={23}
+                                style={{ display: "inline-block", verticalAlign: "middle", marginLeft: "4px" }}
+                              />
+                            ) : null}
                           </Typography>
-                          <Typography variant="body2" mt="5px">
-                            {t("Unit Price")} :{" "}
-                            {getAmountWithSign(product?.item_details?.price)}
-                          </Typography>
-                          <Typography variant="body2" mt="4px">
-                            {t("Qty")}: {product?.quantity}
-                          </Typography>
-                          {product?.add_ons.length > 0 && (
-                            <Typography mt="3px" variant="body2">
-                              {t("Addons")}: {getAddOnsNames(product?.add_ons)}
+                          <Stack spacing={0.3} mt={0.5}>
+                            {product?.item_details?.unit_type && (
+                              <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
+                                {t(product?.item_details?.unit_type)}
+                              </Typography>
+                            )}
+                            <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
+                              {t("Unit Price")} :{" "}
+                              {getAmountWithSign(product?.item_details?.price)}
                             </Typography>
-                          )}
+                            <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
+                              {t("Qty")}: {product?.quantity}
+                            </Typography>
+                            {product?.add_ons?.length > 0 && (
+                              <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
+                                {t("Addons")}: {getAddOnsNames(product?.add_ons)}
+                              </Typography>
+                            )}
+                          </Stack>
                         </Stack>
                         <Typography fontSize="14px" fontWeight="bold" flexShrink={0}>
                           {getAmountWithSign(product?.item_details?.price)}
                         </Typography>
                       </Stack>
-
-                      {/*{product?.variation?.length > 0 && (*/}
-                      {/*    <>{getVariationNames(product, t)}</>*/}
-                      {/*)}*/}
                     </Grid>
                   </Grid>
                 ))}
