@@ -556,32 +556,34 @@ const SignUp = ({
               </IconButton>
 
               {/* Logo */}
-              <Box
-                sx={{
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  borderRadius: "12px",
-                  px: "14px",
-                  py: "8px",
-                  mb: 2,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-                  maxWidth: "160px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              {configData?.logo_full_url && (
                 <Box
-                  component="img"
-                  src={configData?.logo_full_url}
-                  alt="logo"
                   sx={{
-                    height: "36px",
-                    maxWidth: "130px",
-                    objectFit: "contain",
+                    backgroundColor: "rgba(255,255,255,0.95)",
+                    borderRadius: "12px",
+                    px: "14px",
+                    py: "8px",
+                    mb: 2,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                    maxWidth: "160px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                  onError={(e) => { e.target.style.display = "none"; }}
-                />
-              </Box>
+                >
+                  <Box
+                    component="img"
+                    src={configData?.logo_full_url}
+                    alt={configData?.business_name || "Logo"}
+                    sx={{
+                      height: "36px",
+                      maxWidth: "130px",
+                      objectFit: "contain",
+                    }}
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                </Box>
+              )}
 
               {/* Welcome text */}
               <Typography

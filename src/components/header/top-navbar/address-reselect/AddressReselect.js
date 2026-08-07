@@ -122,9 +122,12 @@ const AddressReselect = ({ location, setOpenDrawer }) => {
                 // width: "210px",
               }}
             >
-              {locationLabel && locationLabel !== "Current location"
+              {locationLabel &&
+               locationLabel !== "Current location" &&
+               locationLabel !== "Default Location"
                 ? t(locationLabel)
-                : location
+                : location &&
+                  location !== "Default Location"
                   ? formatLocationText(location)
                   : t("Select location")}
             </Typography>

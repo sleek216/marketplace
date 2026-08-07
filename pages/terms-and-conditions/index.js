@@ -6,7 +6,6 @@ import PolicyPage from "../../src/components/policy-page";
 import useGetPolicyPage from "../../src/api-manage/hooks/react-query/useGetPolicyPage";
 import { getServerSideProps } from "../index";
 import SEO from "../../src/components/seo";
-import { getImageUrl } from "utils/CustomFunctions";
 
 const Index = ({ configData, landingPageData }) => {
   const { t } = useTranslation();
@@ -21,13 +20,9 @@ const Index = ({ configData, landingPageData }) => {
     <>
       <CssBaseline />
       <SEO
-        title={configData ? `Terms And Conditions` : "Loading..."}
-        image={`${getImageUrl(
-          { value: configData?.logo_storage },
-          "business_logo_url",
-          configData
-        )}/${configData?.fav_icon}`}
+        title={t("Terms And Conditions")}
         businessName={configData?.business_name}
+        configData={configData}
       />
       <MainLayout configData={configData} landingPageData={landingPageData}>
         <PolicyPage

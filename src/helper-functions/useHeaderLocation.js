@@ -3,7 +3,10 @@ import { HEADER_SESSION_SYNC_EVENT } from "./headerSessionSync";
 
 export const readStoredLocation = () => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("location");
+  const loc = localStorage.getItem("location");
+  // Treat "Default Location" (old fallback) as unset
+  if (!loc || loc === "Default Location") return null;
+  return loc;
 };
 
 /**

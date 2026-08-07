@@ -269,9 +269,7 @@ const ModuleSelect = ({
           JSON.stringify(moduleZoneIds.length > 0 ? moduleZoneIds : [1])
         );
       }
-      if (!localStorage.getItem("location")) {
-        localStorage.setItem("location", "Default Location");
-      }
+      // Do NOT set a fake "Default Location" — let the user choose via "Select Location" in header
       localStorage.setItem("module", JSON.stringify(item));
     }
 

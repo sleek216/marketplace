@@ -14,8 +14,8 @@ const SEO = ({
   const router = useRouter();
   const { asPath } = router;
 
-  const siteName = configData? businessName:"Loading"; // Replace with your website's name
-  const siteUrl = "we"; // Replace with your website's URL
+  const siteName = businessName || "GIFT Marketplace";
+  const siteUrl = typeof window !== "undefined" ? window.location.origin : ""; // site URL
 
   // Concatenate the current page URL with the site URL
   const url = `${siteUrl}${asPath}`;
