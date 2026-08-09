@@ -1,15 +1,11 @@
 import React from "react";
 import {
   Box,
-  Button,
-  Stack,
-  Typography,
   alpha,
   useTheme,
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
-import { ArrowRight } from "lucide-react";
 import CustomContainer from "components/container";
 import CustomImageContainer from "components/CustomImageContainer";
 
@@ -37,20 +33,21 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
   };
 
   return (
-    <CustomContainer sx={{ mb: { xs: 4, md: 5 } }}>
+    <CustomContainer sx={{ mb: { xs: 1.5, md: 2 } }}>
       <Box
         sx={{
           position: "relative",
           width: "100%",
-          borderRadius: { xs: "14px", sm: "18px", md: "22px" },
+          height: { xs: "140px", sm: "180px", md: "210px" },
+          borderRadius: { xs: "12px", sm: "16px", md: "20px" },
           overflow: "hidden",
-          boxShadow: `0 12px 35px ${alpha(theme.palette.neutral[900], 0.08)}`,
-          border: `1px solid ${alpha(theme.palette.neutral[300], 0.6)}`,
+          boxShadow: `0 8px 25px ${alpha(theme.palette.neutral[900], 0.06)}`,
+          border: `1px solid ${alpha(theme.palette.neutral[300], 0.5)}`,
           backgroundColor: "#ffffff",
           lineHeight: 0,
         }}
       >
-        <Box sx={{ width: "100%", height: "auto", position: "relative" }}>
+        <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
           <CustomImageContainer
             src="/landingpage/app_and_seller_full_banner.png"
             alt="Download Our App & Become a Seller"
@@ -68,15 +65,15 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             title={t("Google Play")}
             sx={{
               position: "absolute",
-              left: "6.5%",
-              bottom: "12%",
-              width: "18%",
-              height: "26%",
+              left: "6%",
+              bottom: "10%",
+              width: "19%",
+              height: "32%",
               borderRadius: "8px",
               cursor: "pointer",
               transition: "all 0.2s ease",
               "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                backgroundColor: "rgba(255, 255, 255, 0.12)",
               },
             }}
           />
@@ -90,15 +87,15 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             title={t("App Store")}
             sx={{
               position: "absolute",
-              left: "25.5%",
-              bottom: "12%",
-              width: "18%",
-              height: "26%",
+              left: "26%",
+              bottom: "10%",
+              width: "19%",
+              height: "32%",
               borderRadius: "8px",
               cursor: "pointer",
               transition: "all 0.2s ease",
               "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                backgroundColor: "rgba(255, 255, 255, 0.12)",
               },
             }}
           />
@@ -110,14 +107,14 @@ const AppAndSellerBanner = ({ configData, landingPageData }) => {
             sx={{
               position: "absolute",
               left: "53.5%",
-              bottom: "12%",
-              width: "18%",
-              height: "26%",
+              bottom: "10%",
+              width: "19%",
+              height: "32%",
               borderRadius: "10px",
               cursor: "pointer",
               transition: "all 0.2s ease",
               "&:hover": {
-                backgroundColor: "rgba(7, 56, 166, 0.06)",
+                backgroundColor: "rgba(7, 56, 166, 0.08)",
               },
             }}
           />
