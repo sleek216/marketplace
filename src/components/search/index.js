@@ -46,18 +46,21 @@ const ProductSearchPage = ({ configData }) => {
 		if (typeof window !== "undefined") {
 			searchValue = localStorage.getItem("searchValue");
 		}
-		if (router.query.searchValue) {
-			setSearchValue(router.query.searchValue);
+		const querySearch =
+			router.query.search ||
+			router.query.searchValue ||
+			router.query.name ||
+			"";
+
+		if (querySearch) {
+			setSearchValue(querySearch);
 		} else {
 			let searchValues = [];
 			if (typeof window !== "undefined") {
-				searchValues = JSON.parse(
-					localStorage.getItem("searchedValues")
-				);
+				searchValues =
+					JSON.parse(localStorage.getItem("searchedValues")) || [];
 				if (searchValues.length > 0 && searchValues[0]) {
 					setSearchValue(searchValues[0]);
-				} else {
-					router.push("/home", undefined, { shallow: true });
 				}
 			}
 		}
