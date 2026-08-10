@@ -48,8 +48,14 @@ const CategoryStripShimmer = () => (
 const FeaturedCategories = () => {
   const theme = useTheme();
   const scrollRef = useRef(null);
-  const { data, isLoading } = useGetFeaturedCategories();
-  const categories = data?.data || [];
+  const { data: featuredData, isLoading: featuredLoading } = useGetFeaturedCategories();
+  const { data: allData, isLoading: allLoading } = useGetAllModulesCategories();
+
+  const categories =
+    featuredData?.data && featuredData?.data?.length > 0
+      ? featuredData?.data
+      : allData?.data || [];
+  const isLoading = (featuredLoading || allLoading) && categories.length === 0;
 
   useCategoryAutoScroll(scrollRef, {
     enabled: categories.length > 1,

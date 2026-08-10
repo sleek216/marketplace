@@ -12,16 +12,33 @@ const LandingCategoryTile = ({ category, imageUrl }) => {
   const img = imageUrl || category?.image_full_url;
 
   const handleClick = () => {
-    router.push({
-      pathname: "/home",
-      query: {
-        search: "category",
-        id: `${id}`,
-        module_id: `${getModuleId()}`,
-        name: name || "",
-        data_type: "category",
-      },
-    });
+    let activeModuleId = category?.module_id || getModuleId();
+    if (!activeModuleId && typeof window !== "undefined") {
+      try {
+        const storedModule = JSON.parse(localStorage.getItem("module"));
+        if (storedModule?.id) {
+          activeModuleId = storedModule.id;
+        }
+      } catch (e) {}
+    }
+
+    if (activeModuleId) {
+      router.push({
+        pathname: "/home",
+        query: {
+          search: "category",
+          id: `${id}`,
+          module_id: `${activeModuleId}`,
+          name: name || "",
+          data_type: "category",
+        },
+      });
+    } else {
+      router.push({
+        pathname: "/categories",
+        query: { id: `${id}`, name: name || "" },
+      });
+    }
   };
 
   return (

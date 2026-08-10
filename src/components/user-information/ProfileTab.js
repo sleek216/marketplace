@@ -123,7 +123,7 @@ const ProfileTab = ({
                           : "13px",
                     }}
                   >
-                    {t(item?.name.replace(/-/g, " "))}
+                    {item?.displayName ? item.displayName : t(item?.name.replace(/-/g, " "))}
                   </Typography>
                 </UserProfileTab>
               </Box>

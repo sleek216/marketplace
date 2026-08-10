@@ -74,7 +74,6 @@ export function getResolvedModuleType(trackOrderData) {
 export const TRACKING_SLUG_ORDER = [
   "pending",
   "confirmed",
-  "accepted",
   "processing",
   "handover",
   "picked_up",
@@ -98,8 +97,8 @@ export const TRACKING_SLUG_ORDER = [
 
 export const RETURN_FLOW_TRACKING_SLUGS = RETURN_FLOW_STATUSES;
 
-export const FULFILLMENT_TRACKING_SLUGS = TRACKING_SLUG_ORDER.slice(0, 7);
-export const OUTCOME_TRACKING_SLUGS = TRACKING_SLUG_ORDER.slice(7);
+export const FULFILLMENT_TRACKING_SLUGS = TRACKING_SLUG_ORDER.slice(0, 6);
+export const OUTCOME_TRACKING_SLUGS = TRACKING_SLUG_ORDER.slice(6);
 
 /** Refund / return / cancel / failure — hidden during normal fulfillment; shown only when API status is one of these. */
 export const OUTCOME_PHASE_ORDER_STATUSES = new Set(OUTCOME_TRACKING_SLUGS);
@@ -140,11 +139,10 @@ export function inferFulfillmentRank(trackOrderData, orderStatus) {
   const fi = FULFILLMENT_SLUGS.indexOf(orderStatus);
   if (fi !== -1) return fi;
 
-  if (d.delivered) return 6;
-  if (d.picked_up) return 5;
-  if (d.handover) return 4;
-  if (d.processing) return 3;
-  if (d.accepted) return 2;
+  if (d.delivered) return 5;
+  if (d.picked_up) return 4;
+  if (d.handover) return 3;
+  if (d.processing || d.accepted) return 2;
   if (d.confirmed) return 1;
   if (d.pending) return 0;
 

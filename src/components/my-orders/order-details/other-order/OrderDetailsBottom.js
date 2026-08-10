@@ -17,6 +17,8 @@ import { useGetOrderCancelReason } from "../../../../api-manage/hooks/react-quer
 import { useQuery } from "react-query";
 import { GoogleApi } from "../../../../api-manage/hooks/react-query/googleApi";
 
+import DeliveryAttemptsCard from "./DeliveryAttemptsCard";
+
 const OrderDetailsBottom = ({
   id,
   refetchOrderDetails,
@@ -25,6 +27,7 @@ const OrderDetailsBottom = ({
 }) => {
   const [openModal, setOpenModal] = useState(false);
   const [openModalForPayment, setModalOpenForPayment] = useState();
+  const [openAttemptsModal, setOpenAttemptsModal] = useState(false);
   const [cancelReason, setCancelReason] = useState(null);
   const { t } = useTranslation();
   const theme = useTheme();
@@ -70,6 +73,26 @@ const OrderDetailsBottom = ({
       });
     }
   };
+
+  const deliveryAttemptsCount =
+    trackData?.delivery_attempt_count ??
+    trackData?.delivery_progress?.current_attempt ??
+    trackData?.delivery_progress?.attempt_history?.length ??
+    0;
+  const returnAttemptsCount =
+    trackData?.customer_return_attempt_count ??
+    trackData?.return_progress?.customer_attempt_count ??
+    trackData?.return_progress?.attempt_history?.length ??
+    0;
+  const hasAttempts = deliveryAttemptsCount > 0 || returnAttemptsCount > 0;
+  const hasTrackButton =
+    trackData &&
+    (trackData?.order_status === "pending" ||
+      trackData?.order_status === "confirmed" ||
+      trackData?.order_status === "processing" ||
+      trackData?.order_status === "accepted" ||
+      trackData?.order_status === "picked_up" ||
+      trackData?.order_status === "handover");
 
   return (
     <>
@@ -158,6 +181,16 @@ const OrderDetailsBottom = ({
           refetchTrackData={refetchTrackData}
           id={trackData?.id}
         />
+      </CustomModal>
+
+      <CustomModal
+        openModal={openAttemptsModal}
+        setModalOpen={setOpenAttemptsModal}
+        handleClose={() => setOpenAttemptsModal(false)}
+      >
+        <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: "600px", width: "100%" }}>
+          <DeliveryAttemptsCard orderData={trackData} />
+        </Box>
       </CustomModal>
     </>
   );

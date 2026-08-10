@@ -61,21 +61,10 @@ const CollapsableMenu = ({
       if (getCurrentModuleType() === "rental"){
         router.push({ pathname: "/rental/vehicle-search", query: { all_category: 1 } }, undefined, { shallow: false });
       } else {
-        router.push(
-          {
-            pathname: "/home",
-          query: {
-            search: VIEW_ALL_TEXT.allCategories,
-            from: "allCategories",
-            data_type: "new",
-          },
-        },
-        undefined,
-          { shallow: true }
-        );
+        router.push("/categories");
       }
     } else {
-      router.push(pathName, undefined, { shallow: true });
+      router.push(pathName);
     }
 
     setOpen(false);

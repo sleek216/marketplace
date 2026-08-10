@@ -14,7 +14,7 @@ const IMAGE_SUPPORTED_FORMATS = [
 const ValidationSchemaForRestaurant = () => {
 	const { t } = useTranslation();
 
-	const FILE_SIZE = 2097152;
+	const FILE_SIZE = 5242880;
 
 	return Yup.object({
 		restaurant_name: Yup.object().test(
@@ -51,7 +51,7 @@ const ValidationSchemaForRestaurant = () => {
 			)
 			.test(
 				"fileSize",
-				t("Image size must be less than 2MB"),
+				t("Image size must be less than 5MB"),
 				(value) => !value || (value instanceof File && value.size <= FILE_SIZE)
 			)
 			.test(
@@ -70,7 +70,7 @@ const ValidationSchemaForRestaurant = () => {
 			)
 			.test(
 				"fileSize",
-				t("Image size must be less than 2MB"),
+				t("Image size must be less than 5MB"),
 				(value) => !value || (value instanceof File && value.size <= FILE_SIZE)
 			)
 			.test(

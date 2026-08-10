@@ -29,6 +29,7 @@ import OfflinePaymentEdit from "../offline-order/OfflinePaymentEdit";
 import PrescriptionOrderCalculation from "../prescription-order/PerscriptionOrderCalculation";
 import PrescriptionOrderSummery from "../prescription-order/PrescriptionOrderSummery";
 import SingleOrderAttachment from "../singleOrderAttachment";
+import DeliveryAttemptsCard from "./DeliveryAttemptsCard";
 import InstructionBox from "./InstructionBox";
 import OrderCalculation from "./OrderCalculation";
 import { getImageUrl } from "utils/CustomFunctions";

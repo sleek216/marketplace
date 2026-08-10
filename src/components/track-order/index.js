@@ -31,6 +31,7 @@ import {
   FULFILLMENT_TRACKING_SLUGS,
 } from "utils/orderTracking";
 import { getCustomerOrderStatusLabel } from "utils/orderStatus";
+import DeliveryAttemptsCard from "components/my-orders/order-details/other-order/DeliveryAttemptsCard";
 
 const STEP_ICON_SIZE = 36;
 

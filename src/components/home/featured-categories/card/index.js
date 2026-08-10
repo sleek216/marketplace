@@ -43,20 +43,22 @@ const FeaturedItemCard = ({ image, title, id, onlyshimmer }) => {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const isExtraSmallScreen = useMediaQuery(theme.breakpoints.down("xs"));
 
-  return (
-    <Link
-      href={{
+  const activeModuleId = getModuleId();
+  const linkHref = activeModuleId
+    ? {
         pathname: "/home",
         query: {
           search: "category",
           id: id,
-          module_id: `${getModuleId()}`,
+          module_id: `${activeModuleId}`,
           name: title && title,
           data_type: "category",
         },
-      }}
-      passHref
-    >
+      }
+    : "/categories";
+
+  return (
+    <Link href={linkHref} passHref>
       <Stack
         alignItems="center"
         justifyContent="center"

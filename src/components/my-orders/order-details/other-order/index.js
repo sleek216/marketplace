@@ -34,6 +34,8 @@ import { useGetFailedPayment } from "api-manage/hooks/react-query/useGetFailedPa
 import { cod_exceeds_message } from "utils/toasterMessages";
 import { shouldPollTrackOrder } from "utils/orderTracking";
 
+import DeliveryAttemptsCard from "./DeliveryAttemptsCard";
+
 const OtherOrder = (props) => {
   const {
     configData,
@@ -224,9 +226,46 @@ const OtherOrder = (props) => {
           />
         );
         break;
+      case "delivery-attempts":
+        return (
+          <DeliveryAttemptsCard orderData={trackOrderData || data} />
+        );
+        break;
       default:
         break;
     }
+  };
+
+  const deliveryAttemptsCount =
+    trackOrderData?.delivery_attempt_count ??
+    trackOrderData?.delivery_progress?.current_attempt ??
+    trackOrderData?.delivery_progress?.attempt_history?.length ??
+    0;
+  const maxAttempts = trackOrderData?.delivery_progress?.max_attempts || 3;
+  const returnAttemptsCount =
+    trackOrderData?.customer_return_attempt_count ??
+    trackOrderData?.return_progress?.customer_attempt_count ??
+    trackOrderData?.return_progress?.attempt_history?.length ??
+    0;
+  const hasAttempts = deliveryAttemptsCount > 0 || returnAttemptsCount > 0;
+
+  const baseMenuData =
+    data && orderModuleType === "parcel"
+      ? orderDetailsMenuDataForParcel
+      : trackOrderData?.order_type === "take_away"
+        ? orderDetailsMenuDataTakeAway
+        : orderDetailsMenuData;
+
+  const getDynamicMenuData = () => {
+    if (!hasAttempts) return baseMenuData;
+    return [
+      ...baseMenuData,
+      {
+        id: 15,
+        name: "delivery-attempts",
+        displayName: t("Delivery Attempts"),
+      },
+    ];
   };
 
   return (
@@ -261,13 +300,7 @@ const OtherOrder = (props) => {
           <CustomDivider border="1px" />
           {trackDataIsLoading ? null : (
             <ProfileTab
-              menuData={
-                data && orderModuleType === "parcel"
-                  ? orderDetailsMenuDataForParcel
-                  : trackOrderData?.order_type === "take_away"
-                    ? orderDetailsMenuDataTakeAway
-                    : orderDetailsMenuData
-              }
+              menuData={getDynamicMenuData()}
               marginright="20px"
               fontSize="11px"
               padding="8px 8px 8px 12px"
@@ -306,13 +339,7 @@ const OtherOrder = (props) => {
           <CustomDivider />
           {trackDataIsLoading ? null : (
             <ProfileTab
-              menuData={
-                data && orderModuleType === "parcel"
-                  ? orderDetailsMenuDataForParcel
-                  : trackOrderData?.order_type === "take_away"
-                    ? orderDetailsMenuDataTakeAway
-                    : orderDetailsMenuData
-              }
+              menuData={getDynamicMenuData()}
               marginright="12px"
               fontSize="13px"
               padding="10px 12px"

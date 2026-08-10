@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const processImage = (fileName) => {
+const processImage = (fileName, threshold = 195) => {
   const inputPath = path.join(__dirname, 'public/landingpage', fileName);
   if (!fs.existsSync(inputPath)) {
     console.error('File does not exist:', inputPath);
@@ -17,7 +17,7 @@ const processImage = (fileName) => {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        if (r > 220 && g > 220 && b > 220) {
+        if (r > threshold && g > threshold && b > threshold) {
           data[i + 3] = 0;
         }
       }
@@ -33,13 +33,11 @@ const processImage = (fileName) => {
     })
     .then(() => {
       fs.renameSync(inputPath + '.tmp', inputPath);
-      console.log(`Successfully made ${fileName} transparent!`);
+      console.log(`Successfully processed ${fileName}!`);
     });
 };
 
 Promise.all([
-  processImage('iphone_mockup_center.png'),
-  processImage('seller_store_3d.png'),
-  processImage('fresh_deals_basket.png'),
-  processImage('delivery_rider_scooter.png')
+  processImage('iphone_mockup_center.png', 190),
+  processImage('seller_store_3d.png', 210)
 ]).catch(err => console.error(err));

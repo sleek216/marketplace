@@ -46,7 +46,7 @@ const LandingPage = ({ configData, landingPageData }) => {
   return (
     <>
       <PushNotificationLayout>
-        {/* Hero Banner */}
+        {/* Hero Banner with Location Search */}
         <HeroSection
           landingPageDataheroSection={landingPageData?.hero_section}
           promotionalBanner={
@@ -55,25 +55,17 @@ const LandingPage = ({ configData, landingPageData }) => {
           }
         />
 
-        {/* Modules Section (Marketplace Services & Modules) */}
+        {/* Multi-Vendor Marketplace Modules (Food, Grocery, Pharmacy, E-Commerce) */}
         <LandingModulesSection />
 
-        {/* High-Impact Promotional Grocery Showcase Banner */}
-        <LandingPromotionalBannerSection />
-
-        {/* E-Commerce Value Propositions & Platform Features ("Why Shop On Our Marketplace?") */}
+        {/* Platform Features & Value Propositions */}
         <LandingFeaturesSection />
 
-        {/* Doorstep Delivery Banner (Delivery Guy + Spinning Same Day Delivery Stamp) */}
+        {/* Express Doorstep Delivery Banner */}
         <LandingDoorstepDeliveryBanner />
 
         {/* Simple 3-Step How It Works Guide */}
         <LandingHowItWorksSection />
-
-        {/* Highlight Promo Banner */}
-        {landingPageData?.company_title && (
-          <ComponentOne landingPageData={landingPageData} />
-        )}
 
         {/* Customer Testimonials & Reviews */}
         {landingPageData?.testimonial_list?.length > 0 && (

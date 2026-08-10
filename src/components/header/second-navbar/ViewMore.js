@@ -25,9 +25,9 @@ const ViewMore = ({ redirect, handlePopoverCloseSub, buttonType }) => {
                 data_type: "category",
               },
             };
-      router.push(query, undefined, { shallow: true });
+      router.push(query);
     } else {
-      router.push(redirect, undefined, { shallow: true });
+      router.push(redirect);
     }
   };
 

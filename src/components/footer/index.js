@@ -15,13 +15,15 @@ const FooterComponent = (props) => {
     <CustomStackFullWidth
       sx={{
         mt: {
-          xs: "1.5rem",
-          sm: "2rem",
-          md: "2.5rem",
+          xs: "0.75rem",
+          sm: "1rem",
+          md: "1.25rem",
         },
       }}
     >
-      <AppAndSellerBanner configData={configData} landingPageData={landingPageData} />
+      {router.pathname === "/" && (
+        <AppAndSellerBanner configData={configData} landingPageData={landingPageData} />
+      )}
       <FooterTop landingPageData={landingPageData} />
       <StyledFooterBackground nobottommargin={isLandingPage}>
         <CustomStackFullWidth
