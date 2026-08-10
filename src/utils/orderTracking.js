@@ -11,54 +11,6 @@ import {
 
 /** Slugs to render: fulfillment while in progress; focused outcome path for return/refund/cancel. */
 export function getTrackingSlugsForDisplay(orderStatus) {
-  if (!orderStatus) return [...FULFILLMENT_TRACKING_SLUGS];
-  const normalized = normalizeOrderStatus(orderStatus);
-
-  // Return / investigation flow — keep fulfillment + return path only (not every outcome slug)
-  if (RETURN_FLOW_TRACKING_SLUGS.includes(normalized)) {
-    return [...FULFILLMENT_TRACKING_SLUGS, ...RETURN_FLOW_TRACKING_SLUGS];
-  }
-
-  if (normalized === "refund_requested") {
-    return [
-      ...FULFILLMENT_TRACKING_SLUGS,
-      "refund_requested",
-      ...RETURN_FLOW_TRACKING_SLUGS,
-    ];
-  }
-
-  if (normalized === "refund_request_canceled") {
-    return [
-      ...FULFILLMENT_TRACKING_SLUGS,
-      "refund_requested",
-      "refund_request_canceled",
-    ];
-  }
-
-  if (normalized === "refunded" || normalized === "refund_resolved") {
-    return [
-      ...FULFILLMENT_TRACKING_SLUGS,
-      "refund_requested",
-      ...RETURN_FLOW_TRACKING_SLUGS,
-      normalized,
-    ];
-  }
-
-  if (normalized === "returned") {
-    return [...FULFILLMENT_TRACKING_SLUGS, "returned"];
-  }
-
-  if (normalized === "canceled" || normalized === "failed") {
-    return [...FULFILLMENT_TRACKING_SLUGS, normalized];
-  }
-
-  if (
-    OUTCOME_PHASE_ORDER_STATUSES.has(normalized) ||
-    isRefundPipelineStatus(normalized)
-  ) {
-    return [...FULFILLMENT_TRACKING_SLUGS, normalized];
-  }
-
   return [...FULFILLMENT_TRACKING_SLUGS];
 }
 
