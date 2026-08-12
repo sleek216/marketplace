@@ -9,7 +9,10 @@ import {
 } from "@mui/material";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import { useGetFeaturedCategories } from "api-manage/hooks/react-query/all-category/all-categorys";
+import {
+  useGetFeaturedCategories,
+  useGetAllModulesCategories,
+} from "api-manage/hooks/react-query/all-category/all-categorys";
 import CustomContainer from "../../container";
 import LandingCategoryTile from "../LandingCategoryTile";
 import {

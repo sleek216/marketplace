@@ -34,6 +34,7 @@
 | **0.4** | 12 August 2026 | Updated Sign In (Welcome Back) and Create Account modals with exact field specifications, icons, and buttons | Documentation Team |
 | **0.5** | 12 August 2026 | Added complete Terms and Conditions page mapping (12 legal sections & Effective Date) | Documentation Team |
 | **0.6** | 12 August 2026 | Added About Us page, Help & Support page (3 contact cards), and Track Your Order Status page mapping | Documentation Team |
+| **0.7** | 12 August 2026 | Added complete UI mapping & Administrator Review & Notification workflows for Store & Rider Registration pages | Documentation Team |
 
 > 📌 **Review Required:** Confirm official product owner, release date, supported web browsers, support hotline, order cancellation rules, refund policies, and legal/privacy wording before final publication.
 
@@ -81,9 +82,15 @@
 8. [Wallet, Loyalty Points & Discounts](#8-wallet-loyalty-points--discounts)
    - 8.1 GIFT Wallet Management
    - 8.2 Loyalty Points & Discount Redemption
-9. [Partner Onboarding Links](#9-partner-onboarding-links)
-   - 9.1 Become a Seller (Store Registration)
-   - 9.2 Become a Rider (Deliveryman Registration)
+9. [Partner Onboarding Procedures & Admin Workflows](#9-partner-onboarding-procedures--admin-workflows)
+   - 9.1 Marketplace Seller Registration (`/store-registration`)
+     - 9.1.1 Seller Registration Form UI Reference & Stepper
+     - 9.1.2 Step-by-Step Store Registration Procedure
+     - 9.1.3 System Administrator Notification & Approval Workflow
+   - 9.2 Marketplace Rider Registration (`/deliveryman-registration`)
+     - 9.2.1 Rider Registration Form UI Reference
+     - 9.2.2 Step-by-Step Rider Registration Procedure
+     - 9.2.3 System Administrator Verification & Notification Workflow
 10. [Interface and Status Reference](#10-interface-and-status-reference)
     - 10.1 Primary Web Controls
     - 10.2 Important Statuses
@@ -586,19 +593,144 @@ Select your preferred payment option:
 
 ---
 
-## 9. Partner Onboarding Links
+## 9. Partner Onboarding Procedures & Admin Workflows
 
-### 9.1 Become a Seller (Store Registration)
-- Click **Become a Seller** in top utility bar (`/store-registration`).
-- Enter shop name, merchant contact info, address, and business registration details.
-- Upload shop logo and CNIC/business documents and submit for admin approval.
+### 9.1 Marketplace Seller Registration (`/store-registration`)
+
+**Goal:** Submit a merchant application to open an online store on GIFT Marketplace.  
+**Prerequisites:** Valid owner personal details, business name, address, business zone selection, and shop map pin.
+
+#### 9.1.1 Seller Registration Form UI Reference & Stepper
+
+**Accessing the Page:** Click **Become a Seller** in the top utility bar (`/store-registration`).
+
+**Page Title:** `Marketplace Seller`  
+**Page Subtitle:** `Join GIFT Marketplace and grow your business with online orders, powerful tools, and dedicated customer reach.`
+
+##### 3-Step Registration Stepper Bar
+```
+(1) General Information ─────── (2) Business Plan ─────── (3) Complete Registration
+```
+
+##### Form Fields Breakdown (Step 1: General Information)
+
+| Form Section | Field Name | Icon / Control | Placeholder / Display Value | Requirement | Functional Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Owner Information** | **First Name *** | 👤 User Icon | `First name` | **Required** | Shop owner's first name. |
+| **Owner Information** | **Last Name *** | 👤 User Icon | `Last name` | **Required** | Shop owner's last name. |
+| **Owner Information** | **Phone *** | 🇵🇰 Flag Dropdown | `+92` | **Required** | Contact mobile phone number. |
+| **General Information** | **Business Name *** | 🏢 Shop Icon | `Business name` | **Required** | Official store/shop name. |
+| **General Information** | **Business Address *** | 📍 Pin Icon | `653R+WXH GIFT University...` | **Required** | Physical shop street address. |
+| **General Information** | **Business Zone *** | ▾ Dropdown | `Select Business Zone` | **Required** | Delivery operating zone. |
+| **Map Location** | **Set Business Location** | Interactive Map | Map Pin Marker + Search Box | **Required** | Drag map pin to exact shop location. Includes **Reset** and **Next** buttons. |
 
 ---
 
-### 9.2 Become a Rider (Deliveryman Registration)
-- Click **Become a Rider** in top utility bar (`/deliveryman-registration`).
-- Enter personal details, vehicle type (Freelance or Salary-Based), and zone.
-- Upload CNIC photos (Front/Back) and Driving License and submit for admin review.
+#### 9.1.2 Step-by-Step Store Registration Procedure
+
+##### Procedure
+1. Click **Become a Seller** in the top navigation strip (`/store-registration`).
+2. On Step 1 (**General Information**), fill in **Owner Information**:
+   - Enter your **First Name *** and **Last Name ***.
+   - Enter your mobile phone number in **Phone *** (`+92`).
+3. Fill in **General Information**:
+   - Enter your official shop name in **Business Name ***.
+   - Enter your physical address in **Business Address ***.
+   - Select your operational territory in **Business Zone ***.
+4. Set your shop location on the map in **Set Your Business Location on Map**:
+   - Use the map search bar or drag the pin marker directly onto your shop building.
+5. Click **Next** to proceed to Step 2 (**Business Plan**) and Step 3 (**Complete Registration**).
+6. Upload required business identity documents and click **Submit Application**.
+
+**Expected outcome:** The system registers your store application request and displays an application submission confirmation screen.
+
+---
+
+#### 9.1.3 System Administrator Notification & Approval Workflow
+
+```
+[Applicant Submits Store Form] ➔ 🔔 [Auto-Notification Sent to System Admin]
+                                        │
+                                        ▼
+                          [Admin Reviews Documents & Location]
+                                        │
+             ┌──────────────────────────┴──────────────────────────┐
+             ▼                                                     ▼
+   [🟢 Application Approved]                             [⚠️ Issue Detected]
+             │                                                     │
+[Admin Contacts Seller & Activates Account]            🔔 [Auto-Notification Re-Sent to Admin & Seller]
+```
+
+1. **Automatic Admin Notification:** The moment the seller submits the application, the GIFT Marketplace system **automatically sends a notification to the System Administrator**.
+2. **Review & Verification:** The System Administrator inspects the submitted owner information, business location pin, and uploaded verification documents.
+3. **Admin Contact:** Upon successful review, the System Administrator **contacts the shop owner directly** (via phone call or email) to verify credentials and activate the vendor dashboard.
+4. **Issue Re-Notification:** If any submitted document is unclear, invalid, or requires correction, the system **automatically triggers a follow-up notification** to both the System Admin and the seller, requesting updated details.
+
+---
+
+### 9.2 Marketplace Rider Registration (`/deliveryman-registration`)
+
+**Goal:** Submit a delivery rider onboarding application to join GIFT Marketplace as a delivery partner.  
+**Prerequisites:** Full name, valid email, mobile number, deliveryman type selection, zone selection, vehicle type, profile photo, and CNIC/License documents.
+
+#### 9.2.1 Rider Registration Form UI Reference
+
+**Accessing the Page:** Click **Become a Rider** in the top utility bar (`/deliveryman-registration`).
+
+**Page Title:** `Marketplace Rider`
+
+##### Form Fields & Upload Component Breakdown
+
+| Form Section | Field Name | Icon / Control | Placeholder / Option Value | Requirement | Functional Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **User Info** | **First name *** | 👤 User Icon | `First name` | **Required** | Rider's legal first name. |
+| **User Info** | **Last name *** | 👤 User Icon | `Last name` | **Required** | Rider's legal last name. |
+| **User Info** | **Email *** | ✉️ Mail Icon | `Email` | **Required** | Valid contact email address. |
+| **User Info** | **Deliveryman Type *** | 👥 Dropdown | `Select Deliveryman Type` | **Required** | Choose *Freelancer* or *Salary Based*. |
+| **User Info** | **Delivery Zone *** | 📍 Pin Dropdown | `Delivery Zone` | **Required** | Select assigned delivery operating zone. |
+| **User Info** | **Select Vehicle Type *** | 🚗 Vehicle Dropdown | `Select Vehicle Type` | **Required** | Choose *Motorbike*, *Bicycle*, *Car*, or *Van*. |
+| **Profile Image Upload** | **Add Image** | Image Upload Box | `JPG, JPEG, PNG, WEBP Less Than 1MB` | **Required** | Upload clear profile headshot photo (ratio 2:1, max 1MB). |
+| **Account Info** | **Password / ID** | Password Input | `Password` | **Required** | Login password for Rider Mobile App. |
+| **Form Action Buttons** | **Reset & Submit** | Action Buttons | `Reset` \| `Submit Information` | Action Controls | `Reset` clears form fields. `Submit Information` sends application. |
+
+---
+
+#### 9.2.2 Step-by-Step Rider Registration Procedure
+
+##### Procedure
+1. Click **Become a Rider** in the top navigation strip (`/deliveryman-registration`).
+2. In **User Info**, enter your **First name *** and **Last name ***.
+3. Enter your email address in **Email ***.
+4. Select your employment preference in **Deliveryman Type *** (*Freelancer* or *Salary Based*).
+5. Select your city area in **Delivery Zone ***.
+6. Select your transport mode in **Select Vehicle Type *** (*Motorbike*, *Bicycle*, etc.).
+7. In **Profile Image**, click **Add Image** and upload a clear profile photo (under 1 MB).
+8. Complete **Account Info** (identity details & password).
+9. Click **Submit Information**.
+
+**Expected outcome:** Application details are transmitted and the website confirms application receipt.
+
+---
+
+#### 9.2.3 System Administrator Verification & Notification Workflow
+
+```
+[Rider Submits Onboarding Form] ➔ 🔔 [Auto-Notification Sent to System Admin]
+                                        │
+                                        ▼
+                          [Admin Audits License & CNIC Identity]
+                                        │
+             ┌──────────────────────────┴──────────────────────────┐
+             ▼                                                     ▼
+   [🟢 Application Approved]                             [⚠️ Document Issue]
+             │                                                     │
+[Admin Contacts Rider & Issues App Credentials]       🔔 [Auto-Notification Re-Sent to Admin & Rider]
+```
+
+1. **Automatic Admin Notification:** As soon as the rider clicks **Submit Information**, the platform **automatically notifies the System Administrator** that a new rider application is pending review.
+2. **Identity & Document Audit:** The System Administrator verifies the applicant's profile photo, CNIC number, and driving license validity.
+3. **Admin Contact & Credentials:** Upon successful approval, the System Administrator **contacts the rider directly** (via phone or SMS) to provide official login credentials for the **Marketplace Rider Mobile App**.
+4. **Issue Re-Notification:** If identity photos are blurry, license is expired, or information is missing, the system **automatically issues a re-notification alert** to both the System Admin and rider to request document re-upload.
 
 ---
 
@@ -740,6 +872,9 @@ Below is the complete UI mapping of the 3 official contact support cards:
 - [x] About Us page mapping (`/about-us`) added.
 - [x] Track Your Order Status page mapping (`/track-order`) added with exact fields (`Order ID *`, `Phone`, `🔍 Search Order`).
 - [x] Help & Support page mapping (`/help-and-support`) added with 3 contact cards (**VISIT US**, **EMAIL US**, **CALL US**).
+- [x] Store Registration page (`/store-registration`) UI table & interactive map mapping added.
+- [x] Rider Registration page (`/deliveryman-registration`) UI table & profile photo upload mapping added.
+- [x] System Administrator notification, review, contact, and issue re-notification workflows added to Section 9.
 - [x] All 6 core modules, search, cart, checkout, parcel, rental, tracking, wallet, and onboarding links mapped.
 - [x] Written in simple, accessible English suitable for general customers.
 - [ ] Confirm official release date, approver signatures, legal privacy policy text, and helpline operating hours before publication.
