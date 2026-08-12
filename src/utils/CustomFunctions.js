@@ -204,7 +204,7 @@ export const handlePurchasedAmount = (cartList) => {
   if (getCurrentModuleType() === "food") {
     return cartList.reduce(
       (total, product) =>
-        (product.food_variations.length > 0
+        (product?.food_variations?.length > 0
           ? handleProductValueWithOutDiscount(product)
           : product.price) *
         product.quantity +
@@ -344,7 +344,7 @@ const handleTotalDiscountBasedOnModules = (
   if (getCurrentModuleType() === "food") {
     return items.reduce(
       (total, product) =>
-        (product.food_variations.length > 0
+        (product?.food_variations?.length > 0
           ? handleProductValueWithOutDiscount(product) -
           getConvertDiscount(
             restaurentDiscount,
@@ -848,14 +848,14 @@ export const getDeliveryFees = (
 };
 
 export const getItemTotalWithoutDiscount = (item) => {
-  return item?.price + handleVariationValuesSum(item.food_variations);
+  return item?.price + handleVariationValuesSum(item?.food_variations);
 };
 
 export const getSubTotalPrice = (cartList) => {
   if (getCurrentModuleType() === "food") {
     return cartList.reduce(
       (total, product) =>
-        (product?.food_variations.length > 0
+        (product?.food_variations?.length > 0
           ? getItemTotalWithoutDiscount(product)
           : product.price) *
         product.quantity +
