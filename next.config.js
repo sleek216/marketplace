@@ -82,13 +82,9 @@ const nextConfig = {
     remotePatterns: getImageRemotePatterns(),
   },
   async rewrites() {
-    const apiBase = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
-    if (!apiBase) {
-      console.warn(
-        "[next.config] NEXT_PUBLIC_BASE_URL is not set; /api proxy rewrites are disabled."
-      );
-      return [];
-    }
+    const apiBase = (
+      process.env.NEXT_PUBLIC_BASE_URL || "https://marketplace.aibit.services"
+    ).replace(/\/$/, "");
 
     return [
       {

@@ -3,7 +3,7 @@ import { hasValidAuthToken } from "helper-functions/getToken";
 // In the browser, use a relative base URL so all API calls go through
 // the Next.js proxy rewrites (avoids CORS issues with the backend).
 // On the server (SSR), call the backend directly.
-export const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+export const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://marketplace.aibit.services";
 const MainApi = axios.create({
   // In browser, force root-relative API base so nested routes
   // (e.g. /store/slug) don't prefix requests with /store/.

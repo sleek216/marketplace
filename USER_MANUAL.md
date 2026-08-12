@@ -35,6 +35,8 @@
 | **0.5** | 12 August 2026 | Added complete Terms and Conditions page mapping (12 legal sections & Effective Date) | Documentation Team |
 | **0.6** | 12 August 2026 | Added About Us page, Help & Support page (3 contact cards), and Track Your Order Status page mapping | Documentation Team |
 | **0.7** | 12 August 2026 | Added complete UI mapping & Administrator Review & Notification workflows for Store & Rider Registration pages | Documentation Team |
+| **0.8** | 12 August 2026 | Added header Categories ▾ Mega Menu and Stores ▾ Mega Menu complete structural mapping and navigation rules | Documentation Team |
+| **0.9** | 12 August 2026 | Documented Module-Isolated Cart System & Right Floating Side Module Switcher Bar across 4 core modules | Documentation Team |
 
 > 📌 **Review Required:** Confirm official product owner, release date, supported web browsers, support hotline, order cancellation rules, refund policies, and legal/privacy wording before final publication.
 
@@ -59,12 +61,19 @@
      - 3.2.1 Sign In to GIFT Marketplace Web (Welcome Back Modal UI Reference & Procedure)
      - 3.2.2 Reset a Forgotten Password
    - 3.3 Navigate the Web Application (Homepage Layout & UI Mapping)
+   - 3.4 Header Dropdown Mega Menus Mapping (Categories ▾ & Stores ▾)
+     - 3.4.1 Categories ▾ Dropdown Mega Menu Reference
+     - 3.4.2 Stores ▾ Dropdown Mega Menu Reference
 4. [Browsing, Modules & Shopping Procedures](#4-browsing-modules--shopping-procedures)
    - 4.1 Set Delivery Location Procedure
    - 4.2 Explore Featured Categories & Banners
-   - 4.3 Explore the 4 Main Shopping Modules (Grocery, Food, Pharmacy, E-Commerce)
+   - 4.3 Explore the 4 Main Shopping Modules & Right Floating Side Switcher Bar
+     - 4.3.1 Module-Specific UI Specifications & Banners
+     - 4.3.2 Right Floating Side Module Switcher Bar
    - 4.4 Search Products, Stores & Categories
-   - 4.5 Manage Wishlist & Shopping Cart
+   - 4.5 Module-Isolated Cart System & Wishlist Management
+     - 4.5.1 Module-Isolated Cart Architecture & Isolation Rules
+     - 4.5.2 Cart & Wishlist Procedure
 5. [Ordering and Checkout Procedures](#5-ordering-and-checkout-procedures)
    - 5.1 Review Cart & Proceed to Checkout
    - 5.2 Select Delivery Address
@@ -377,6 +386,75 @@ Below is the complete visual mapping of the GIFT Marketplace Homepage based on l
 
 ---
 
+### 3.4 Header Dropdown Mega Menus Mapping (Categories ▾ & Stores ▾)
+
+In the main header navigation, hovering over or clicking **Categories ▾** or **Stores ▾** opens a full-width 4-column mega menu organized by module.
+
+#### 3.4.1 Categories ▾ Dropdown Mega Menu Reference
+
+Hovering over or clicking **Categories ▾** displays all product categories and subcategories grouped under 4 main module columns:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ GROCERY             FOOD                PHARMACY              ECOMMERCE                         │
+│ • Crockery          • Chinese           • Pain Killers        • Electronics                     │
+│   - Spatula           - Soup              - Antibiotics         - Laptops                       │
+│ • Vegetables          - Dumplings         - Pain Relievers      - Desktop Computers             │
+│   - Potatoes          - Egg Fried Rice    - Antihistamines      - Mobile Phones                 │
+│   - Tomatoes        • Italian           • Infectious Disease • Men's Fashion                   │
+│ • Pet Food            - Pizza             - Fever               - Men's Clothing                │
+│   - Cat Food          - Pasta             - Cough               - Men's Footwear                │
+│   - Dog Food        • Fast Food                               • Women's Fashion                 │
+│ • Fruits              - Shawarma                                - Women's Bag                   │
+│   - Strawberries      - Zinger Burger                           - Women's clothing              │
+│   - Watermelon        - Fries                                 • Sports                          │
+│   - Mangoes           - Grill Wrap                              - Football                      │
+│ • Households        • Desi Food                                 - Bats                          │
+│   - Bread/Eggs/Milk   - Tikka / Karahi                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [ See all Grocery ➔ ] [ See all Food ➔ ]  [ See all Pharmacy ➔ ] [ See all Ecommerce ➔ ]        │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Categories Mega Menu Content Breakdown
+
+| Module Column | Category Groups | Subcategories & Product Types | Action Link |
+| :--- | :--- | :--- | :--- |
+| 🛒 **GROCERY** | Crockery, Vegetables, Pet Food, Fruits, Households | Spatula, Potatoes, Tomatoes, Cat Food, Dog Food, Strawberries, Watermelon, Mangoes, Bread, Eggs, Milk, Rice | Click `See all Grocery ->` to open complete grocery catalog. |
+| 🍔 **FOOD** | Chinese, Italian, Fast Food, Desi Food | Soup, Dumplings, Egg Fried Rice, Pizza, Pasta, Shawarma, Zinger Burger, Fries, Grill Wrap, Tikka, Handi, Malai Boti, Karahi | Click `See all Food ->` to view all restaurant menus. |
+| 💊 **PHARMACY** | Pain Killers, Infectious Disease | Antibiotics, Pain Relievers, Antihistamines, Fever, Cough medicines | Click `See all Pharmacy ->` to view full medical catalog. |
+| 🛍️ **ECOMMERCE** | Electronics, Men's Fashion, Women's Fashion, Sports | Laptops, Desktop Computers, Mobile Phones, Men's Clothing, Men's Footwear, Women's Bag, Women's clothing, Football, Bats | Click `See all Ecommerce ->` to browse fashion & tech. |
+
+---
+
+#### 3.4.2 Stores ▾ Dropdown Mega Menu Reference
+
+Hovering over or clicking **Stores ▾** displays all registered merchants, supermarkets, restaurants, pharmacies, and brand shops organized by module column:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ GROCERY             FOOD                PHARMACY              ECOMMERCE                         │
+│ • Abdullah Waseem   • My Food           • Ehtisham Pharmacy   • My Company                      │
+│   Karyana Store     • Yasir Food        • Aibit Pharmacy      • Daniyal Ecommerce               │
+│ • Asrar Fast Food   • Food Category 3   • PharmacyCategory3   • Ameer Hamza                     │
+│ • VIS QA Store      • Ehtasham          • qwedsa              • Abdul Rehman Rahi               │
+│ • QA Store DM       • Food Category 2   • Pharmacy 4          • Yasir Iqbal / M.Ziad            │
+├─────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [ See all Grocery ➔ ] [ See all Food ➔ ]  [ See all Pharmacy ➔ ] [ See all Ecommerce ➔ ]        │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Stores Mega Menu Content Breakdown
+
+| Module Column | Featured Merchant Stores | Primary Offered Service | Action Link |
+| :--- | :--- | :--- | :--- |
+| 🛒 **GROCERY STORES** | Abdullah Waseem Karyana Store, Asrar Fast Food, VIS QA Stores, QA Store DM | Supermarket staples, daily ration, fresh produce & household items. | Click `See all Grocery ->` to view all verified grocery merchants. |
+| 🍔 **FOOD RESTAURANTS** | My Food, Yasir Food, Food Category 3, Ehtasham, Food Category 2, Food 4 | Local eateries, fast food chains, traditional dining & desserts. | Click `See all Food ->` to view all active restaurants. |
+| 💊 **PHARMACIES** | Ehtisham Pharmacy, Aibit Pharmacy, PharmacyCategory3, qwedsa, Pharmacy 4 | Accredited pharmacies for prescription & OTC healthcare items. | Click `See all Pharmacy ->` to view verified medical stores. |
+| 🛍️ **ECOMMERCE MERCHANTS**| My Company, Daniyal Ecommerce, Ameer Hamza, Abdul Rehman Rahi, Yasir Iqbal, M.Ziad | Verified brand merchants selling electronics, fashion & gadgets. | Click `See all Ecommerce ->` to view all ecommerce sellers. |
+
+---
+
 ## 4. Browsing, Modules & Shopping Procedures
 
 ### 4.1 Set Delivery Location Procedure
@@ -402,51 +480,103 @@ Below is the complete visual mapping of the GIFT Marketplace Homepage based on l
 
 ---
 
-### 4.3 Explore the 4 Main Shopping Modules
-From the homepage section **"Marketplace Services & Modules"**:
+### 4.3 Explore the 4 Main Shopping Modules & Right Floating Side Switcher Bar
 
-1. **🛒 Grocery Module:** Click **`Explore Grocery ->`** to purchase fresh vegetables, fruits, dairy, ration, and cleaning products.
-2. **🍔 Food Module:** Click **`Order Food ->`** to browse neighborhood restaurants, fast food burgers, biryani, pizzas, and desserts.
-3. **💊 Pharmacy Module:** Click **`Get Medicines ->`** to order healthcare supplements, OTC drugs, baby care items, and hygiene essentials.
-4. **🛍️ Ecommerce Module:** Click **`Shop Ecommerce ->`** to buy clothing, footwear, electronic accessories, and home appliances.
+GIFT Marketplace operates via **4 distinct shopping modules**. Each module has its own customized theme, category icons, banner promotions, search bar placeholders, and **isolated shopping cart session**.
+
+#### 4.3.1 Module-Specific UI Specifications & Banners
+
+| Module Name | Module Theme Color | Search Input Placeholder | Shop By Category Icons | Hero Banner Headline & Call-To-Action |
+| :--- | :--- | :--- | :--- | :--- |
+| 🛒 **Grocery** | Forest Green | `Search for grocery or store...` | Crockery, Vegetables, Pet Food, Fruits, Households | *"GROCERY - Smarter Grocery Shopping Starts Here"* ➔ Button: `Explore Grocery` |
+| 🍔 **Food** | Warm Orange / Amber | `Search foods and restaurants...` | Chinease, Italian, Fast Food, Desi Food | *"Meals You Love DELIVERED FRESH"* ➔ Button: `Order Now` |
+| 💊 **Pharmacy** | Deep Cyan / Blue | `Search for medicine or store...` | Pain Killers, Infectious Disease | *"Reliable Care for You and Your Family"* ➔ Button: `Order Now` |
+| 🛍️ **Ecommerce** | Teal / Turquoise | `Search for products or store...` | Electronics, Men's Fashion, Women's Fashion, Sports | *"SHOP WHAT INSPIRES YOU"* ➔ Button: `Start Exploring` |
+
+---
+
+#### 4.3.2 Right Floating Side Module Switcher Bar
+
+On the right margin of the screen, a **vertical floating module drawer** displays 4 quick-switch icons:
+
+```
+  ┌───────────┐
+  │ 🛒 Grocery│
+  ├───────────┤
+  │ 🍔 Food   │
+  ├───────────┤
+  │ 💊 Pharmacy│
+  ├───────────┤
+  │ 🛍️ Ecommerce│
+  └───────────┘
+```
+
+- **Functionality:** Clicking any icon instantly switches your active shopping environment to that module.
+- **Visual Feedback:** The selected module icon highlights with an active background container.
+- **Cart Context Switch:** Switching modules automatically updates the top header **Cart Icon badge** and **Cart Drawer** to show items belonging exclusively to that active module.
 
 ---
 
 ### 4.4 Search Products, Stores & Categories
-1. Click the **🔍 Search Bar** (`Search for grocery or store...`) in the main header.
+1. Click the **🔍 Search Bar** in the main header (placeholder dynamically adjusts per module: `Search for grocery/products/medicine/food...`).
 2. Type the item name (e.g., *"Milk"*, *"Chicken Burger"*, *"Panadol"*, *"Shirt"*) or store name.
 3. Press **Enter**.
 4. Use filter options on the results page to sort by **Price (Low to High)**, **Rating**, or **Distance**.
 
 ---
 
-### 4.5 Manage Wishlist & Shopping Cart
+### 4.5 Module-Isolated Cart System & Wishlist Management
 
-#### A. Saving Items to Wishlist
-- On any item card, click the **Heart Icon (❤️)**.
+#### 4.5.1 Module-Isolated Cart Architecture & Isolation Rules
+
+> 🔒 **CRITICAL SYSTEM RULE: Module-Isolated Shopping Carts**  
+> GIFT Marketplace implements strict **Module-Isolated Shopping Carts**. Each shopping module (Grocery, Food, Pharmacy, E-Commerce) maintains its own completely independent shopping cart session.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           GIFT MARKETPLACE WEB APP                              │
+├───────────────────┬───────────────────┬───────────────────┬─────────────────────┤
+│ 🛒 GROCERY CART   │ 🍔 FOOD CART      │ 💊 PHARMACY CART  │ 🛍️ ECOMMERCE CART   │
+│ [Grocery Items]   │ [Restaurant Meals]│ [Medicines/Rx]    │ [Fashion & Tech]    │
+│ (Cart Badge: 4)   │ (Cart Badge: 1)   │ (Cart Badge: 1)   │ (Cart Badge: 3)     │
+└───────────────────┴───────────────────┴───────────────────┴─────────────────────┘
+```
+
+##### Operational Rules for Module Carts:
+1. **Strict Item Isolation:** Products added in the Grocery module go exclusively into the **Grocery Cart**. Products added in Food go into the **Food Cart**, Pharmacy into the **Pharmacy Cart**, and E-Commerce into the **E-Commerce Cart**.
+2. **No Cart Mixing:** Items added from one module will **NEVER appear inside another module's cart drawer**. For example, a customer browsing in the Pharmacy module will only see Pharmacy items in their cart drawer; Grocery or Food items will remain hidden in their respective module carts.
+3. **Module-Specific Cart Badge Count:** The 🛒 **Cart Icon badge** in the header dynamically displays the exact item count for the **currently active module** (e.g. `4` for Grocery, `3` for E-Commerce, `1` for Pharmacy, `1` for Food).
+4. **Independent Checkout Workflows:** Customers complete checkout independently for each module cart, ensuring distinct delivery schedules, vendor dispatching, and courier assignments.
+
+---
+
+#### 4.5.2 Cart & Wishlist Procedure
+
+##### Saving Items to Wishlist
+- On any item card, click the **Heart Icon (❤️)**. The top wishlist badge updates dynamically (e.g. `4` in Grocery, `3` in Pharmacy, `2` in E-Commerce).
 - View saved items anytime under **My Profile ➔ Wishlist**.
 
-#### B. Adding Items to Shopping Cart
-1. Click on a product card to open full details.
-2. Choose size, weight, or variation options (if applicable).
+##### Adding Items to Module Cart
+1. Ensure you are in the correct module (Grocery, Food, Pharmacy, or E-Commerce).
+2. Click on a product card to open full details.
 3. Select quantity (`1`, `2`, `3`).
-4. Click **Add to Cart**.
+4. Click **Add to Cart**. The item is saved strictly into that module's cart.
 
-#### C. Cart Review
-- Click the **🛒 Cart Icon** at the top-right header to open the slide-over cart drawer.
-- Adjust item quantities using **`+`** or **`-`**, or remove items using **`🗑️`**.
+##### Reviewing Cart
+1. Click the **🛒 Cart Icon** at the top-right header to open the active module's cart drawer.
+2. Verify items, quantities (`+` / `-`), and subtotal price for the active module.
 
 ---
 
 ## 5. Ordering and Checkout Procedures
 
 ```
-[Open Cart Drawer] ➔ [Click Proceed to Checkout] ➔ [Select Delivery Address] ➔ [Apply Coupon] ➔ [Select Payment] ➔ [Place Order]
+[Open Module Cart Drawer] ➔ [Click Proceed to Checkout] ➔ [Select Delivery Address] ➔ [Apply Coupon] ➔ [Select Payment] ➔ [Place Order]
 ```
 
 ### 5.1 Review Cart & Proceed to Checkout
 1. Click the **🛒 Cart Icon** in the header.
-2. Review selected items and subtotal price.
+2. Review selected module items and subtotal price.
 3. Click **Proceed to Checkout**.
 
 ---
@@ -743,6 +873,7 @@ Select your preferred payment option:
 | **📍 Select Location** | Opens location search and map pin modal | Required before browsing local stores. |
 | **🔍 Search Input** | Searches items, categories, and stores | Use anytime to locate specific products. |
 | **🛒 Cart Drawer** | Displays selected items, quantity controls & subtotal | Open to review order before checkout. |
+| **Right Side Module Switcher** | Floating bar to switch active module (Grocery, Food, Pharmacy, Ecommerce) | Use anytime to change module & cart context. |
 | **Apply Coupon** | Subtracts promo discount from total bill | Enter valid coupon code before payment. |
 | **Track Order** | Opens live delivery tracking status bar and map | Available after placing an active order. |
 
@@ -811,6 +942,7 @@ Below is the complete mapping of the 12 legal sections as displayed on the live 
 | :--- | :--- | :--- |
 | **No stores showing on homepage** | Delivery location not set or no stores in area | Click **Select Location** and choose a valid city/area. |
 | **OTP SMS code not arriving** | Network delay or invalid mobile number | Wait for countdown timer and click **Resend OTP**. |
+| **Items missing from cart drawer** | Switched to a different module | Click the **Right Side Module Switcher** to switch back to the module where items were added. |
 | **Promo code rejected** | Code expired, typo, or subtotal minimum not met | Check coupon terms and re-type promo code. |
 | **Payment card declined** | Insufficient funds or bank authorization issue | Retry card or select **Cash on Delivery (COD)**. |
 
@@ -855,8 +987,10 @@ Below is the complete UI mapping of the 3 official contact support cards:
 | :--- | :--- |
 | **COD** | Cash on Delivery. Customer pays cash to the rider upon parcel delivery. |
 | **Module** | A dedicated shopping department (Grocery, Food, Pharmacy, E-Commerce, Parcel, Rental). |
+| **Module-Isolated Cart** | Architecture rule where items added in one module remain strictly isolated within that module's cart drawer. |
+| **Right Side Switcher** | Floating drawer bar on the right screen margin to quickly switch active modules. |
 | **OTP** | One-Time Password. A 6-digit security code sent via SMS for account verification. |
-| **Cart Drawer** | A slide-over window showing items added to shopping bag. |
+| **Cart Drawer** | A slide-over window showing items added to shopping bag for the active module. |
 | **GIFT Wallet** | In-app prepaid digital wallet balance for instant order payments. |
 
 ---
@@ -874,6 +1008,9 @@ Below is the complete UI mapping of the 3 official contact support cards:
 - [x] Help & Support page mapping (`/help-and-support`) added with 3 contact cards (**VISIT US**, **EMAIL US**, **CALL US**).
 - [x] Store Registration page (`/store-registration`) UI table & interactive map mapping added.
 - [x] Rider Registration page (`/deliveryman-registration`) UI table & profile photo upload mapping added.
+- [x] Header Categories ▾ Mega Menu & Stores ▾ Mega Menu 4-column mapping added to Section 3.4.
+- [x] Documented Module-Isolated Cart System (items from one module never mix into another module's cart) in Section 4.5.
+- [x] Documented Right Floating Side Module Switcher Bar (Grocery, Food, Pharmacy, Ecommerce) in Section 4.3.2.
 - [x] System Administrator notification, review, contact, and issue re-notification workflows added to Section 9.
 - [x] All 6 core modules, search, cart, checkout, parcel, rental, tracking, wallet, and onboarding links mapped.
 - [x] Written in simple, accessible English suitable for general customers.

@@ -88,8 +88,9 @@ export const getServerSideProps = async (context) => {
 
   const { req } = context;
   const language = req.cookies.languageSetting;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://marketplace.aibit.services";
   const configRes = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/config`,
+    `${baseUrl}/api/v1/config`,
     {
       method: "GET",
       headers: {
@@ -102,7 +103,7 @@ export const getServerSideProps = async (context) => {
   );
   const config = await configRes.json();
   const landingPageRes = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/react-landing-page`,
+    `${baseUrl}/api/v1/react-landing-page`,
     {
       method: "GET",
       headers: {
@@ -118,7 +119,7 @@ export const getServerSideProps = async (context) => {
   let productDetailsData = null;
   try {
     const productDetailsRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/items/details/${productId}`,
+      `${baseUrl}/api/v1/items/details/${productId}`,
       {
         method: "GET",
         headers: {
