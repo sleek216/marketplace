@@ -10,14 +10,123 @@ import {
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import {
-  useGetFeaturedCategories,
-  useGetAllModulesCategories,
-} from "api-manage/hooks/react-query/all-category/all-categorys";
-import CustomContainer from "../../container";
-import LandingCategoryTile from "../LandingCategoryTile";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import { useRouter } from "next/router";
+import useGetLandingBrands from "api-manage/hooks/react-query/brands/useGetLandingBrands";
+import CustomContainer from "../container";
 
-const CategoryStripShimmer = () => (
+const CategoryBrandTile = ({ brand }) => {
+  const theme = useTheme();
+  const router = useRouter();
+  const name = brand?.name;
+  const id = brand?.id;
+  const img = brand?.image_full_url;
+
+  const handleClick = () => {
+    router.push({
+      pathname: "/search",
+      query: {
+        search_type: "item",
+        brand_id: id,
+        name: name || "",
+      },
+    });
+  };
+
+  const isDarkMode = theme.palette.mode === "dark";
+
+  return (
+    <Box
+      onClick={handleClick}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
+        cursor: "pointer",
+        flexShrink: 0,
+        width: { xs: "85px", sm: "100px", md: "110px" },
+        transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+        "&:hover": {
+          "& .circle-img-box": {
+            transform: "scale(1.06)",
+            boxShadow: isDarkMode
+              ? "0px 8px 20px rgba(0, 0, 0, 0.4)"
+              : `0px 8px 20px ${alpha(theme.palette.primary.main, 0.18)}`,
+            borderColor: theme.palette.primary.main,
+          },
+          "& .brand-name-text": {
+            color: theme.palette.primary.main,
+          },
+        },
+      }}
+    >
+      {/* Slightly Compact Circular Photo Container */}
+      <Box
+        className="circle-img-box"
+        sx={{
+          width: { xs: "75px", sm: "90px", md: "100px" },
+          height: { xs: "75px", sm: "90px", md: "100px" },
+          borderRadius: "50%",
+          backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+          border: `1.5px solid ${
+            isDarkMode ? "rgba(255,255,255,0.1)" : "#E2E8F0"
+          }`,
+          boxShadow: isDarkMode
+            ? "0px 3px 12px rgba(0, 0, 0, 0.3)"
+            : "0px 3px 10px rgba(0, 0, 0, 0.04)",
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.25s ease-in-out",
+          position: "relative",
+          p: img ? 1.2 : 0,
+        }}
+      >
+        {img ? (
+          <Box
+            component="img"
+            src={img}
+            alt={name}
+            sx={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center",
+            }}
+          />
+        ) : (
+          <StorefrontOutlinedIcon
+            sx={{ fontSize: 28, color: theme.palette.text.secondary }}
+          />
+        )}
+      </Box>
+
+      {/* Brand Title */}
+      <Typography
+        className="brand-name-text"
+        sx={{
+          mt: 1,
+          fontSize: { xs: "11px", sm: "12px", md: "13px" },
+          fontWeight: 600,
+          color: isDarkMode ? theme.palette.text.primary : "#1E293B",
+          lineHeight: 1.25,
+          textAlign: "center",
+          width: "100%",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          transition: "color 0.2s ease-in-out",
+        }}
+      >
+        {name}
+      </Typography>
+    </Box>
+  );
+};
+
+const ShimmerLoadingStrip = () => (
   <Stack
     direction="row"
     spacing={{ xs: 2, sm: 2.5, md: 3 }}
@@ -47,35 +156,25 @@ const CategoryStripShimmer = () => (
   </Stack>
 );
 
-/** Featured Categories component matching Shop by Brands section UI 100% & Admin Config Ready */
-const FeaturedCategories = ({ landingPageData }) => {
+/** Compact Brand Carousel Component with Theme Blue Title & Adjusted Circle Size */
+const LandingBrandsSection = ({ landingPageData }) => {
   const theme = useTheme();
   const scrollRef = useRef(null);
-  const { data: featuredData, isLoading: featuredLoading } =
-    useGetFeaturedCategories();
-  const { data: allData, isLoading: allLoading } =
-    useGetAllModulesCategories();
+  const { data: brands = [], isLoading } = useGetLandingBrands();
   const [activeBtn, setActiveBtn] = useState("right");
 
-  // Dynamic admin config checks
   const isEnabled =
-    landingPageData?.categories_section?.status !== 0 &&
-    landingPageData?.categories_section?.status !== false;
+    landingPageData?.brands_section?.status !== 0 &&
+    landingPageData?.brands_section?.status !== false;
   const sectionTitle =
-    landingPageData?.categories_section?.title || "Featured Categories";
-  const sectionSubtitle = landingPageData?.categories_section?.subtitle;
-
-  const categories =
-    featuredData?.data && featuredData?.data?.length > 0
-      ? featuredData?.data
-      : allData?.data || [];
-  const isLoading = (featuredLoading || allLoading) && categories.length === 0;
+    landingPageData?.brands_section?.title || "Shop By Category";
+  const sectionSubtitle = landingPageData?.brands_section?.subtitle;
 
   const isDarkMode = theme.palette.mode === "dark";
 
-  // Auto-scroll loop with pause on mouse hover
+  // Auto-scroll loop
   useEffect(() => {
-    if (!categories || categories.length <= 1) return undefined;
+    if (!brands || brands.length <= 1) return undefined;
     const el = scrollRef.current;
     if (!el) return undefined;
 
@@ -108,7 +207,7 @@ const FeaturedCategories = ({ landingPageData }) => {
       el.removeEventListener("mouseenter", pause);
       el.removeEventListener("mouseleave", resume);
     };
-  }, [categories]);
+  }, [brands]);
 
   const handleScroll = (direction) => {
     setActiveBtn(direction);
@@ -118,16 +217,14 @@ const FeaturedCategories = ({ landingPageData }) => {
     }
   };
 
-  if (!isEnabled || (!isLoading && categories.length === 0)) {
+  if (!isEnabled || (!isLoading && brands.length === 0)) {
     return null;
   }
 
   return (
     <Box
       sx={{
-        pt: { xs: 5, sm: 6.5, md: 7.5 },
-        pb: { xs: 3.5, sm: 4.5, md: 5 },
-        mt: { xs: 1.5, sm: 2, md: 2.5 },
+        py: { xs: 3.5, sm: 4.5, md: 5 },
         width: "100%",
         backgroundColor: (theme) =>
           theme.palette.mode === "dark"
@@ -136,7 +233,7 @@ const FeaturedCategories = ({ landingPageData }) => {
       }}
     >
       <CustomContainer>
-        {/* Section Header with Blue Title & Arrow Controls */}
+        {/* Section Header with Blue Title */}
         <Stack
           direction="row"
           alignItems="flex-start"
@@ -148,10 +245,10 @@ const FeaturedCategories = ({ landingPageData }) => {
             <Typography
               variant="h4"
               sx={{
-                fontSize: { xs: "1.15rem", sm: "1.3rem", md: "1.45rem" },
+                fontSize: { xs: "1.4rem", sm: "1.75rem", md: "2rem" },
                 fontWeight: 700,
                 color: theme.palette.primary.main,
-                letterSpacing: "-0.2px",
+                letterSpacing: "-0.3px",
                 fontFamily: "inherit",
               }}
             >
@@ -173,12 +270,12 @@ const FeaturedCategories = ({ landingPageData }) => {
             )}
           </Box>
 
-          {/* Navigation Circular Arrow Buttons in Theme Blue */}
-          {!isLoading && categories.length > 0 && (
+          {/* Arrow Buttons in Theme Blue */}
+          {!isLoading && brands.length > 0 && (
             <Stack direction="row" spacing={1.2} alignItems="center">
               {/* Prev Button */}
               <IconButton
-                aria-label="Previous categories"
+                aria-label="Previous items"
                 onClick={() => handleScroll("left")}
                 sx={{
                   width: { xs: 34, sm: 38 },
@@ -198,8 +295,7 @@ const FeaturedCategories = ({ landingPageData }) => {
                       : "#475569",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {
-                    backgroundColor:
-                      theme.palette.primary.dark || theme.palette.primary.main,
+                    backgroundColor: theme.palette.primary.dark || theme.palette.primary.main,
                     color: "#FFFFFF",
                   },
                 }}
@@ -209,7 +305,7 @@ const FeaturedCategories = ({ landingPageData }) => {
 
               {/* Next Button */}
               <IconButton
-                aria-label="Next categories"
+                aria-label="Next items"
                 onClick={() => handleScroll("right")}
                 sx={{
                   width: { xs: 34, sm: 38 },
@@ -229,8 +325,7 @@ const FeaturedCategories = ({ landingPageData }) => {
                       : "#475569",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {
-                    backgroundColor:
-                      theme.palette.primary.dark || theme.palette.primary.main,
+                    backgroundColor: theme.palette.primary.dark || theme.palette.primary.main,
                     color: "#FFFFFF",
                   },
                 }}
@@ -241,9 +336,9 @@ const FeaturedCategories = ({ landingPageData }) => {
           )}
         </Stack>
 
-        {/* Horizontal Category Circles Carousel */}
+        {/* Horizontal Circle Strip with Compact Sizes */}
         {isLoading ? (
-          <CategoryStripShimmer />
+          <ShimmerLoadingStrip />
         ) : (
           <Box
             ref={scrollRef}
@@ -261,11 +356,8 @@ const FeaturedCategories = ({ landingPageData }) => {
               scrollbarWidth: "none",
             }}
           >
-            {categories.map((cat, index) => (
-              <LandingCategoryTile
-                key={cat?.id || cat?.name || index}
-                category={cat}
-              />
+            {brands.map((brand, index) => (
+              <CategoryBrandTile key={brand?.id || index} brand={brand} />
             ))}
           </Box>
         )}
@@ -274,4 +366,4 @@ const FeaturedCategories = ({ landingPageData }) => {
   );
 };
 
-export default FeaturedCategories;
+export default LandingBrandsSection;

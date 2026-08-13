@@ -13,7 +13,7 @@ import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import CustomContainer from "../container";
 
-const STEPS = [
+const DEFAULT_STEPS = [
   {
     step: "01",
     icon: <LocationOnOutlinedIcon sx={{ fontSize: 34 }} />,
@@ -37,8 +37,82 @@ const STEPS = [
   },
 ];
 
-const LandingHowItWorksSection = () => {
+const STEP_ICONS = [
+  <LocationOnOutlinedIcon sx={{ fontSize: 34 }} key="1" />,
+  <StorefrontOutlinedIcon sx={{ fontSize: 34 }} key="2" />,
+  <LocalShippingOutlinedIcon sx={{ fontSize: 34 }} key="3" />,
+];
+
+const LandingHowItWorksSection = ({ landingPageData }) => {
   const theme = useTheme();
+
+  const sectionData = landingPageData?.how_it_works_section;
+
+  // Dynamic status check from Admin Panel
+  const isEnabled =
+    sectionData?.status !== 0 && sectionData?.status !== false;
+
+  const rawTitle = sectionData?.title;
+  const sectionTitle =
+    rawTitle && rawTitle.trim() !== "" ? rawTitle : "How Ordering Works";
+
+  const rawSubtitle = sectionData?.subtitle;
+  const sectionSubtitle =
+    rawSubtitle && rawSubtitle.trim() !== ""
+      ? rawSubtitle
+      : "Get your favorite products & meals delivered in 3 simple steps.";
+
+  // Build steps list dynamically from Admin Panel
+  let stepsList = DEFAULT_STEPS;
+  if (Array.isArray(sectionData?.steps) && sectionData.steps.length > 0) {
+    stepsList = sectionData.steps.map((item, idx) => {
+      const iconUrl =
+        item?.image_full_url ||
+        item?.icon_full_url ||
+        item?.image ||
+        item?.icon_url;
+
+      return {
+        step: item?.step_number || `0${idx + 1}`,
+        iconUrl: iconUrl && typeof iconUrl === "string" && iconUrl.startsWith("http") ? iconUrl : null,
+        fallbackIcon: STEP_ICONS[idx % STEP_ICONS.length],
+        title: item?.title || item?.step_title || `Step ${idx + 1}`,
+        description: item?.description || item?.subtitle || item?.step_sub_title || "",
+      };
+    });
+  } else if (
+    sectionData?.step_1_title ||
+    sectionData?.step_2_title ||
+    sectionData?.step_3_title
+  ) {
+    stepsList = [
+      {
+        step: "01",
+        iconUrl: sectionData?.step_1_image_full_url || sectionData?.step_1_image || null,
+        fallbackIcon: <LocationOnOutlinedIcon sx={{ fontSize: 34 }} />,
+        title: sectionData?.step_1_title || DEFAULT_STEPS[0].title,
+        description: sectionData?.step_1_sub_title || DEFAULT_STEPS[0].description,
+      },
+      {
+        step: "02",
+        iconUrl: sectionData?.step_2_image_full_url || sectionData?.step_2_image || null,
+        fallbackIcon: <StorefrontOutlinedIcon sx={{ fontSize: 34 }} />,
+        title: sectionData?.step_2_title || DEFAULT_STEPS[1].title,
+        description: sectionData?.step_2_sub_title || DEFAULT_STEPS[1].description,
+      },
+      {
+        step: "03",
+        iconUrl: sectionData?.step_3_image_full_url || sectionData?.step_3_image || null,
+        fallbackIcon: <LocalShippingOutlinedIcon sx={{ fontSize: 34 }} />,
+        title: sectionData?.step_3_title || DEFAULT_STEPS[2].title,
+        description: sectionData?.step_3_sub_title || DEFAULT_STEPS[2].description,
+      },
+    ];
+  }
+
+  if (!isEnabled) {
+    return null;
+  }
 
   return (
     <Box
@@ -58,31 +132,33 @@ const LandingHowItWorksSection = () => {
             variant="h4"
             align="left"
             sx={{
-              fontSize: { xs: "1.5rem", sm: "1.875rem", md: "2.125rem" },
+              fontSize: { xs: "1.15rem", sm: "1.3rem", md: "1.45rem" },
               fontWeight: 700,
               color: theme.palette.primary.main,
               textAlign: "left",
             }}
           >
-            How Ordering Works
+            {sectionTitle}
           </Typography>
-          <Typography
-            variant="body1"
-            align="left"
-            sx={{
-              color: (theme) => alpha(theme.palette.neutral[500], 0.85),
-              maxWidth: "600px",
-              fontSize: { xs: "0.875rem", md: "1rem" },
-              textAlign: "left",
-            }}
-          >
-            Get your favorite products & meals delivered in 3 simple steps.
-          </Typography>
+          {Boolean(sectionSubtitle) && (
+            <Typography
+              variant="body1"
+              align="left"
+              sx={{
+                color: (theme) => alpha(theme.palette.neutral[500], 0.85),
+                maxWidth: "600px",
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                textAlign: "left",
+              }}
+            >
+              {sectionSubtitle}
+            </Typography>
+          )}
         </Stack>
 
         {/* Steps Grid */}
         <Grid container spacing={3.5} justifyContent="center">
-          {STEPS.map((item, index) => (
+          {stepsList.map((item, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Paper
                 elevation={0}
@@ -117,7 +193,7 @@ const LandingHowItWorksSection = () => {
                   {item.step}
                 </Typography>
 
-                {/* Step Icon */}
+                {/* Dynamic Step Icon */}
                 <Box
                   sx={{
                     width: 60,
@@ -130,9 +206,23 @@ const LandingHowItWorksSection = () => {
                     justifyContent: "center",
                     mx: "auto",
                     mb: 2.5,
+                    overflow: "hidden",
                   }}
                 >
-                  {item.icon}
+                  {item.iconUrl ? (
+                    <Box
+                      component="img"
+                      src={item.iconUrl}
+                      alt={item.title}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    item.icon || item.fallbackIcon
+                  )}
                 </Box>
 
                 <Typography

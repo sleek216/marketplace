@@ -20,6 +20,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { useGetAllModulesCategories } from "api-manage/hooks/react-query/all-category/all-categorys";
 import CustomContainer from "../../container";
+import LandingCategoryTile from "../../home/LandingCategoryTile";
 import {
   categorySectionHeaderRowSx,
   headerToCategoryBandSx,
@@ -38,12 +39,25 @@ import banner3 from "../../home/assets/food.png";
 import banner4 from "../../home/assets/pharmacy.png";
 import banner5 from "../../home/assets/parcelBg.png";
 
-const HeroSection = ({ landingPageDataheroSection, promotionalBanner }) => {
+const HeroSection = ({
+  landingPageData,
+  landingPageDataheroSection,
+  promotionalBanner,
+}) => {
   const router = useRouter();
   const theme = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const scrollRef = useRef(null);
+
+  // Dynamic Admin Panel Controls for Categories Section
+  const isCategorySectionEnabled =
+    landingPageData?.categories_section?.status !== 0 &&
+    landingPageData?.categories_section?.status !== false;
+  const categorySectionTitle =
+    landingPageData?.categories_section?.title || "Featured Categories";
+  const categorySectionSubtitle =
+    landingPageData?.categories_section?.subtitle;
 
   useEffect(() => {
     setMounted(true);
@@ -57,8 +71,15 @@ const HeroSection = ({ landingPageDataheroSection, promotionalBanner }) => {
     return () => clearInterval(interval);
   }, [promotionalBanner]);
 
-  const handleScroll = (direction) => {
-    scrollCategoryStrip(scrollRef, direction);
+  const [activeCategoryBtn, setActiveCategoryBtn] = useState("right");
+  const isDarkMode = theme.palette.mode === "dark";
+
+  const handleCategoryScroll = (direction) => {
+    setActiveCategoryBtn(direction);
+    if (scrollRef.current) {
+      const amount = direction === "left" ? -260 : 260;
+      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+    }
   };
 
   const trustItems = [
@@ -82,167 +103,161 @@ const HeroSection = ({ landingPageDataheroSection, promotionalBanner }) => {
     <Fade in={mounted} timeout={600}>
       <Box sx={{ width: "100%" }}>
         {/* ═══════════════════════════════════════════
-            BOX 1: SHOP BY CATEGORY (UPPER LEVEL)
+            BOX 1: FEATURED CATEGORIES (TOP LEVEL)
         ═══════════════════════════════════════════ */}
-        <Box
-          sx={{
-            ...headerToCategoryBandSx,
-            width: "100%",
-          }}
-        >
-          {featuredCategories.length > 0 && (
-            <Box>
-              {/* Header Row */}
-              <CustomContainer>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={categorySectionHeaderRowSx}
-                >
+        {isCategorySectionEnabled && featuredCategories.length > 0 && (
+          <Box
+            sx={{
+              pt: { xs: 5, sm: 6.5, md: 7.5 },
+              pb: { xs: 3.5, sm: 4.5, md: 5 },
+              mt: { xs: 1.5, sm: 2, md: 2.5 },
+              width: "100%",
+              backgroundColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? theme.palette.background.paper
+                  : "#FFFFFF",
+            }}
+          >
+            <CustomContainer>
+              {/* Header Row with Theme Blue Title & Circular Navigation Arrows */}
+              <Stack
+                direction="row"
+                alignItems="flex-start"
+                justifyContent="space-between"
+                mb={{ xs: 2.5, sm: 3, md: 3.5 }}
+              >
+                <Box>
                   <Typography
+                    variant="h4"
                     sx={{
-                      fontSize: { xs: "14px", md: "16px" },
+                      fontSize: { xs: "1.15rem", sm: "1.3rem", md: "1.45rem" },
                       fontWeight: 700,
-                      color: theme.palette.text.primary,
-                      letterSpacing: "0.02em",
+                      color: theme.palette.primary.main,
+                      letterSpacing: "-0.2px",
+                      fontFamily: "inherit",
                     }}
                   >
-                    {("Featured Categories")}
+                    {categorySectionTitle}
                   </Typography>
 
-                  <Stack direction="row" gap={1}>
-                    <IconButton
-                      onClick={() => handleScroll("left")}
-                      size="small"
+                  {Boolean(categorySectionSubtitle) && (
+                    <Typography
+                      variant="body1"
                       sx={{
-                        border: `1.5px solid ${theme.palette.divider}`,
-                        borderRadius: "4px",
-                        color: theme.palette.text.primary,
-                        p: 0.8,
-                        "&:hover": { background: "rgba(0,0,0,0.04)" },
+                        mt: 0.5,
+                        fontSize: { xs: "0.85rem", md: "0.95rem" },
+                        color: (theme) => alpha(theme.palette.neutral[500], 0.85),
+                        fontWeight: 400,
                       }}
                     >
-                      <ArrowBackIosIcon sx={{ fontSize: 12, pl: "4px" }} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => handleScroll("right")}
-                      size="small"
-                      sx={{
-                        border: `1.5px solid ${theme.palette.divider}`,
-                        borderRadius: "4px",
-                        color: theme.palette.text.primary,
-                        p: 0.8,
-                        "&:hover": { background: "rgba(0,0,0,0.04)" },
-                      }}
-                    >
-                      <ArrowForwardIosIcon sx={{ fontSize: 12, pl: "2px" }} />
-                    </IconButton>
-                  </Stack>
-                </Stack>
-              </CustomContainer>
+                      {categorySectionSubtitle}
+                    </Typography>
+                  )}
+                </Box>
 
-              {/* Horizontal Scroll list — kept inside the container so it
-                  aligns with the banner width below */}
-              <CustomContainer>
-                <CategoryScrollStrip ref={scrollRef}>
-                  {featuredCategories.map((cat, i) => (
-                    <CategoryScrollItem key={cat.id || cat.name || i}>
-                      <Box
-                        onClick={() => {
-                          if (router) {
-                            router.push({
-                              pathname: "/search",
-                              query: {
-                                category_id: cat.id || "",
-                                search: cat.name || "all",
-                                from: "category",
-                              },
-                            });
-                          }
-                        }}
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          textAlign: "center",
-                          cursor: "pointer",
-                          width: "100%",
-                          py: 2,
-                          transition: "background-color 0.2s",
-                          "&:hover": {
-                            backgroundColor: theme.palette.action.hover,
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: { xs: "60px", sm: "68px", md: "74px" },
-                            height: { xs: "60px", sm: "68px", md: "74px" },
-                            borderRadius: "50%",
-                            border: `1px solid ${theme.palette.divider}`,
-                            backgroundColor: theme.palette.mode === "dark" ? "#1e293b" : "#ffffff",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-                            overflow: "hidden",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "all 0.23s ease-in-out",
-                            p: 1.2,
-                            "&:hover": {
-                              transform: "scale(1.06)",
-                              borderColor: theme.palette.primary.main,
-                              boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
-                            },
-                          }}
-                        >
-                          {cat.image_full_url ? (
-                            <Box
-                              component="img"
-                              src={cat.image_full_url}
-                              alt={cat.name}
-                              sx={{
-                                width: "80%",
-                                height: "80%",
-                                objectFit: "contain",
-                              }}
-                            />
-                          ) : (
-                            <StorefrontOutlinedIcon sx={{ fontSize: 26, color: theme.palette.text.secondary }} />
-                          )}
-                        </Box>
-                        <Typography
-                          sx={{
-                            mt: 1.2,
-                            fontSize: { xs: "11px", md: "12px" },
-                            fontWeight: 500,
-                            color: theme.palette.text.primary,
-                            lineHeight: 1.25,
-                            width: "90%",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {cat.name}
-                        </Typography>
-                      </Box>
-                    </CategoryScrollItem>
-                  ))}
-                </CategoryScrollStrip>
-              </CustomContainer>
-            </Box>
-          )}
-        </Box>
+                <Stack direction="row" spacing={1.2} alignItems="center">
+                  {/* Prev Button */}
+                  <IconButton
+                    aria-label="Previous categories"
+                    onClick={() => handleCategoryScroll("left")}
+                    sx={{
+                      width: { xs: 34, sm: 38 },
+                      height: { xs: 34, sm: 38 },
+                      borderRadius: "50%",
+                      backgroundColor:
+                        activeCategoryBtn === "left"
+                          ? theme.palette.primary.main
+                          : isDarkMode
+                          ? "#334155"
+                          : "#F1F5F9",
+                      color:
+                        activeCategoryBtn === "left"
+                          ? "#FFFFFF"
+                          : isDarkMode
+                          ? "#94A3B8"
+                          : "#475569",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        backgroundColor:
+                          theme.palette.primary.dark || theme.palette.primary.main,
+                        color: "#FFFFFF",
+                      },
+                    }}
+                  >
+                    <ArrowBackIosIcon sx={{ fontSize: { xs: 13, sm: 15 }, pl: "4px" }} />
+                  </IconButton>
+
+                  {/* Next Button */}
+                  <IconButton
+                    aria-label="Next categories"
+                    onClick={() => handleCategoryScroll("right")}
+                    sx={{
+                      width: { xs: 34, sm: 38 },
+                      height: { xs: 34, sm: 38 },
+                      borderRadius: "50%",
+                      backgroundColor:
+                        activeCategoryBtn === "right"
+                          ? theme.palette.primary.main
+                          : isDarkMode
+                          ? "#334155"
+                          : "#F1F5F9",
+                      color:
+                        activeCategoryBtn === "right"
+                          ? "#FFFFFF"
+                          : isDarkMode
+                          ? "#94A3B8"
+                          : "#475569",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        backgroundColor:
+                          theme.palette.primary.dark || theme.palette.primary.main,
+                        color: "#FFFFFF",
+                      },
+                    }}
+                  >
+                    <ArrowForwardIosIcon sx={{ fontSize: { xs: 13, sm: 15 }, pl: "2px" }} />
+                  </IconButton>
+                </Stack>
+              </Stack>
+
+              {/* Horizontal Scroll Strip matching Shop by Brands UI */}
+              <Box
+                ref={scrollRef}
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: { xs: 2, sm: 2.5, md: 3 },
+                  overflowX: "auto",
+                  scrollBehavior: "smooth",
+                  py: 0.8,
+                  px: 0.4,
+                  width: "100%",
+                  "&::-webkit-scrollbar": { display: "none" },
+                  msOverflowStyle: "none",
+                  scrollbarWidth: "none",
+                }}
+              >
+                {featuredCategories.map((cat, i) => (
+                  <LandingCategoryTile
+                    key={cat.id || cat.name || i}
+                    category={cat}
+                  />
+                ))}
+              </Box>
+            </CustomContainer>
+          </Box>
+        )}
 
         {/* ═══════════════════════════════════════════
-            HERO SECTION
+            HERO SECTION BANNERS
         ═══════════════════════════════════════════ */}
         <Box
           sx={{
             background: theme.palette.background.paper,
-            // Same section rhythm as the ecommerce home bands
-            py: { xs: "12px", sm: "16px", md: "20px" },
+            pt: isCategorySectionEnabled && featuredCategories.length > 0
+              ? { xs: "12px", sm: "16px", md: "20px" }
+              : { xs: "32px", sm: "44px", md: "52px" },
+            pb: { xs: "12px", sm: "16px", md: "20px" },
             position: "relative",
             overflow: "hidden",
           }}

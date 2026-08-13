@@ -118,7 +118,7 @@ export const getServerSideProps = async (context) => {
 
   let productDetailsData = null;
   try {
-    const productDetailsRes = await fetch(
+    let productDetailsRes = await fetch(
       `${baseUrl}/api/v1/items/details/${productId}`,
       {
         method: "GET",
@@ -130,6 +130,24 @@ export const getServerSideProps = async (context) => {
         },
       }
     );
+    if (!productDetailsRes.ok && productId) {
+      const match = String(productId).match(/-(\d+)$/);
+      const numericId = match ? match[1] : (/^\d+$/.test(String(productId)) ? String(productId) : null);
+      if (numericId && numericId !== String(productId)) {
+        productDetailsRes = await fetch(
+          `${baseUrl}/api/v1/items/details/${numericId}`,
+          {
+            method: "GET",
+            headers: {
+              "X-software-id": 33571750,
+              "X-server": "server",
+              origin: process.env.NEXT_CLIENT_HOST_URL,
+              "X-localization": language,
+            },
+          }
+        );
+      }
+    }
     if (productDetailsRes.ok) {
       productDetailsData = await productDetailsRes.json();
     }

@@ -5,13 +5,26 @@ import {onSingleErrorResponse} from "api-manage/api-error-response/ErrorResponse
 import {item_details_api} from "api-manage/ApiRoutes";
 
 export const getData = async (params) => {
-  const { id, campaign, page_limit, offset } = params
+  const { id, campaign } = params;
   const tempUrl = campaign
     ? `${item_details_api}/${id}?campaign=${campaign}`
-    : `${item_details_api}/${id}`
-  const { data } = await MainApi.get(`${tempUrl}`)
-  return data
-}
+    : `${item_details_api}/${id}`;
+  try {
+    const { data } = await MainApi.get(`${tempUrl}`);
+    return data;
+  } catch (err) {
+    const match = String(id).match(/-(\d+)$/);
+    const numericId = match ? match[1] : null;
+    if (numericId) {
+      const fallbackUrl = campaign
+        ? `${item_details_api}/${numericId}?campaign=${campaign}`
+        : `${item_details_api}/${numericId}`;
+      const { data } = await MainApi.get(`${fallbackUrl}`);
+      return data;
+    }
+    throw err;
+  }
+};
 
 export const useGetItemDetails = (params, itemSuccess,productUpdate) => {
   // Create a query key that includes the relevant parameters

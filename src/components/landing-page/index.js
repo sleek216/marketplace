@@ -7,9 +7,11 @@ import PushNotificationLayout from "../PushNotificationLayout";
 import HeroSection from "./hero-section/HeroSection";
 import LandingModulesSection from "./LandingModulesSection";
 import LandingPromotionalBannerSection from "./LandingPromotionalBannerSection";
-import LandingDoorstepDeliveryBanner from "./LandingDoorstepDeliveryBanner";
 import LandingFeaturesSection from "./LandingFeaturesSection";
+import LandingBrandsSection from "./LandingBrandsSection";
+import LandingDoorstepDeliveryBanner from "./LandingDoorstepDeliveryBanner";
 import LandingHowItWorksSection from "./LandingHowItWorksSection";
+import LandingAppDownloadBannerSection from "./LandingAppDownloadBannerSection";
 import ComponentOne from "./ComponentOne";
 import Testimonials from "./Testimonials";
 
@@ -48,6 +50,7 @@ const LandingPage = ({ configData, landingPageData }) => {
       <PushNotificationLayout>
         {/* Hero Banner with Location Search */}
         <HeroSection
+          landingPageData={landingPageData}
           landingPageDataheroSection={landingPageData?.hero_section}
           promotionalBanner={
             landingPageData?.promotional_banner_section
@@ -59,13 +62,22 @@ const LandingPage = ({ configData, landingPageData }) => {
         <LandingModulesSection />
 
         {/* Platform Features & Value Propositions */}
-        <LandingFeaturesSection />
+        <LandingFeaturesSection landingPageData={landingPageData} />
+
+        {/* Shop by Brands Section */}
+        <LandingBrandsSection landingPageData={landingPageData} />
 
         {/* Express Doorstep Delivery Banner */}
-        <LandingDoorstepDeliveryBanner />
+        <LandingDoorstepDeliveryBanner landingPageData={landingPageData} />
 
         {/* Simple 3-Step How It Works Guide */}
-        <LandingHowItWorksSection />
+        <LandingHowItWorksSection landingPageData={landingPageData} />
+
+        {/* App Download Banner Section (Above Footer Newsletter) */}
+        <LandingAppDownloadBannerSection
+          configData={configData}
+          landingPageData={landingPageData}
+        />
 
         {/* Customer Testimonials & Reviews */}
         {landingPageData?.testimonial_list?.length > 0 && (

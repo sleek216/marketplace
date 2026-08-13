@@ -1,15 +1,18 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import React from "react";
+import { Box, Typography, useTheme, alpha } from "@mui/material";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import { useRouter } from "next/router";
 import { getModuleId } from "helper-functions/getModuleId";
 
-/** Landing-parity category cell — circular icon + label inside scroll strip */
+/** Landing-parity category tile — Circular photo avatar + name label */
 const LandingCategoryTile = ({ category, imageUrl }) => {
   const theme = useTheme();
   const router = useRouter();
   const name = category?.name;
   const id = category?.id;
   const img = imageUrl || category?.image_full_url;
+
+  const isDarkMode = theme.palette.mode === "dark";
 
   const handleClick = () => {
     let activeModuleId = category?.module_id || getModuleId();
@@ -50,34 +53,44 @@ const LandingCategoryTile = ({ category, imageUrl }) => {
         alignItems: "center",
         textAlign: "center",
         cursor: "pointer",
-        width: "100%",
-        py: 2,
-        transition: "background-color 0.2s",
+        flexShrink: 0,
+        width: { xs: "85px", sm: "100px", md: "110px" },
+        transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
         "&:hover": {
-          backgroundColor: theme.palette.action.hover,
+          "& .category-img-box": {
+            transform: "scale(1.06)",
+            boxShadow: isDarkMode
+              ? "0px 8px 20px rgba(0, 0, 0, 0.4)"
+              : `0px 8px 20px ${alpha(theme.palette.primary.main, 0.18)}`,
+            borderColor: theme.palette.primary.main,
+          },
+          "& .category-name-text": {
+            color: theme.palette.primary.main,
+          },
         },
       }}
     >
+      {/* Circular Photo Avatar */}
       <Box
+        className="category-img-box"
         sx={{
-          width: { xs: "60px", sm: "68px", md: "74px" },
-          height: { xs: "60px", sm: "68px", md: "74px" },
+          width: { xs: "75px", sm: "90px", md: "100px" },
+          height: { xs: "75px", sm: "90px", md: "100px" },
           borderRadius: "50%",
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor:
-            theme.palette.mode === "dark" ? "#1e293b" : "#ffffff",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+          backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+          border: `1.5px solid ${
+            isDarkMode ? "rgba(255,255,255,0.1)" : "#E2E8F0"
+          }`,
+          boxShadow: isDarkMode
+            ? "0px 3px 12px rgba(0, 0, 0, 0.3)"
+            : "0px 3px 10px rgba(0, 0, 0, 0.04)",
           overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "all 0.23s ease-in-out",
-          p: 1.2,
-          "&:hover": {
-            transform: "scale(1.06)",
-            borderColor: theme.palette.primary.main,
-            boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
-          },
+          transition: "all 0.25s ease-in-out",
+          position: "relative",
+          p: img ? 1.2 : 0,
         }}
       >
         {img ? (
@@ -86,28 +99,34 @@ const LandingCategoryTile = ({ category, imageUrl }) => {
             src={img}
             alt={name}
             sx={{
-              width: "80%",
-              height: "80%",
+              width: "100%",
+              height: "100%",
               objectFit: "contain",
+              objectPosition: "center",
             }}
           />
         ) : (
           <StorefrontOutlinedIcon
-            sx={{ fontSize: 26, color: theme.palette.text.secondary }}
+            sx={{ fontSize: 28, color: theme.palette.text.secondary }}
           />
         )}
       </Box>
+
+      {/* Category Name Label */}
       <Typography
+        className="category-name-text"
         sx={{
-          mt: 1.2,
-          fontSize: { xs: "11px", md: "12px" },
-          fontWeight: 500,
-          color: theme.palette.text.primary,
+          mt: 1,
+          fontSize: { xs: "11px", sm: "12px", md: "13px" },
+          fontWeight: 600,
+          color: isDarkMode ? theme.palette.text.primary : "#1E293B",
           lineHeight: 1.25,
-          width: "90%",
+          textAlign: "center",
+          width: "100%",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          transition: "color 0.2s ease-in-out",
         }}
       >
         {name}

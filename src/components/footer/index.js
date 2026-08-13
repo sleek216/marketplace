@@ -21,9 +21,6 @@ const FooterComponent = (props) => {
         },
       }}
     >
-      {router.pathname === "/" && (
-        <AppAndSellerBanner configData={configData} landingPageData={landingPageData} />
-      )}
       <FooterTop landingPageData={landingPageData} />
       <StyledFooterBackground nobottommargin={isLandingPage}>
         <CustomStackFullWidth

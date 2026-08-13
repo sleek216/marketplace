@@ -160,10 +160,10 @@ const LandingModulesSection = () => {
               variant="h4"
               align="left"
               sx={{
-                fontSize: { xs: "1.4rem", sm: "1.75rem", md: "2rem" },
-                fontWeight: 800,
+                fontSize: { xs: "1.15rem", sm: "1.3rem", md: "1.45rem" },
+                fontWeight: 700,
                 color: theme.palette.text.primary,
-                letterSpacing: "-0.3px",
+                letterSpacing: "-0.2px",
               }}
             >
               Marketplace Services & Modules

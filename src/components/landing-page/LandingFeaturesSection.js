@@ -16,7 +16,7 @@ import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
 import CustomContainer from "../container";
 
-const FEATURES = [
+const DEFAULT_FEATURES = [
   {
     icon: <LocalShippingOutlinedIcon sx={{ fontSize: 32 }} />,
     title: "Express Doorstep Delivery",
@@ -55,8 +55,67 @@ const FEATURES = [
   },
 ];
 
-const LandingFeaturesSection = () => {
+const FEATURE_ICONS = [
+  <LocalShippingOutlinedIcon sx={{ fontSize: 32 }} key="1" />,
+  <VerifiedOutlinedIcon sx={{ fontSize: 32 }} key="2" />,
+  <DiscountOutlinedIcon sx={{ fontSize: 32 }} key="3" />,
+  <SupportAgentOutlinedIcon sx={{ fontSize: 32 }} key="4" />,
+  <StorefrontOutlinedIcon sx={{ fontSize: 32 }} key="5" />,
+  <AutorenewOutlinedIcon sx={{ fontSize: 32 }} key="6" />,
+];
+
+const LandingFeaturesSection = ({ landingPageData }) => {
   const theme = useTheme();
+
+  const sectionData =
+    landingPageData?.why_choose_us_section ||
+    landingPageData?.features_section ||
+    landingPageData?.why_choose_us;
+
+  // Dynamic status check from Admin Panel
+  const isEnabled =
+    sectionData?.status !== 0 && sectionData?.status !== false;
+
+  const rawTitle = sectionData?.title;
+  const sectionTitle =
+    rawTitle && rawTitle.trim() !== ""
+      ? rawTitle
+      : "Why Shop On Our Marketplace?";
+
+  const rawSubtitle = sectionData?.subtitle;
+  const sectionSubtitle =
+    rawSubtitle && rawSubtitle.trim() !== ""
+      ? rawSubtitle
+      : "We provide a fast, secure, and multi-category online shopping platform.";
+
+  // Build features list dynamically from Admin Panel
+  let featuresList = DEFAULT_FEATURES;
+  const rawList =
+    sectionData?.features ||
+    sectionData?.list ||
+    sectionData?.cards ||
+    landingPageData?.why_choose_us_list;
+
+  if (Array.isArray(rawList) && rawList.length > 0) {
+    featuresList = rawList.map((item, idx) => {
+      const iconUrl =
+        item?.image_full_url ||
+        item?.icon_full_url ||
+        item?.image ||
+        item?.icon_url;
+
+      return {
+        iconUrl: iconUrl && typeof iconUrl === "string" && iconUrl.startsWith("http") ? iconUrl : null,
+        fallbackIcon: FEATURE_ICONS[idx % FEATURE_ICONS.length],
+        title: item?.title || item?.feature_title || `Feature ${idx + 1}`,
+        description: item?.description || item?.subtitle || item?.feature_sub_title || "",
+      };
+    });
+  }
+
+  if (!isEnabled) {
+    return null;
+  }
 
   return (
     <Box
@@ -73,31 +132,33 @@ const LandingFeaturesSection = () => {
             variant="h4"
             align="left"
             sx={{
-              fontSize: { xs: "1.5rem", sm: "1.875rem", md: "2.125rem" },
+              fontSize: { xs: "1.15rem", sm: "1.3rem", md: "1.45rem" },
               fontWeight: 700,
               color: theme.palette.primary.main,
               textAlign: "left",
             }}
           >
-            Why Shop On Our Marketplace?
+            {sectionTitle}
           </Typography>
-          <Typography
-            variant="body1"
-            align="left"
-            sx={{
-              color: (theme) => alpha(theme.palette.neutral[500], 0.85),
-              maxWidth: "600px",
-              fontSize: { xs: "0.875rem", md: "1rem" },
-              textAlign: "left",
-            }}
-          >
-            We provide a fast, secure, and multi-category online shopping platform.
-          </Typography>
+          {Boolean(sectionSubtitle) && (
+            <Typography
+              variant="body1"
+              align="left"
+              sx={{
+                color: (theme) => alpha(theme.palette.neutral[500], 0.85),
+                maxWidth: "600px",
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                textAlign: "left",
+              }}
+            >
+              {sectionSubtitle}
+            </Typography>
+          )}
         </Stack>
 
         {/* Feature Cards Grid */}
         <Grid container spacing={3}>
-          {FEATURES.map((item, index) => (
+          {featuresList.map((item, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Paper
                 elevation={0}
@@ -122,6 +183,7 @@ const LandingFeaturesSection = () => {
                   },
                 }}
               >
+                {/* Dynamic Icon Container */}
                 <Box
                   className="feature-icon"
                   sx={{
@@ -135,10 +197,26 @@ const LandingFeaturesSection = () => {
                     justifyContent: "center",
                     mb: 2,
                     transition: "all 0.3s ease",
+                    overflow: "hidden",
                   }}
                 >
-                  {item.icon}
+                  {item.iconUrl ? (
+                    <Box
+                      component="img"
+                      src={item.iconUrl}
+                      alt={item.title}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    item.icon || item.fallbackIcon
+                  )}
                 </Box>
+
+                {/* Card Title */}
                 <Typography
                   variant="h6"
                   sx={{
@@ -150,6 +228,8 @@ const LandingFeaturesSection = () => {
                 >
                   {item.title}
                 </Typography>
+
+                {/* Card Description */}
                 <Typography
                   variant="body2"
                   sx={{

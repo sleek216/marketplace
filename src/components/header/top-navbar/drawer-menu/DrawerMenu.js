@@ -13,29 +13,39 @@ import { logoutSuccessFull } from "utils/toasterMessages";
 import { clearWishList } from "redux/slices/wishList";
 import { setClearCart } from "redux/slices/cart";
 import { OPEN_AUTH_MODAL_EVENT } from "../../second-navbar/SecondNavbar";
-import { notifyHeaderSessionSync, clearUserSessionData } from "helper-functions/headerSessionSync";
+import { clearUserSessionData } from "helper-functions/headerSessionSync";
 
 import { resetEntireCart } from "redux/slices/cart";
 
-const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
+const DrawerMenu = ({ setOpenDrawer: externalSetOpenDrawer }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
+  const [internalOpen, setInternalOpen] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [isLogoutLoading, setIsLogoutLoading] = useState(false);
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const toggleDrawer = () => {
-    setOpenDrawer(false);
+  const closeDrawer = () => {
+    setInternalOpen(false);
+    if (externalSetOpenDrawer) {
+      externalSetOpenDrawer(false);
+    }
   };
+
+  const openDrawerHandler = () => {
+    setInternalOpen(true);
+  };
+
   const handleRoute = (path) => {
     router.push(`/${path}`, undefined, { shallow: true });
-    setOpenDrawer(false);
+    closeDrawer();
   };
+
   const handleSignIn = () => {
     window.dispatchEvent(new Event(OPEN_AUTH_MODAL_EVENT));
-    setOpenDrawer(false);
+    closeDrawer();
   };
+
   const handleLogout = async () => {
     setIsLogoutLoading(true);
     try {
@@ -43,7 +53,7 @@ const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
         dispatch(setLogoutUser(null));
         dispatch(resetEntireCart());
         clearUserSessionData();
-        setOpenDrawer(false);
+        closeDrawer();
         toast.success(t(logoutSuccessFull));
         setOpenModal(false);
         let a = [];
@@ -59,14 +69,15 @@ const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
       console.error(err);
     }
   };
+
   return (
     <>
       <IconButton
         size="large"
-        aria-label="account of current user"
+        aria-label="mobile navigation menu"
         aria-controls="menu-appbar"
         aria-haspopup="true"
-        onClick={toggleDrawer(!openDrawer)}
+        onClick={openDrawerHandler}
         sx={{
           color: (theme) => theme.palette.primary.main,
           paddingRight: "0px",
@@ -74,24 +85,24 @@ const DrawerMenu = ({ setOpenDrawer, openDrawer }) => {
       >
         <MenuIcon />
       </IconButton>
-      {openDrawer && (
+      {internalOpen && (
         <CustomDrawer
           variant="temporary"
           anchor="right"
-          open={openDrawer}
-          onClose={toggleDrawer(false)}
+          open={internalOpen}
+          onClose={closeDrawer}
           router={router}
           TransitionComponent={Slide}
           TransitionProps={{
-            direction: "right", // Customize the direction ('left', 'right', 'up', or 'down')
-            timeout: 300, // Transition duration in milliseconds
+            direction: "left",
+            timeout: 300,
           }}
         >
           <MobileTopMenu
             handleRoute={handleRoute}
             handleSignIn={handleSignIn}
-            toggleDrawer={toggleDrawer}
-            setOpenDrawer={setOpenDrawer}
+            toggleDrawer={closeDrawer}
+            setOpenDrawer={setInternalOpen}
             handleLogout={handleLogout}
             openModal={openModal}
             isLogoutLoading={isLogoutLoading}
