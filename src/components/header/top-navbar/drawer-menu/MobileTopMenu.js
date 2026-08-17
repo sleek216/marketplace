@@ -36,7 +36,7 @@ const MobileTopMenu = ({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   let token = undefined;
   let location = undefined;
-  if (typeof window !== undefined) {
+  if (typeof window !== "undefined") {
     location = localStorage.getItem("location");
     token = localStorage.getItem("token");
   }
@@ -120,7 +120,10 @@ const MobileTopMenu = ({
         justifyContent: "space-between",
       }}
       role="presentation"
-      onKeyDown={toggleDrawer(false)}
+      onKeyDown={(e) => {
+        if (e.key === "Tab" || e.key === "Shift") return;
+        if (typeof toggleDrawer === "function") toggleDrawer();
+      }}
     >
       <Box sx={{ paddingX: "20px" }}>
         <Scrollbar style={{ maxHeight: "80vh" }}>
@@ -159,9 +162,9 @@ const MobileTopMenu = ({
                       primary={t("Profile")}
                     />
                     {profileMenuOpen ? (
-                      <ExpandLess sx={{ fontSize: "20px" }} />
+                      <ExpandLess size={20} />
                     ) : (
-                      <ExpandMore sx={{ fontSize: "20px" }} />
+                      <ExpandMore size={20} />
                     )}
                   </ListItemButton>
 

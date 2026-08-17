@@ -254,7 +254,7 @@ const HomePageComponents = ({ configData, landingPageData }) => {
         ) : (
           <Box width="100%">
             {getModuleWiseComponents()}
-            <PromoDealsBanner />
+            {getModuleWiseComponents() ? <PromoDealsBanner /> : null}
           </Box>
         )}
       </CustomStackFullWidth>

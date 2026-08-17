@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Menu as MenuIcon } from "lucide-react";
-import { IconButton, Slide } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 
 import { useTranslation } from "react-i18next";
 import MobileTopMenu from "./MobileTopMenu";
-import { CustomDrawer } from "../../NavBar.style";
+import CustomSideDrawer from "components/side-drawer/CustomSideDrawer";
 import { setLogoutUser } from "redux/slices/profileInfo";
 import toast from "react-hot-toast";
 import { logoutSuccessFull } from "utils/toasterMessages";
@@ -17,13 +17,19 @@ import { clearUserSessionData } from "helper-functions/headerSessionSync";
 
 import { resetEntireCart } from "redux/slices/cart";
 
-const DrawerMenu = ({ setOpenDrawer: externalSetOpenDrawer }) => {
+const DrawerMenu = ({ setOpenDrawer: externalSetOpenDrawer, openDrawer: externalOpenDrawer }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [isLogoutLoading, setIsLogoutLoading] = useState(false);
+
+  useEffect(() => {
+    if (externalOpenDrawer !== undefined) {
+      setInternalOpen(Boolean(externalOpenDrawer));
+    }
+  }, [externalOpenDrawer]);
 
   const closeDrawer = () => {
     setInternalOpen(false);
@@ -34,6 +40,9 @@ const DrawerMenu = ({ setOpenDrawer: externalSetOpenDrawer }) => {
 
   const openDrawerHandler = () => {
     setInternalOpen(true);
+    if (externalSetOpenDrawer) {
+      externalSetOpenDrawer(true);
+    }
   };
 
   const handleRoute = (path) => {
@@ -85,32 +94,29 @@ const DrawerMenu = ({ setOpenDrawer: externalSetOpenDrawer }) => {
       >
         <MenuIcon />
       </IconButton>
-      {internalOpen && (
-        <CustomDrawer
-          variant="temporary"
-          anchor="right"
-          open={internalOpen}
-          onClose={closeDrawer}
-          router={router}
-          TransitionComponent={Slide}
-          TransitionProps={{
-            direction: "left",
-            timeout: 300,
+      <CustomSideDrawer
+        anchor="right"
+        open={Boolean(internalOpen)}
+        onClose={closeDrawer}
+        maxWidth="320px"
+        width="85vw"
+        height="100vh"
+      >
+        <MobileTopMenu
+          handleRoute={handleRoute}
+          handleSignIn={handleSignIn}
+          toggleDrawer={closeDrawer}
+          setOpenDrawer={(val) => {
+            setInternalOpen(val);
+            if (externalSetOpenDrawer) externalSetOpenDrawer(val);
           }}
-        >
-          <MobileTopMenu
-            handleRoute={handleRoute}
-            handleSignIn={handleSignIn}
-            toggleDrawer={closeDrawer}
-            setOpenDrawer={setInternalOpen}
-            handleLogout={handleLogout}
-            openModal={openModal}
-            isLogoutLoading={isLogoutLoading}
-            setOpenModal={setOpenModal}
-            t={t}
-          />
-        </CustomDrawer>
-      )}
+          handleLogout={handleLogout}
+          openModal={openModal}
+          isLogoutLoading={isLogoutLoading}
+          setOpenModal={setOpenModal}
+          t={t}
+        />
+      </CustomSideDrawer>
     </>
   );
 };

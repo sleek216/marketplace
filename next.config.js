@@ -59,19 +59,7 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  experimental: {
-    optimizePackageImports: [
-      "@mui/material",
-      "@mui/icons-material",
-      "@mui/lab",
-      "@mui/x-date-pickers",
-      "lucide-react",
-      "date-fns",
-      "lodash",
-      "formik",
-      "yup",
-    ],
-  },
+
   eslint: {
     ignoreDuringBuilds: true,
   },

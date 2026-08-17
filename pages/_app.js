@@ -43,69 +43,10 @@ const SocialAuthScripts = dynamic(
   { ssr: false }
 );
 
-// Universal React Hook Shield: In React 19, if a legacy library or hook returns a non-function (like a Promise, Object, null, or boolean) from useEffect/useLayoutEffect,
-// React stores it as effect.destroy and crashes with 'destroy is not a function' during commitHookEffectListUnmount.
-// We intercept all effect callbacks so they NEVER return a non-function!
-if (typeof React !== "undefined") {
-  const origUseEffect = React.useEffect;
-  const origUseLayoutEffect = React.useLayoutEffect;
-  const wrapEffect = (orig) => {
-    if (!orig || orig._isWrapped) return orig;
-    const wrapped = function (callback, deps) {
-      return orig(() => {
-        const res = callback();
-        return typeof res === "function" ? res : undefined;
-      }, deps);
-    };
-    wrapped._isWrapped = true;
-    return wrapped;
-  };
-  React.useEffect = wrapEffect(origUseEffect);
-  React.useLayoutEffect = wrapEffect(origUseLayoutEffect);
-}
-
 Router.events.on("routeChangeStart", nProgress.start);
 Router.events.on("routeChangeError", nProgress.done);
 Router.events.on("routeChangeComplete", nProgress.done);
 
-// Bulletproof Shield: Prevent React 19 / Fast Refresh unmount conflicts where legacy libraries set `.destroy = null` and call it again
-if (typeof window !== "undefined") {
-  const noop = function () {};
-  const shieldProperty = (target, prop) => {
-    try {
-      Object.defineProperty(target, prop, {
-        get() {
-          return noop;
-        },
-        set(val) {
-          try {
-            let currentVal = typeof val === "function" ? val : noop;
-            Object.defineProperty(this, prop, {
-              get() {
-                return typeof currentVal === "function" ? currentVal : noop;
-              },
-              set(newVal) {
-                if (typeof newVal === "function") {
-                  currentVal = newVal;
-                } else {
-                  currentVal = noop;
-                }
-              },
-              configurable: true,
-              enumerable: false,
-            });
-          } catch (e) {}
-        },
-        configurable: true,
-        enumerable: false,
-      });
-    } catch (e) {}
-  };
-  ["destroy", "dispose", "cleanup"].forEach((prop) => {
-    shieldProperty(Object.prototype, prop);
-    shieldProperty(window, prop);
-  });
-}
 
 export const currentVersion = process.env.NEXT_PUBLIC_SITE_VERSION;
 const clientSideEmotionCache = createEmotionCache();

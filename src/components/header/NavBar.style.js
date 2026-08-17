@@ -213,13 +213,15 @@ export const ButtonContainer = styled("div")(({ theme }) => ({
   marginRight: "15px",
 }));
 export const CustomDrawer = styled(Drawer)(({ theme, router }) => ({
+  zIndex: 1300,
   "& .MuiDrawer-paper": {
-    top: "56px",
+    top: "0px",
     maxWidth: "320px",
-    width: "96vw",
-    height: "calc(100dvh-56px)",
+    width: "85vw",
+    height: "100%",
+    boxSizing: "border-box",
     transition: "transform 0.3s ease-in-out",
-    zIndex: "1200",
+    zIndex: 1300,
   },
 }));
 export const CustomBottomNavigationAction = styled(BottomNavigationAction)(

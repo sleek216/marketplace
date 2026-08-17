@@ -83,9 +83,9 @@ const CollapsableMenu = ({
       >
         <ListItemText primary={t(value?.text)} />
         {open ? (
-          <ExpandLess sx={{ fontSize: "20px" }} />
+          <ExpandLess size={20} />
         ) : (
-          <ExpandMore sx={{ fontSize: "20px" }} />
+          <ExpandMore size={20} />
         )}
       </ListItemButton>
 
