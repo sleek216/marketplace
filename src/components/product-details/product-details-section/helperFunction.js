@@ -149,7 +149,14 @@ export const getItemDataForAddToCart = (
   mainPrice,
   guest_id
 ) => {
-  const resolvedPrice = Number(mainPrice ?? values?.price ?? values?.unit_price ?? values?.item?.price ?? 0) || 0;
+  const qty = Number(updateQuantity) || 1;
+  let resolvedPrice = Number(mainPrice ?? values?.price ?? values?.unit_price ?? values?.item?.price ?? 0) || 0;
+  const catalog = Number(
+    values?.unit_price ?? values?.itemBasePrice ?? values?.item?.price ?? values?.price ?? 0
+  );
+  if (qty > 1 && catalog > 0 && Math.abs(resolvedPrice - catalog * qty) < 0.01) {
+    resolvedPrice = catalog;
+  }
   const cartRowId = values?.cartItemId || values?.id;
   const productId = values?.item?.id || values?.item_id || (values?.cartItemId ? values?.id : null);
   let totalQty = 0;
@@ -191,15 +198,13 @@ export const getPriceAfterQuantityChange = (cart, Quantity) => {
   let mainPrice = 0;
   const basePrice = Number(cart?.price ?? cart?.unit_price ?? cart?.item?.price ?? cart?.price_with_discount ?? 0) || 0;
   const price = basePrice + getTotalVariationsPrice(cart?.food_variations);
-  //here quantity is incremented with number 1
-  const productPrice = price * Quantity;
   const optPrice = Number(cart?.selectedOption?.[0]?.price ?? basePrice) || basePrice;
   mainPrice =
     getCurrentModuleType() === "food"
-      ? productPrice
+      ? price
       : (cart?.selectedOption?.length > 0
           ? optPrice
-          : basePrice) * Quantity;
+          : basePrice);
   return mainPrice;
 };
 export const isVariationAvailable = (productDetailsData) => {

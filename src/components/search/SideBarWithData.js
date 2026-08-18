@@ -6,6 +6,7 @@ import {
 import { Grid, Skeleton, Stack, Box } from "@mui/material";
 import SearchFilter from "./search-filter";
 import ProductCard, { CardWrapper } from "../cards/ProductCard";
+import ModuleMarketplaceProductCard from "../home/ModuleMarketplaceProductCard";
 import StoreCard from "../cards/StoreCard";
 import EmptySearchResults from "../EmptySearchResults";
 import AppliedFilters from "./AppliedFilters";
@@ -30,6 +31,7 @@ const SideBarWithData = forwardRef((props, ref) => {
     selectedBrandsHandler,
     fromNav,
     linkRouteTo,
+    toolbar,
   } = props;
 
   const [loading, setLoading] = useState(false);
@@ -43,8 +45,8 @@ const SideBarWithData = forwardRef((props, ref) => {
   }, []);
 
   const getProductShimmer = () => (
-    <Grid item xs={12} sm={4} md={3}>
-      <CardWrapper sx={{ height: "250px" }}>
+    <Grid item xs={6} sm={4} md={3}>
+      <CardWrapper sx={{ height: "100%", minHeight: "320px" }}>
         <Stack spacing={1}>
           <Skeleton variant="rectangular" animation="pulse" height={150} />
           <Stack alignItems="center" justifyContent="center" padding="1rem">
@@ -64,17 +66,17 @@ const SideBarWithData = forwardRef((props, ref) => {
             <>
               {pageData?.pages?.length > 0 && (
                 <>
-                  {pageData?.pages?.map((page) =>
+                  {pageData?.pages?.map((page, pageIndex) =>
                     page?.products?.map((product, index) => (
-                      <Grid key={index} item xs={6} sm={4} md={3}>
-                        <ProductCard
-                          key={product?.id}
-                          item={product}
-                          cardheight="318px"
-                          cardFor="vertical"
-                          cardType="vertical-type"
-                          // cardFor="popular items"
-                        />
+                      <Grid
+                        key={`search-item-${pageIndex}-${product?.id ?? index}`}
+                        item
+                        xs={6}
+                        sm={4}
+                        md={3}
+                        sx={{ display: "flex", "& > *": { width: "100%" } }}
+                      >
+                        <ModuleMarketplaceProductCard item={product} />
                       </Grid>
                     ))
                   )}
@@ -85,17 +87,22 @@ const SideBarWithData = forwardRef((props, ref) => {
             <>
               {pageData?.pages?.length > 0 && (
                 <>
-                  {pageData?.pages?.map((page) =>
+                  {pageData?.pages?.map((page, pageIndex) =>
                     page?.products?.map((product, index) => (
-                      <Grid key={index} item xs={12} sm={6} md={6}>
+                      <Grid
+                        key={`search-list-${pageIndex}-${product?.id ?? index}`}
+                        item
+                        xs={12}
+                        sm={6}
+                        md={6}
+                        sx={{ display: "flex", "& > *": { width: "100%" } }}
+                      >
                         <ProductCard
-                          key={product?.id}
                           item={product}
                           cardheight="150px"
                           cardType="vertical-type"
                           horizontalcard="true"
                           cardFor="list-view"
-                          // cardFor="popular items"
                         />
                       </Grid>
                     ))
@@ -111,9 +118,16 @@ const SideBarWithData = forwardRef((props, ref) => {
         <>
           {pageData?.pages?.length > 0 && (
             <>
-              {pageData?.pages?.map((page, index) =>
-                page?.stores?.map((item, index) => (
-                  <Grid key={index} item xs={12} sm={4} md={4}>
+              {pageData?.pages?.map((page) =>
+                page?.stores?.map((item) => (
+                  <Grid
+                    key={item?.id ?? item?.slug}
+                    item
+                    xs={12}
+                    sm={6}
+                    md={4}
+                    sx={{ display: "flex", "& > *": { width: "100%" } }}
+                  >
                     <StoreCard
                       item={item}
                       imageUrl={item?.cover_photo_full_url}
@@ -132,27 +146,43 @@ const SideBarWithData = forwardRef((props, ref) => {
   const emptyHandler = () => {
     if (currentTab === 0) {
       if (!isFetchingNextPage && pageData?.pages[0]?.products?.length === 0) {
-        return <EmptySearchResults text="Items not found!" />;
+        return (
+          <Grid item xs={12}>
+            <EmptySearchResults text="Items Not Found!" isItems />
+          </Grid>
+        );
       }
     } else {
       if (!isFetchingNextPage && pageData?.pages[0]?.stores?.length === 0) {
-        return <EmptySearchResults text="Stores not found!" />;
+        return (
+          <Grid item xs={12}>
+            <EmptySearchResults text="Stores Not Found!" />
+          </Grid>
+        );
       }
     }
   };
 
   return (
-    <CustomBoxFullWidth sx={{ marginTop: "20px" }}>
-      <Grid container>
-        <Grid item xs={0} sm={0} md={0} lg={3} sx={{ display: { xs: 'none', lg: 'block' } }}>
+    <CustomBoxFullWidth>
+      <Grid container columnSpacing={{ xs: 0, lg: 3 }} alignItems="flex-start">
+        <Grid
+          item
+          xs={0}
+          sm={0}
+          md={0}
+          lg={3}
+          sx={{ display: { xs: "none", lg: "block" } }}
+        >
           <CustomBoxFullWidth
             ref={sidebarRef}
             sx={{
-              position: 'sticky',
-              top: '80px',
-              height: 'calc(100vh - 100px)',
-            
-            
+              position: "sticky",
+              top: { lg: "84px" },
+              maxHeight: "calc(100vh - 110px)",
+              overflowY: "auto",
+              pr: 0.5,
+              scrollbarWidth: "thin",
             }}
           >
             <SearchFilter
@@ -167,14 +197,15 @@ const SideBarWithData = forwardRef((props, ref) => {
             />
           </CustomBoxFullWidth>
         </Grid>
-        <Grid item xs={12} sm={12} md={12} lg={9} spacing={2.5}>
-          <CustomStackFullWidth spacing={2} sx={{ paddingTop: "1rem" }}>
+        <Grid item xs={12} sm={12} md={12} lg={9}>
+          <CustomStackFullWidth spacing={1.5} sx={{ minWidth: 0 }}>
+            {toolbar}
             <AppliedFilters
               filterData={filterData}
               //setFilterData={setFilterData}
             />
             <CustomBoxFullWidth ref={ref}>
-              <Grid container spacing={2}>
+              <Grid container spacing={2} alignItems="stretch">
                 {getLayoutHandler()}
                 {isFetchingNextPage && (
                   <Grid

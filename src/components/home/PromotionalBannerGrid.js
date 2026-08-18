@@ -118,19 +118,20 @@ const PromotionalBannerGrid = ({
     borderRadius: "2px",
     overflow: "hidden",
     position: "relative",
-    cursor: loading ? "default" : "pointer",
+    cursor: loading || !onSlideClick ? "default" : "pointer",
     flex: "1 1 0",
     minHeight: { xs: bannerSideTileMinSx.xs, sm: bannerSideTileMinSx.sm },
     border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
     boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    ...(!loading && {
-      "&:hover": {
-        transform: "translateY(-2px)",
-        boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-        [`& .${imageClass}`]: { transform: "scale(1.03)" },
-      },
-    }),
+    ...(!loading &&
+      onSlideClick && {
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+          [`& .${imageClass}`]: { transform: "scale(1.03)" },
+        },
+      }),
   });
 
   const arrowSx = {
@@ -264,7 +265,7 @@ const PromotionalBannerGrid = ({
                   key={loading ? index : slide?.id || index}
                   elevation={0}
                   onClick={
-                    loading || !slide
+                    loading || !slide || !onSlideClick
                       ? undefined
                       : () => handleSlideActivate(slide, slideIndex)
                   }

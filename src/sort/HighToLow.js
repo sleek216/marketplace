@@ -1,17 +1,28 @@
 import React from "react";
-import { Button, Popover, Stack, styled, Typography } from "@mui/material";
+import { Button, Popover, Stack, styled, Typography, alpha } from "@mui/material";
 import sort from "./assets/sort.png";
 import { useTranslation } from "react-i18next";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import CustomImageContainer from "components/CustomImageContainer";
 
-const Wrapper = styled(Button)(({ theme, border }) => ({
-  border: border === "true" && `1px solid ${theme.palette.neutral[400]}`,
-  borderRadius: "5px",
-  minHeight: "32px",
-  padding: "4px 10px",
-  textTransform: "capitalize",
+const Wrapper = styled(Button)(({ theme, active }) => ({
+  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+  borderRadius: "8px",
+  minHeight: "36px",
+  padding: "6px 14px",
+  textTransform: "none",
+  backgroundColor:
+    active === "true"
+      ? alpha(theme.palette.primary.main, 0.08)
+      : theme.palette.background.paper,
+  color: theme.palette.text.primary,
+  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+  },
 }));
 
 const HighToLow = ({ handleSortBy, sortBy }) => {
@@ -38,7 +49,7 @@ const HighToLow = ({ handleSortBy, sortBy }) => {
     { name: t("High to Low"), value: "high" },
     { name: t("Low to High"), value: "low" },
   ];
-  const Sort_by=t("Sort by:")
+  const Sort_by = t("Sort by:");
 
   const getContent = (label, showArrow) => {
     return (
@@ -46,28 +57,29 @@ const HighToLow = ({ handleSortBy, sortBy }) => {
         direction="row"
         alignItems="center"
         justifyContent="center"
-        spacing={0.8}
+        spacing={1}
       >
         <CustomImageContainer
           src={sort?.src}
-          height="10px"
-          width="10px"
+          height="12px"
+          width="12px"
           objectFit="contain"
         />
         <Typography
-          fontSize="12px"
-          sx={{ color: (theme) => theme.palette.neutral[600] }}
+          fontSize="12.5px"
+          fontWeight={600}
+          sx={{ color: (theme) => theme.palette.text.primary }}
         >
           {`${Sort_by} ${label}`}
         </Typography>
         {showArrow === "true" &&
           (open ? (
             <KeyboardArrowUpIcon
-              sx={{ color: (theme) => theme.palette.text.secondary }}
+              sx={{ fontSize: 18, color: (theme) => theme.palette.text.secondary }}
             />
           ) : (
             <KeyboardArrowDownIcon
-              sx={{ color: (theme) => theme.palette.text.secondary }}
+              sx={{ fontSize: 18, color: (theme) => theme.palette.text.secondary }}
             />
           ))}
       </Stack>
@@ -76,7 +88,7 @@ const HighToLow = ({ handleSortBy, sortBy }) => {
 
   return (
     <div>
-      <Wrapper border="true" onClick={handleClick}>
+      <Wrapper active={open ? "true" : "false"} onClick={handleClick}>
         {getContent(
           sortOptions.find((option) => option.value === sortBy)?.name ||
             t("Default"),
@@ -93,20 +105,54 @@ const HighToLow = ({ handleSortBy, sortBy }) => {
           vertical: "bottom",
           horizontal: "left",
         }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "left",
+        }}
         PaperProps={{
-          style: {
+          sx: {
+            mt: 1,
+            p: 0.75,
+            borderRadius: "10px",
+            border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
             width: anchorEl?.clientWidth || "auto",
+            minWidth: "160px",
           },
         }}
       >
-        {sortOptions.map((option) => (
-          <Wrapper
-            key={option.value}
-            onClick={() => handleSelect(option.value)}
-          >
-            {getContent(option.name, "false")}
-          </Wrapper>
-        ))}
+        <Stack spacing={0.5}>
+          {sortOptions.map((option) => (
+            <Button
+              key={option.value}
+              fullWidth
+              onClick={() => handleSelect(option.value)}
+              sx={{
+                justifyContent: "flex-start",
+                py: 0.8,
+                px: 1.5,
+                borderRadius: "6px",
+                textTransform: "none",
+                fontSize: "12.5px",
+                fontWeight: sortBy === option.value ? 700 : 500,
+                color:
+                  sortBy === option.value
+                    ? "primary.main"
+                    : "text.primary",
+                backgroundColor:
+                  sortBy === option.value
+                    ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                    : "transparent",
+                "&:hover": {
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.06),
+                },
+              }}
+            >
+              {option.name}
+            </Button>
+          ))}
+        </Stack>
       </Popover>
     </div>
   );

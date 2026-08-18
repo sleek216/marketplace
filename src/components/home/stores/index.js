@@ -191,6 +191,7 @@ const Stores = (props) => {
         key={`${filteredData}${selectedFilterValue}`}
         sx={{
           minHeight: "20vh",
+          pb: { xs: 2, md: 3 },
         }}
       >
         <AllStores

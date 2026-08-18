@@ -1,4 +1,6 @@
-import { handleProductValueWithOutDiscount } from "utils/CustomFunctions";
+import { handleProductValueWithOutDiscount, coerceToUnitPrice } from "utils/CustomFunctions";
+import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+import { applySelectedFoodVariations } from "helper-functions/cartItemMatch";
 
 const getSelectedVariations = (variations) => {
   const selectedItem = [];
@@ -32,8 +34,6 @@ const getOtherModuleVariation = (itemVariations, selectedVariation) => {
   return selectedItem;
 };
 
-import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
-
 const resolveCartRowModuleType = (cartRow, product) =>
   product?.module_type ||
   product?.module?.module_type ||
@@ -47,6 +47,25 @@ const resolveCartRowModuleId = (cartRow, product) =>
   cartRow?.module_id ||
   cartRow?.module?.id ||
   getCurrentModuleId();
+
+const resolveSelectedAddons = (cartRow, product) => {
+  if (Array.isArray(cartRow?.add_ons) && cartRow.add_ons.length > 0) {
+    return cartRow.add_ons;
+  }
+  const ids = cartRow?.add_on_ids;
+  const qtys = cartRow?.add_on_qtys;
+  const catalog = Array.isArray(product?.addons) ? product.addons : [];
+  if (Array.isArray(ids) && ids.length > 0) {
+    return ids.map((id, index) => {
+      const found = catalog.find((addon) => String(addon?.id) === String(id));
+      const quantity = Number(qtys?.[index]) || 1;
+      return found
+        ? { ...found, quantity }
+        : { id, quantity, price: 0 };
+    });
+  }
+  return [];
+};
 
 /**
  * Cart list API may return a flat array (legacy) or a grouped payload:
@@ -96,21 +115,29 @@ export const mapApiCartRowsToReduxItems = (carts) => {
     const moduleType = resolveCartRowModuleType(cartRow, product);
     const moduleId = resolveCartRowModuleId(cartRow, product);
     const isFood = moduleType === "food";
+    const foodVariations = isFood
+      ? applySelectedFoodVariations(product?.food_variations, cartRow?.variation)
+      : product?.food_variations;
     const selectedOption = isFood
-      ? getSelectedVariations(product?.food_variations)
+      ? getSelectedVariations(foodVariations)
       : getOtherModuleVariation(product?.variations, cartRow?.variation);
 
+    const qty = Number(cartRow?.quantity) || 1;
+    const catalogUnit = Number(product?.price || product?.unit_price || 0);
     const rowUnitPrice =
-      Number(cartRow?.price) > 0
-        ? Number(cartRow.price)
-        : handleProductValueWithOutDiscount({
-            ...product,
-            selectedOption,
-          });
+      coerceToUnitPrice(
+        Number(cartRow?.price) > 0
+          ? Number(cartRow.price)
+          : handleProductValueWithOutDiscount({
+              ...product,
+              selectedOption,
+            }),
+        qty,
+        { unit_price: catalogUnit, catalogPrice: catalogUnit }
+      ) || catalogUnit;
 
     return {
       ...product,
-      // Preserve store-level delivery fields from the cart row (not just item)
       store_id: cartRow?.store_id || product?.store_id,
       store_name: cartRow?.store_name || product?.store_name,
       delivery_charge: cartRow?.delivery_charge ?? product?.delivery_charge,
@@ -136,10 +163,12 @@ export const mapApiCartRowsToReduxItems = (carts) => {
       cartItemId: cartRow?.id,
       is_selected: cartRow?.is_selected !== undefined ? Boolean(cartRow.is_selected) : true,
       price: rowUnitPrice,
-      totalPrice: rowUnitPrice * (cartRow?.quantity || 1),
-      selectedAddons: product?.addons,
-      quantity: cartRow?.quantity,
-      food_variations: product?.food_variations,
+      unit_price: catalogUnit || rowUnitPrice,
+      totalPrice: rowUnitPrice * qty,
+      variation: cartRow?.variation,
+      selectedAddons: resolveSelectedAddons(cartRow, product),
+      quantity: qty,
+      food_variations: foodVariations,
       itemBasePrice: rowUnitPrice,
       selectedOption,
     };
@@ -156,6 +185,6 @@ export const getCustomerLatLng = () => {
     const lng = loc?.lng ?? loc?.longitude ?? null;
     return { lat, lng };
   } catch {
-    return { lat: null, lng: null };
+    return { lat, lng };
   }
 };

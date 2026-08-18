@@ -13,17 +13,10 @@ import CartIcon from "./assets/CartIcon";
 import FreeDeliveryProgressBar from "./FreeDeliveryProgressBar";
 import CartTotalPrice from "./CartTotalPrice";
 import { useTheme } from "@emotion/react";
-import { alpha, Box, Stack, Typography } from "@mui/material";
+import { alpha, Stack } from "@mui/material";
 import DotSpin from "../DotSpin";
 import useDeleteCartItem from "../../api-manage/hooks/react-query/add-cart/useDeleteCartItem";
-import useGetAllCartList from "../../api-manage/hooks/react-query/add-cart/useGetAllCartList";
-import { setCartList, clearCartMeta, setCartMeta } from "redux/slices/cart";
-import {
-  getCartMetaFromResponse,
-  getCartsFromResponse,
-  mapApiCartRowsToReduxItems,
-} from "helper-functions/normalizeCartListResponse";
-import { getGuestId } from "helper-functions/getToken";
+import { setCartList } from "redux/slices/cart";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import {
@@ -51,29 +44,6 @@ const CardView = (props) => {
   const [selectedCartIds, setSelectedCartIds] = useState(initialCartIds);
   const { mutateAsync: removeCartItemMutate, isLoading: removeSelectedLoading } =
     useDeleteCartItem();
-
-  // Fire server API request with selected_cart_ids on every checkbox selection change
-  const cartListSuccessHandler = (res) => {
-    if (res) {
-      const apiRows = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
-      if (Array.isArray(apiRows)) {
-        dispatch(setCartList(apiRows));
-      }
-      dispatch(setCartMeta(getCartMetaFromResponse(res)));
-    }
-  };
-
-  const { isFetching: isCartApiFetching } = useGetAllCartList(
-    getGuestId(),
-    cartListSuccessHandler,
-    selectedCartIds
-  );
-
-  useEffect(() => {
-    if (sideDrawerOpen) {
-      refetch?.();
-    }
-  }, [sideDrawerOpen, refetch]);
 
   // Landing page: show modules first, then drill into a selected module
   const isLandingPage =
@@ -154,6 +124,8 @@ const CardView = (props) => {
   const storeId = selectedCartList?.[0]?.store_id;
   const { data: storeData } = useGetStoreDetails(storeId, {
     enabled: Boolean(storeId && selectedCartList.length > 0),
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
   const minimumOrderBlocked = useMemo(() => {
     const minimum = getStoreMinimumOrderAmount(storeData);
@@ -164,7 +136,6 @@ const CardView = (props) => {
   const handleToggleSelect = (cartItem) => {
     const id = cartItem?.cartItemId || cartItem?.id;
     if (!id) return;
-    dispatch(clearCartMeta());
     const targetStr = String(id);
     setSelectedCartIds((prev) => {
       const exists = prev.some((itemId) => String(itemId) === targetStr);
@@ -190,7 +161,6 @@ const CardView = (props) => {
       (item) => !idsToDelete.includes(item?.cartItemId) && !idsToDelete.includes(item?.id)
     );
     dispatch(setCartList(nextCartList));
-    dispatch(clearCartMeta());
     setSelectedCartIds([]);
     toast.success(t("Selected items removed from cart"));
 
@@ -234,7 +204,7 @@ const CardView = (props) => {
         refetch={refetch}
         selectedCartIds={selectedCartIds}
         onToggleSelect={handleToggleSelect}
-        isFetchingApi={isCartApiFetching}
+        storeData={storeData}
       />
     );
   };
@@ -338,9 +308,7 @@ const CardView = (props) => {
             )}
             <CartTotalPrice
               cartList={selectedCartList}
-              selectedCartIds={selectedCartIds}
-              allCartList={activeCartList}
-              isFetchingApi={isCartApiFetching}
+              storeData={storeData}
             />
             <CartActions
               setSideDrawerOpen={setSideDrawerOpen}

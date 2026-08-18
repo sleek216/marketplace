@@ -82,16 +82,15 @@ export const getIndexFromArrayByComparision = (arrayOfObjects, object) => {
 };
 
 export const calculateItemBasePrice = (item, selectedOptions) => {
-  let basePrice = item?.price;
-  if (selectedOptions.length > 0) {
-    selectedOptions?.forEach((option) => {
-      if (option.isSelected === true) {
-        basePrice += Number.parseInt(option?.optionPrice);
+  let basePrice = Number(item?.price) || 0;
+  if (selectedOptions?.length > 0) {
+    selectedOptions.forEach((option) => {
+      if (option?.isSelected === true) {
+        basePrice += Number(option?.optionPrice) || 0;
       }
     });
   }
   return basePrice;
-  // if(item)
 };
 
 export const FormatedDateWithTime = (date) => {
@@ -132,7 +131,7 @@ export const getDayNumber = (day) => {
 
 const handleVariationValuesSum = (productVariations) => {
   let sum = 0;
-  if (productVariations.length > 0) {
+  if (productVariations?.length > 0) {
     productVariations?.forEach((pVal) => {
       pVal?.values?.forEach((cVal) => {
         if (cVal?.isSelected) {
@@ -144,6 +143,71 @@ const handleVariationValuesSum = (productVariations) => {
   return sum;
 };
 
+export const roundMoney = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+};
+
+export const getSelectedCartAddons = (item) => {
+  const addons = item?.selectedAddons;
+  if (!Array.isArray(addons) || addons.length === 0) return [];
+  return addons.filter(
+    (addon) => addon && (Boolean(addon.isChecked) || Number(addon.quantity) > 0)
+  );
+};
+
+/** Cart/API unit price already includes selected variations. Never add extras on top. */
+export const coerceToUnitPrice = (rawPrice, quantity, extras = {}) => {
+  const n = Number(rawPrice);
+  const qty = Number(quantity) || 1;
+  const catalog = Number(
+    extras?.unit_price ?? extras?.catalogPrice ?? extras?.item?.price ?? 0
+  );
+  const total = Number(extras?.totalPrice ?? 0);
+  if (!Number.isFinite(n) || n <= 0) {
+    if (qty > 1 && total > 0) return roundMoney(total / qty);
+    return catalog > 0 ? catalog : 0;
+  }
+  if (qty > 1) {
+    if (total > 0 && Math.abs(n - total) < 0.01) return roundMoney(n / qty);
+    if (catalog > 0 && Math.abs(n - catalog * qty) < 0.01) return catalog;
+  }
+  return n;
+};
+
+export const getCartItemUnitPrice = (item) => {
+  if (!item) return 0;
+  const qty = Number(item?.quantity) || 1;
+  const extras = item;
+  const fromBase = coerceToUnitPrice(item?.itemBasePrice, qty, extras);
+  if (fromBase > 0) return fromBase;
+  const fromPrice = coerceToUnitPrice(item?.price, qty, extras);
+  if (fromPrice > 0) return fromPrice;
+  if (qty > 0 && Number(item?.totalPrice) > 0) {
+    return roundMoney(Number(item.totalPrice) / qty);
+  }
+  if (Number(item?.selectedOption?.[0]?.price) > 0) {
+    return coerceToUnitPrice(item.selectedOption[0].price, qty, extras);
+  }
+  let productPrice = Number(item?.price || 0);
+  if (item?.food_variations?.length > 0) {
+    productPrice += handleVariationValuesSum(item.food_variations);
+  }
+  return productPrice;
+};
+
+export const getCartItemGrossLineTotal = (item) => {
+  if (!item) return 0;
+  const qty = Number(item?.quantity) || 1;
+  return roundMoney(
+    handleTotalAmountWithAddons(
+      getCartItemUnitPrice(item) * qty,
+      getSelectedCartAddons(item)
+    )
+  );
+};
+
 const handleValuesSum = (productVariations) => {
   let sum = 0;
   if (productVariations.length > 0) {
@@ -153,6 +217,10 @@ const handleValuesSum = (productVariations) => {
 };
 
 export const handleProductValueWithOutDiscount = (product) => {
+  if (Number(product?.itemBasePrice) > 0) return Number(product.itemBasePrice);
+  if (product?.cartItemId != null && Number(product?.price) > 0) {
+    return Number(product.price);
+  }
   let productPrice = product?.price;
   if (getCurrentModuleType() === "food") {
     if (product?.food_variations?.length > 0) {
@@ -201,28 +269,7 @@ const handleValueWithOutDiscount = (product) => {
 };
 
 export const handlePurchasedAmount = (cartList) => {
-  if (getCurrentModuleType() === "food") {
-    return cartList.reduce(
-      (total, product) =>
-        (product?.food_variations?.length > 0
-          ? handleProductValueWithOutDiscount(product)
-          : product.price) *
-        product.quantity +
-        selectedAddonsTotal(product.selectedAddons) +
-        total,
-      0
-    );
-  } else {
-    return cartList.reduce(
-      (total, product) =>
-        (product?.selectedOption?.length > 0
-          ? handleValueWithOutDiscount(product)
-          : product.price) *
-        product.quantity +
-        total,
-      0
-    );
-  }
+  return getSubTotalPrice(cartList);
 };
 
 export const getCouponDiscount = (couponDiscount, storeData, cartList) => {
@@ -341,73 +388,38 @@ const handleTotalDiscountBasedOnModules = (
   restaurentDiscount,
   resDisType
 ) => {
-  if (getCurrentModuleType() === "food") {
-    return items.reduce(
-      (total, product) =>
-        (product?.food_variations?.length > 0
-          ? handleProductValueWithOutDiscount(product) -
-          getConvertDiscount(
-            restaurentDiscount,
-            resDisType,
-            handleProductValueWithOutDiscount(product),
-            product.store_discount
-          )
-          : product.price -
-          getConvertDiscount(
-            restaurentDiscount,
-            resDisType,
-            product.price,
-            product.store_discount,
-            product.flash_sale
-          )) *
-        product.quantity +
-        total,
-      0
+  return items.reduce((total, product) => {
+    const unit = getCartItemUnitPrice(product);
+    const discountedUnit = getConvertDiscount(
+      restaurentDiscount,
+      resDisType,
+      unit,
+      product.store_discount,
+      product.flash_sale
     );
-  } else {
-    return items.reduce(
-      (total, product) =>
-        (product?.selectedOption?.length > 0
-          ? handleValueWithOutDiscount(product) -
-          getConvertDiscount(
-            restaurentDiscount,
-            resDisType,
-            handleValueWithOutDiscount(product),
-            product.store_discount
-          )
-          : product.price -
-          getConvertDiscount(
-            restaurentDiscount,
-            resDisType,
-            product.price,
-            product.store_discount
-          )) *
-        product.quantity +
-        total,
-      0
-    );
-  }
+    return total + (unit - discountedUnit) * (product.quantity || 1);
+  }, 0);
 };
 
 const handleProductWiseDiscount = (items) => {
   let totalDiscount = 0;
   items?.forEach((item) => {
+    const qty = Number(item?.quantity) || 1;
+    const unit = getCartItemUnitPrice(item);
     if (item.discount > 0) {
       if (item.discount_type === "amount") {
-        totalDiscount += item?.discount * item.quantity;
+        totalDiscount += item?.discount * qty;
       } else {
-        let a =
-          handleProductValueWithOutDiscount(item) -
-          getConvertDiscountNew(
-            item.discount,
-            item.discount_type,
-            handleProductValueWithOutDiscount(item),
-            item.store_discount
-          );
-        totalDiscount += a * item.quantity;
+        const discountedUnit = getConvertDiscountNew(
+          item.discount,
+          item.discount_type,
+          unit,
+          item.store_discount
+        );
+        totalDiscount += (unit - discountedUnit) * qty;
       }
     } else {
-      totalDiscount += item.discount;
+      totalDiscount += item.discount || 0;
     }
   });
   return totalDiscount;
@@ -442,21 +454,7 @@ export const getProductDiscount = (items, storeData, diffDiscount) => {
       );
 
       // Calculate total purchased amount
-      const purchasedAmount = items.reduce((total, product) => {
-        const basePrice = product?.food_variations?.length > 0
-          ? handleProductValueWithOutDiscount(product)
-          : product?.selectedOption?.length > 0 ? product?.price + (product?.selectedOption?.reduce?.((sum, opt) => sum + (opt?.price || 0), 0) || 0) : product?.price;
-
-
-        const addonPrice = product?.selectedAddons?.length > 0
-          ? product.selectedAddons.reduce(
-            (addonTotal, addOn) => addonTotal + addOn.price * addOn.quantity,
-            0
-          )
-          : 0;
-
-        return total + (basePrice + addonPrice) * product.quantity;
-      }, 0);
+      const purchasedAmount = getSubTotalPrice(items);
       // If eligible for store discount, calculate the final applicable discount
       if (purchasedAmount >= restaurentMinimumPurchase) {
         const applicableStoreDiscount = Math.min(totalDiscount, restaurentMaxDiscount);
@@ -651,45 +649,50 @@ export const handleDistance = (distance, origin, destination) => {
   }
 };
 
+/** Selling price of one unit after product/store discount (e.g. 100 with 10% → 90). */
+export const getCartItemDiscountedUnitPrice = (item) => {
+  if (!item) return 0;
+  const unitPrice = getCartItemUnitPrice(item);
+  return roundMoney(
+    getDiscountedAmount(
+      unitPrice,
+      item?.discount,
+      item?.discount_type,
+      item?.store_discount,
+      1
+    )
+  );
+};
+
+export const getCartItemLineTotal = (item) => {
+  if (!item) return 0;
+  const qty = Number(item?.quantity) || 1;
+  const unitPrice = getCartItemUnitPrice(item);
+  const gross = unitPrice * qty;
+  const discounted = getDiscountedAmount(
+    gross,
+    item?.discount,
+    item?.discount_type,
+    item?.store_discount,
+    qty
+  );
+  return roundMoney(
+    handleTotalAmountWithAddons(discounted, getSelectedCartAddons(item))
+  );
+};
+
 export const cartItemsTotalAmount = (cartList) => {
-  let totalAmount = 0;
-  if (cartList?.length > 0) {
-    cartList?.forEach((item) => {
-      const qty = item?.quantity || 1;
+  if (!Array.isArray(cartList) || cartList.length === 0) return 0;
+  return roundMoney(
+    cartList.reduce((sum, item) => sum + getCartItemLineTotal(item), 0)
+  );
+};
 
-      // Resolve per-unit price — same priority as getSingleUnitPrice in CartContent:
-      // 1. itemBasePrice (from API cartRow.price — authoritative)
-      // 2. price field
-      // 3. totalPrice ÷ qty (derive)
-      // 4. selectedOption[0].price (last resort)
-      const unitPrice =
-        Number(item?.itemBasePrice) > 0
-          ? Number(item.itemBasePrice)
-          : Number(item?.price) > 0
-          ? Number(item.price)
-          : qty > 0 && Number(item?.totalPrice) > 0
-          ? Number(item.totalPrice) / qty
-          : Number(item?.selectedOption?.[0]?.price) > 0
-          ? Number(item.selectedOption[0].price)
-          : 0;
-
-      // Apply per-unit discount (amount OR percent/fixed)
-      let discountedUnit = unitPrice;
-      const discount = Number(item?.discount);
-      const discountType = item?.discount_type;
-      if (discount > 0) {
-        if (discountType === "amount") {
-          discountedUnit = Math.max(0, unitPrice - discount);
-        } else if (discountType === "percent" || discountType === "fixed") {
-          discountedUnit = unitPrice - (discount / 100) * unitPrice;
-        }
-      }
-
-      const lineTotal = discountedUnit * qty;
-      totalAmount += handleTotalAmountWithAddons(lineTotal, item?.selectedAddons);
-    });
-  }
-  return totalAmount;
+export const getCartMerchandiseDiscount = (cartList) => {
+  if (!Array.isArray(cartList) || cartList.length === 0) return 0;
+  return roundMoney(
+    Math.max(0, getSubTotalPrice(cartList) - cartItemsTotalAmount(cartList))
+  );
 };
 
 export const getInfoFromZoneData = (zoneData) => {
@@ -848,40 +851,20 @@ export const getDeliveryFees = (
 };
 
 export const getItemTotalWithoutDiscount = (item) => {
-  return item?.price + handleVariationValuesSum(item?.food_variations);
+  return getCartItemUnitPrice(item);
 };
 
 export const getSubTotalPrice = (cartList) => {
-  if (getCurrentModuleType() === "food") {
-    return cartList.reduce(
-      (total, product) =>
-        (product?.food_variations?.length > 0
-          ? getItemTotalWithoutDiscount(product)
-          : product.price) *
-        product.quantity +
-        selectedAddonsTotal(product.selectedAddons) +
-        total,
-      0
-    );
-  } else {
-    return cartList.reduce(
-      (total, product) =>
-        (product?.selectedOption?.length > 0
-          ? product?.selectedOption?.[0]?.price
-          : product.price) *
-        product.quantity +
-        total,
-      0
-    );
-  }
+  if (!Array.isArray(cartList) || cartList.length === 0) return 0;
+  return roundMoney(
+    cartList.reduce((total, item) => total + getCartItemGrossLineTotal(item), 0)
+  );
 };
 
 /** Item total after store/product discounts (before coupon, delivery, tax). */
-export const getOrderSubtotalAfterProductDiscount = (cartList, storeData) => {
+export const getOrderSubtotalAfterProductDiscount = (cartList) => {
   if (!cartList?.length) return 0;
-  return (
-    getSubTotalPrice(cartList) - getProductDiscount(cartList, storeData)
-  );
+  return cartItemsTotalAmount(cartList);
 };
 
 export const getStoreMinimumOrderAmount = (storeData) =>
@@ -958,18 +941,16 @@ export const getCalculatedTotal = (
       );
   if (couponDiscount) {
     if (couponDiscount?.coupon_type === "free_delivery") {
-      return (
-        getSubTotalPrice(cartList) -
-        getProductDiscount(cartList, storeData) +
+      return roundMoney(
+        cartItemsTotalAmount(cartList) +
         taxAmount -
         (couponDiscount
           ? getCouponDiscount(couponDiscount, storeData, cartList)
           : 0)
       );
     } else {
-      return (
-        getSubTotalPrice(cartList) -
-        getProductDiscount(cartList, storeData) +
+      return roundMoney(
+        cartItemsTotalAmount(cartList) +
         taxAmount -
         (couponDiscount
           ? getCouponDiscount(couponDiscount, storeData, cartList)
@@ -981,9 +962,8 @@ export const getCalculatedTotal = (
       );
     }
   } else {
-    return (
-      getSubTotalPrice(cartList) -
-      getProductDiscount(cartList, storeData) +
+    return roundMoney(
+      cartItemsTotalAmount(cartList) +
       taxAmount -
       0 +
       resolvedDeliveryFee +
@@ -1039,16 +1019,37 @@ export const isFoodAvailableBySchedule = (cart, selectedTime) => {
   }
 };
 
-export const getVariation = (variations) => {
-  let variation = "";
-  if (variations?.length > 0) {
-    variations.map((item, index) => {
-      // if (index > 1) variation += `-${item.value}`
-      // variation += item.value
-      variation += `${index !== 0 ? "-" : ""}${item.value.type}`;
-    });
+const getVariationPart = (item) => {
+  if (item == null) return "";
+  if (typeof item === "string" || typeof item === "number") return String(item);
+
+  const nestedType = item?.value?.type || item?.value?.label || item?.value?.name;
+  if (nestedType) return String(nestedType);
+
+  if (item?.type) return String(item.type);
+  if (item?.label) return String(item.label);
+
+  const groupedLabels = item?.values?.label;
+  if (Array.isArray(groupedLabels) && groupedLabels.length > 0) {
+    return groupedLabels.filter(Boolean).join("-");
   }
-  return variation;
+  if (typeof groupedLabels === "string" && groupedLabels) return groupedLabels;
+
+  if (Array.isArray(item?.values) && item.values.length > 0) {
+    const selected = item.values
+      .filter((val) => val?.isSelected)
+      .map((val) => val?.label || val?.type)
+      .filter(Boolean);
+    if (selected.length > 0) return selected.join("-");
+  }
+
+  if (item?.name) return String(item.name);
+  return "";
+};
+
+export const getVariation = (variations) => {
+  if (!Array.isArray(variations) || variations.length === 0) return "";
+  return variations.map(getVariationPart).filter(Boolean).join("-");
 };
 
 export const getTotalVariationsPrice = (variations) => {

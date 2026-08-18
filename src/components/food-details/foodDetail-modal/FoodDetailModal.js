@@ -29,9 +29,11 @@ import {
   setBuyNowItemList,
   setCampaignItemList,
   setCart,
+  setCartList,
   setClearCart,
   setUpdateVariationToCart,
 } from "redux/slices/cart";
+import { getCartsFromResponse, mapApiCartRowsToReduxItems } from "helper-functions/normalizeCartListResponse";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import { FoodDetailModalStyle } from "./foodDetailModal.style";
 import IconButton from "@mui/material/IconButton";
@@ -46,6 +48,8 @@ import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import { handleValuesFromCartItems } from "../../product-details/product-details-section/helperFunction";
 import useCartItemUpdate from "../../../api-manage/hooks/react-query/add-cart/useCartItemUpdate";
 import { getGuestId, getToken, hasValidAuthToken } from "helper-functions/getToken";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
+import { findMatchingCartItem } from "helper-functions/cartItemMatch";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { OPEN_AUTH_MODAL_EVENT } from "components/header/second-navbar/SecondNavbar";
 import {useGetItemDetails} from "api-manage/hooks/react-query/product-details/useGetItemDetails";
@@ -207,19 +211,27 @@ const FoodDetailModal = ({
     quantity: quantity,
     food_variations: getNewVariationForDispatch(),
     selectedAddons: selectedAddons,
-    itemBasePrice: getDiscountedAmount(
-      calculateItemBasePrice(modalData[0], selectedOptions),
-      product?.discount,
-      product?.discount_type,
-      product?.store_discount,
-      quantity
-    ),
+    itemBasePrice: calculateItemBasePrice(modalData[0], selectedOptions || []),
   });
+  const syncCartFromApi = (res, fallbackProduct = null) => {
+    const mappedFromApi = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+    if (mappedFromApi?.length > 0) {
+      const otherModulesItems = cartList.filter((c) => {
+        const cModuleId = c?.module_id || c?.module?.id;
+        if (productModuleId && cModuleId) return String(cModuleId) !== String(productModuleId);
+        return true;
+      });
+      dispatch(setCartList([...otherModulesItems, ...mappedFromApi]));
+    } else if (fallbackProduct) {
+      dispatch(setCart({ ...fallbackProduct, isUpdate: true }));
+    }
+  };
+
   const handleSuccess = (res) => {
     if (res) {
-      let product = {};
+      let productObj = {};
       res?.forEach((item) => {
-        product = {
+        productObj = {
           ...item?.item,
           cartItemId: item?.id,
           totalPrice: item?.price,
@@ -230,87 +242,66 @@ const FoodDetailModal = ({
           itemBasePrice: item?.item?.price,
         };
       });
-      dispatch(setCart({ ...product, isUpdate: true }));
+      syncCartFromApi(res, productObj);
+      toast.success(t("Item added to cart"));
       handleClose();
-      //dispatch()
     }
   };
+
   const updateCartSuccessHandler = (res) => {
-    if (res && res.length > 0) {
-      const updatedProducts = res.map((item) => {
-        const indexNumber = getIndexFromArrayByComparision(cartList, item?.item); // use current item
-        return {
-          product: {
-            ...item?.item,
-            cartItemId: item?.id,
-            totalPrice: item?.price,
-            quantity: item?.quantity,
-            food_variations: item?.item?.food_variations,
-            selectedAddons: selectedAddons,
-            selectedOption: selectedOptions,
-            itemBasePrice: item?.item?.price,
-          },
-          indexNumber,
-        };
-      });
-
-      updatedProducts.forEach(({ product, indexNumber }) => {
-        dispatch(
-          setUpdateVariationToCart({
-            newObj: product,
-            indexNumber,
-          })
-        );
-      });
-
-      toast.success(t("Item updated successfully"));
+    if (res && (res.length > 0 || res.carts?.length > 0)) {
+      syncCartFromApi(res);
+      toast.success(t("Item added to cart"));
       handleModalClose?.();
     }
   };
 
-
   const addOrUpdateToCartByDispatch = () => {
+    if (!checkLocationBeforeCart()) {
+      return;
+    }
     const resolvedStock = Number(modalData?.[0]?.stock);
     const hasFiniteStock = Number.isFinite(resolvedStock);
     if (!isFoodModuleItem && hasFiniteStock && (resolvedStock <= 0 || quantity > resolvedStock)) {
       toast.error(t(out_of_stock));
       return;
     }
-    if (!productUpdate) {
-      setQuantity(1);
-    }
-    if (productUpdate) {
-      //for updating
 
-      let totalQty = 0;
+    const newFoodVariations = getNewVariationForDispatch();
+    const targetId = modalData?.[0]?.id || product?.id;
+
+    const existingCartItem = findMatchingCartItem(cartList, {
+      id: targetId,
+      module_id: productModuleId,
+      module_type: product?.module_type || product?.module?.module_type || "food",
+      food_variations: newFoodVariations,
+      selectedOption: selectedOptions,
+      selectedAddons,
+    });
+
+    const basePrice = Number(modalData?.[0]?.price ?? product?.price ?? fromCard?.price ?? 0);
+    let optionsPrice = 0;
+    if (selectedOptions?.length > 0) {
+      selectedOptions.forEach((item) => {
+        optionsPrice += Number(item?.optionPrice) || 0;
+      });
+    }
+    const unitPrice = basePrice + optionsPrice;
+
+    if (productUpdate) {
       const itemObject = {
-        cart_id: product?.cart_id,
+        cart_id: product?.cart_id || product?.cartItemId || existingCartItem?.cartItemId || existingCartItem?.id,
         guest_id: getGuestId(),
         model: product?.available_date_starts ? "ItemCampaign" : "Item",
-        add_on_ids:
-          selectedAddons?.length > 0
-            ? selectedAddons?.map((add) => {
-                return add.id;
-              })
-            : [],
-        add_on_qtys:
-          selectedAddons?.length > 0
-            ? selectedAddons.map((add) => add.quantity)
-            : [],
-        item_id: product?.id,
-        price: totalPrice,
+        add_on_ids: selectedAddons?.length > 0 ? selectedAddons?.map((add) => add.id) : [],
+        add_on_qtys: selectedAddons?.length > 0 ? selectedAddons.map((add) => add.quantity) : [],
+        item_id: product?.id || targetId,
+        price: unitPrice,
         quantity: quantity,
-        variation:
-          getNewVariationForDispatch()?.length > 0
-            ? getNewVariationForDispatch()?.map((variation) => {
-                return {
-                  name: variation.name,
-                  values: {
-                    label: handleValuesFromCartItems(variation.values),
-                  },
-                };
-              })
-            : [],
+        variation: newFoodVariations?.length > 0 ? newFoodVariations.map((variation) => ({
+            name: variation.name,
+            values: { label: handleValuesFromCartItems(variation.values) },
+          })) : [],
         moduleIdOverride: productModuleId,
       };
 
@@ -318,77 +309,74 @@ const FoodDetailModal = ({
         onSuccess: updateCartSuccessHandler,
         onError: onErrorResponse,
       });
-    } else {
-      const existingCartItem = cartList?.find((cItem) => {
-        return (
-          String(cItem?.id) === String(modalData?.[0]?.id || product?.id) &&
-          JSON.stringify(cItem?.selectedOption || []) === JSON.stringify(selectedOptions || [])
-        );
-      });
+    } else if (existingCartItem) {
+      const currentQty = Number(existingCartItem?.quantity || 1);
+      const accumulatedQty = currentQty + (quantity || 1);
+      const cartIdToUpdate = existingCartItem?.cartItemId || existingCartItem?.id;
 
-      if (existingCartItem) {
-        const accumulatedQty = (existingCartItem?.quantity || 1) + quantity;
-        const itemObject = {
-          cart_id: existingCartItem?.cartItemId || existingCartItem?.id,
-          guest_id: guestId,
-          model: modalData[0]?.available_date_starts ? "ItemCampaign" : "Item",
-          add_on_ids:
-            selectedAddons?.length > 0
-              ? selectedAddons?.map((add) => add.id)
-              : [],
-          add_on_qtys:
-            selectedAddons?.length > 0
-              ? selectedAddons.map((add) => add.quantity)
-              : [],
-          item_id: modalData[0]?.id,
-          price: (totalPrice / (quantity || 1)) * accumulatedQty,
+      dispatch(
+        setCart({
+          ...existingCartItem,
           quantity: accumulatedQty,
-          variation:
-            getNewVariationForDispatch()?.length > 0
-              ? getNewVariationForDispatch()?.map((variation) => ({
-                  name: variation.name,
-                  values: {
-                    label: handleValuesFromCartItems(variation.values),
-                  },
-                }))
-              : [],
-          moduleIdOverride: productModuleId,
-        };
+          totalPrice: unitPrice * accumulatedQty,
+          food_variations: newFoodVariations,
+          selectedAddons,
+          selectedOption: selectedOptions,
+          isUpdate: true,
+        })
+      );
 
-        updateMutate(itemObject, {
-          onSuccess: updateCartSuccessHandler,
-          onError: onErrorResponse,
-        });
-        return;
-      }
+      const itemObject = {
+        cart_id: cartIdToUpdate,
+        guest_id: guestId,
+        model: modalData[0]?.available_date_starts ? "ItemCampaign" : "Item",
+        add_on_ids: selectedAddons?.length > 0 ? selectedAddons?.map((add) => add.id) : [],
+        add_on_qtys: selectedAddons?.length > 0 ? selectedAddons.map((add) => add.quantity) : [],
+        item_id: targetId,
+        price: unitPrice,
+        quantity: accumulatedQty,
+        variation: newFoodVariations?.length > 0 ? newFoodVariations.map((variation) => ({
+            name: variation.name,
+            values: { label: handleValuesFromCartItems(variation.values) },
+          })) : [],
+        moduleIdOverride: productModuleId,
+      };
 
-      let totalQty = 0;
+      updateMutate(itemObject, {
+        onSuccess: updateCartSuccessHandler,
+        onError: (err) => {
+          const status = err?.response?.status;
+          const msg = (err?.response?.data?.message || err?.response?.data?.errors?.[0]?.message || "").toLowerCase();
+          const isNotFound = status === 404 || msg.includes("not found") || msg.includes("notfound");
+          if (isNotFound) {
+            const fallbackAddObj = {
+              ...itemObject,
+              price: unitPrice,
+              quantity: quantity,
+            };
+            delete fallbackAddObj.cart_id;
+            mutate(fallbackAddObj, {
+              onSuccess: handleSuccess,
+              onError: onErrorResponse,
+            });
+          } else {
+            onErrorResponse(err);
+          }
+        },
+      });
+    } else {
       const itemObject = {
         guest_id: guestId,
         model: modalData[0]?.available_date_starts ? "ItemCampaign" : "Item",
-        add_on_ids:
-          selectedAddons?.length > 0
-            ? selectedAddons?.map((add) => {
-                return add.id;
-              })
-            : [],
-        add_on_qtys:selectedAddons?.length > 0
-          ? selectedAddons.map((add) => add.quantity)
-          : [],
-        item_id: modalData[0]?.id,
-        price: totalPrice,
+        add_on_ids: selectedAddons?.length > 0 ? selectedAddons?.map((add) => add.id) : [],
+        add_on_qtys: selectedAddons?.length > 0 ? selectedAddons.map((add) => add.quantity) : [],
+        item_id: targetId,
+        price: unitPrice,
         quantity: quantity,
-        variation:
-          getNewVariationForDispatch()?.length > 0
-            ? getNewVariationForDispatch()?.map((variation) => {
-                return {
-                  name: variation.name,
-                  values: {
-                    label: handleValuesFromCartItems(variation.values),
-                  },
-                };
-              })
-            : [],
+        variation: newFoodVariations?.length > 0 ? newFoodVariations.map((variation) => ({
+            name: variation.name,
+            values: { label: handleValuesFromCartItems(variation.values) },
+          })) : [],
         moduleIdOverride: productModuleId,
       };
       mutate(itemObject, {
@@ -398,6 +386,9 @@ const FoodDetailModal = ({
     }
   };
   const handleBuyOrOrderNow = (status) => {
+    if (!checkLocationBeforeCart()) {
+      return;
+    }
     if (!hasValidAuthToken(getToken())) {
       toast.error(t(not_logged_in_message));
       if (typeof window !== "undefined") {
@@ -621,7 +612,6 @@ const FoodDetailModal = ({
   ) => {
     if (choiceType === "single") {
       if (checked) {
-        //selected or checked variation handling
         if (selectedOptions.length > 0) {
           const isExist = selectedOptions.find(
             (item) =>
@@ -631,18 +621,9 @@ const FoodDetailModal = ({
           if (isExist) {
             const newSelectedOptions = selectedOptions.filter(
               (sOption) =>
-                sOption.choiceIndex === choiceIndex &&
-                sOption.label !== isExist.label
+                !(sOption.choiceIndex === choiceIndex && sOption.label === isExist.label)
             );
             setSelectedOptions(newSelectedOptions);
-            setTotalPrice(
-              (prevState) =>
-                prevState - Number.parseInt(option.optionPrice) * quantity
-            );
-            setVarPrice(
-              (prevPrice) =>
-                prevPrice - Number.parseInt(option.optionPrice) * quantity
-            );
           } else {
             const isItemExistFromSameVariation = selectedOptions.find(
               (item) => item.choiceIndex === choiceIndex
@@ -662,21 +643,6 @@ const FoodDetailModal = ({
                 }
               });
               setSelectedOptions(newObjs);
-              //changing total price by removing previous ones price and adding new selection options price
-              setTotalPrice(
-                (prevState) =>
-                  prevState -
-                  Number.parseInt(isItemExistFromSameVariation.optionPrice) *
-                    quantity +
-                  Number.parseInt(option.optionPrice) * quantity
-              );
-              setVarPrice(
-                (prevPrice) =>
-                  prevPrice -
-                  Number.parseInt(isItemExistFromSameVariation.optionPrice) *
-                    quantity +
-                  Number.parseInt(option.optionPrice) * quantity
-              );
             } else {
               const newObj = {
                 choiceIndex: choiceIndex,
@@ -686,18 +652,9 @@ const FoodDetailModal = ({
                 type: isRequired === "on" ? "required" : "optional",
               };
               setSelectedOptions([...selectedOptions, newObj]);
-              setTotalPrice(
-                (prevState) =>
-                  prevState + Number.parseInt(option.optionPrice) * quantity
-              );
-              setVarPrice(
-                (prevPrice) =>
-                  prevPrice + Number.parseInt(option.optionPrice) * quantity
-              );
             }
           }
         } else {
-          // for a new selected variation
           const newObj = {
             choiceIndex: choiceIndex,
             ...option,
@@ -706,39 +663,14 @@ const FoodDetailModal = ({
             type: isRequired === "on" ? "required" : "optional",
           };
           setSelectedOptions([newObj]);
-          setTotalPrice(
-            (prevState) =>
-              prevState + Number.parseInt(option.optionPrice) * quantity
-          );
-          setVarPrice(
-            (prevPrice) =>
-              prevPrice + Number.parseInt(option.optionPrice) * quantity
-          );
         }
       } else {
-        // uncheck or unselect variation handle
-        const filtered = selectedOptions.filter((item) => {
-          if (item.choiceIndex === choiceIndex) {
-            if (item.label !== option.label) {
-              return item;
-            }
-          } else {
-            return item;
-          }
-        });
+        const filtered = selectedOptions.filter(
+          (item) => !(item.choiceIndex === choiceIndex && item.label === option.label)
+        );
         setSelectedOptions(filtered);
-
-        setTotalPrice(
-          (prevState) =>
-            prevState - Number.parseInt(option.optionPrice) * quantity
-        );
-        setVarPrice(
-          (prevPrice) =>
-            prevPrice - Number.parseInt(option.optionPrice) * quantity
-        );
       }
     } else {
-      //for multiple optional variation selection
       if (e.target.checked) {
         setSelectedOptions((prevState) => [
           ...prevState,
@@ -750,33 +682,11 @@ const FoodDetailModal = ({
             type: isRequired === "on" ? "required" : "optional",
           },
         ]);
-        setTotalPrice(
-          (prevState) =>
-            prevState + Number.parseInt(option.optionPrice) * quantity
-        );
-        setVarPrice(
-          (prevPrice) =>
-            prevPrice + Number.parseInt(option.optionPrice) * quantity
-        );
       } else {
-        const filtered = selectedOptions.filter((item) => {
-          if (item.choiceIndex === choiceIndex) {
-            if (item.label !== option.label) {
-              return item;
-            }
-          } else {
-            return item;
-          }
-        });
+        const filtered = selectedOptions.filter(
+          (item) => !(item.choiceIndex === choiceIndex && item.label === option.label)
+        );
         setSelectedOptions(filtered);
-        setTotalPrice(
-          (prevState) =>
-            prevState - Number.parseInt(option.optionPrice) * quantity
-        );
-        setVarPrice(
-          (prevPrice) =>
-            prevPrice - Number.parseInt(option.optionPrice) * quantity
-        );
       }
     }
   };
@@ -812,26 +722,21 @@ const FoodDetailModal = ({
     }
   };
   const handleTotalPrice = () => {
-    let price;
-    if (productUpdate) {
-      if (modalData.length > 0) {
-        price = modalData?.[0]?.price;
-      }
-    } else {
-      price = product?.price;
-    }
+    let basePrice = Number(modalData?.[0]?.price ?? product?.price ?? fromCard?.price ?? 0);
+    let optionsPrice = 0;
     if (selectedOptions?.length > 0) {
-      selectedOptions?.forEach(
-        (item) => (price += Number.parseInt(item?.optionPrice))
-      );
+      selectedOptions.forEach((item) => {
+        optionsPrice += Number(item?.optionPrice) || 0;
+      });
     }
-    setTotalPrice(price * quantity);
+    const singleUnitPrice = basePrice + optionsPrice;
+    const computedTotal = singleUnitPrice * (quantity || 1);
+    setVarPrice(computedTotal);
+    setTotalPrice(computedTotal);
   };
   useEffect(() => {
-    if (product) {
-      handleTotalPrice();
-    }
-  }, [quantity, modalData]);
+    handleTotalPrice();
+  }, [quantity, selectedOptions, modalData, product, fromCard]);
   const decrementPrice = () => {
     setQuantity((prevQty) => prevQty - 1);
   };

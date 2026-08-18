@@ -298,9 +298,8 @@ const HeroSection = ({
                           height: "100%",
                           objectFit: "cover",
                           transition: "opacity 0.5s ease-in-out, transform 0.5s ease",
-                          cursor: "pointer",
+                          cursor: "default",
                         }}
-                        onClick={() => router.push("/search?search=")}
                       />
                     );
                   })()}
@@ -403,23 +402,15 @@ const HeroSection = ({
                     return (
                       <Paper
                         elevation={0}
-                        onClick={() => router.push("/search?search=")}
                         sx={{
                           borderRadius: "8px",
                           overflow: "hidden",
                           position: "relative",
-                          cursor: "pointer",
                           flex: 1,
                           minHeight: { xs: "75px", sm: "100px", md: "115px", lg: "123px" },
                           height: "calc(50% - 6px)",
                           border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
                           boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                          "&:hover": {
-                            transform: "translateY(-3px)",
-                            boxShadow: "0 12px 30px rgba(0,0,0,0.2)",
-                            "& .right-banner-1": { transform: "scale(1.05)" },
-                          },
                         }}
                       >
                         <Box
@@ -431,7 +422,6 @@ const HeroSection = ({
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
-                            transition: "transform 0.5s ease",
                           }}
                         />
                       </Paper>
@@ -446,23 +436,15 @@ const HeroSection = ({
                     return (
                       <Paper
                         elevation={0}
-                        onClick={() => router.push("/search?search=")}
                         sx={{
                           borderRadius: "8px",
                           overflow: "hidden",
                           position: "relative",
-                          cursor: "pointer",
                           flex: 1,
                           minHeight: { xs: "75px", sm: "100px", md: "115px", lg: "123px" },
                           height: "calc(50% - 6px)",
                           border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
                           boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                          "&:hover": {
-                            transform: "translateY(-3px)",
-                            boxShadow: "0 12px 30px rgba(0,0,0,0.2)",
-                            "& .right-banner-2": { transform: "scale(1.05)" },
-                          },
                         }}
                       >
                         <Box
@@ -474,7 +456,6 @@ const HeroSection = ({
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
-                            transition: "transform 0.5s ease",
                           }}
                         />
                       </Paper>

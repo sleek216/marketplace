@@ -1,22 +1,18 @@
-import { useTheme } from "@emotion/react";
 import { FormControlLabel, Typography } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleCheckBox } from "./group-buttons/OutlinedGroupButtons";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { t } from "i18next";
 
 const CustomCheckbox = ({ item, checkHandler, isChecked, seats }) => {
-  const theme = useTheme();
   const [checked, setChecked] = useState(false);
-  const checkboxRef = useRef(null);
+
+  const resolvedChecked =
+    typeof isChecked === "function" ? Boolean(isChecked()) : Boolean(isChecked);
 
   useEffect(() => {
-    setChecked(isChecked);
-    // checkHandler?.({
-    //   checked: isChecked,
-    //   id: item?.id,
-    // });
-  }, [isChecked]);
+    setChecked(resolvedChecked);
+  }, [resolvedChecked]);
 
   // useEffect(() => {
   //   checkboxRef.current.focus();
@@ -33,10 +29,8 @@ const CustomCheckbox = ({ item, checkHandler, isChecked, seats }) => {
 
   return (
     <FormControlLabel
-      // ref={checkboxRef}
       control={
         <StyleCheckBox
-          // ref={checkboxRef}
           module={getCurrentModuleType()}
           value={item?.value}
           checked={checked}
@@ -46,15 +40,25 @@ const CustomCheckbox = ({ item, checkHandler, isChecked, seats }) => {
       }
       label={
         <Typography
-          color={theme.palette.text.primary}
+          color={checked ? "primary.main" : "text.primary"}
           fontSize="13px"
-          fontWeight={500}
+          fontWeight={checked ? 600 : 500}
           noWrap
           sx={{ lineHeight: 1.3 }}
         >
           {seats ? `${t(item?.name)} ${t("Seats")}` : t(item?.name)}
         </Typography>
       }
+      sx={{
+        m: 0,
+        width: "100%",
+        minHeight: 36,
+        alignItems: "center",
+        columnGap: 0.5,
+        "& .MuiFormControlLabel-label": {
+          width: "100%",
+        },
+      }}
     />
   );
 };

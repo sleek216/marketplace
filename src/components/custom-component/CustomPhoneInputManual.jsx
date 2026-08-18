@@ -18,7 +18,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput)(
       color: theme.palette.neutral[1000],
       left: languageDirection === "rtl" ? "80%" : "10px",
       backgroundColor: theme.palette.background.paper,
-      zIndex: "999",
+      zIndex: 2,
       display: "inline-block",
     },
     "&.react-tel-input .flag-dropdown": {

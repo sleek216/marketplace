@@ -6,6 +6,7 @@ import { useDispatch } from "react-redux";
 import Slider from "react-slick";
 import { useGetFeaturedCategories } from "../../../../api-manage/hooks/react-query/all-category/all-categorys";
 import useGetFeatureCategoriesProducts from "../../../../api-manage/hooks/react-query/useGetFeatureCategories";
+import { getCurrentModuleId } from "helper-functions/getCurrentModuleType";
 import {
   CustomBoxFullWidth,
   CustomStackFullWidth,
@@ -109,9 +110,15 @@ const FeaturedCategoriesWithFilter = (props) => {
   //     refetch();
   //   }
   // }, [categoryId]);
-  const featureCategoryData = featureData?.data?.filter(
-    (item) => item.featured === 1
-  );
+  const currentModuleId = getCurrentModuleId();
+  const featureCategoryData = (featureData?.data || []).filter((item) => {
+    const catModuleId = item?.module_id || item?.module?.id;
+    const sameModule =
+      !currentModuleId ||
+      !catModuleId ||
+      String(catModuleId) === String(currentModuleId);
+    return sameModule && (item.featured === 1 || item.featured === true);
+  });
   const handleClick = (index, id) => {
     setSelected(index);
     setCategoryId(id);

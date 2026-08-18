@@ -1,16 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
 import { CustomBoxFullWidth } from "styled-components/CustomStyles.style";
-import { Grid, Skeleton, styled, useMediaQuery, useTheme, Tooltip } from "@mui/material";
-import H1 from "../typographies/H1";
+import {
+  Box,
+  Stack,
+  Grid,
+  Skeleton,
+  styled,
+  useMediaQuery,
+  useTheme,
+  Tooltip,
+  Typography,
+  alpha,
+} from "@mui/material";
 import HighToLow from "../../sort/HighToLow";
-import { Box, Stack } from "@mui/system";
 import { Grid3x3 as WindowIcon, List as ViewListIcon } from "lucide-react";
 import Body2 from "../typographies/Body2";
 import Filter from "../home/stores/Filter";
 import Funnel from "../svg-components/Funnel";
 import { t } from "i18next";
 import NewSortBy from "components/search/NewSortBy";
-import { alpha } from "@mui/material";
 
 const ToggleGroup = styled(Stack)(({ theme }) => ({
   flexDirection: "row",
@@ -111,30 +119,57 @@ const SearchMenu = (props) => {
 		<CustomBoxFullWidth
 			ref={stickyRef}
 			sx={{
-				marginBottom: "20px",
 				position: "sticky",
-				top: {xs:"55px",sm:"63px"},
+				top: { xs: "55px", sm: "72px" },
 				zIndex: 10,
-				backgroundColor: isSticky ? "background.paper" : "transparent",
-				paddingY: isSticky ? "10px" : "0px",
-				paddingX: isSticky ? "10px" : "0px",
-				transition: "all 0.2s ease"
+				backgroundColor: isSticky
+					? (theme) => alpha(theme.palette.background.paper, 0.96)
+					: "background.paper",
+				backdropFilter: isSticky ? "blur(8px)" : "none",
+				py: isSticky ? 1 : 0,
+				mx: isSticky ? -0.5 : 0,
+				px: isSticky ? 0.5 : 0,
+				borderBottom: (theme) =>
+					isSticky
+						? `1px solid ${alpha(theme.palette.divider, 0.5)}`
+						: "none",
+				transition: "all 0.2s ease",
 			}}
 		>
-		<Grid container alignItems="center" justifyContent="space-between">
-			<Grid item xs={6} md={6}>
+		<Grid
+			container
+			alignItems="center"
+			justifyContent="space-between"
+			columnSpacing={1.5}
+			rowSpacing={1}
+		>
+			<Grid item xs={12} sm="auto" sx={{ minWidth: 0 }}>
 				{isFetchingNextPage ? (
-					<Skeleton variant="text" width="150px" />
+					<Skeleton variant="text" width="160px" height="28px" />
 				) : (
-					<H1
-						textTransform="capitalize"
-						textAlign="start"
-						text={textHandler()}
-					/>
+					<Typography
+						sx={{
+							fontWeight: 700,
+							fontSize: { xs: "15px", sm: "16px", md: "18px" },
+							lineHeight: 1.3,
+							color: "text.primary",
+							letterSpacing: "-0.02em",
+							whiteSpace: "nowrap",
+						}}
+					>
+						{totalDataCount ?? 0} {t(tabs[currentTab]?.value || "Items")} {t("Found")}
+					</Typography>
 				)}
 			</Grid>
-			<Grid item xs={6} md={6}>
-				<Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.75} flexWrap="nowrap">
+			<Grid item xs={12} sm>
+				<Stack
+					direction="row"
+					alignItems="center"
+					justifyContent={{ xs: "flex-start", sm: "flex-end" }}
+					spacing={0.75}
+					flexWrap="wrap"
+					useFlexGap
+				>
 					{/* Grid / List toggle */}
 					{showView && (
 						<ToggleGroup sx={{ flexShrink: 0 }}>

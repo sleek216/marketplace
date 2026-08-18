@@ -16,6 +16,7 @@ import CustomImageContainer from "../CustomImageContainer";
 import { useTranslation } from "react-i18next";
 import { getAmountWithSign } from "helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "utils/CustomFunctions";
+import { getCartQuantityCount } from "helper-functions/cartTotals";
 import useGetModule from "api-manage/hooks/react-query/useGetModule";
 
 /**
@@ -100,7 +101,8 @@ const LandingCartModuleList = ({ cartList, onSelectModule }) => {
 
         <Stack spacing={1.25}>
           {moduleGroups.map((group) => {
-            const hasItems = group.items.length > 0;
+            const qtyCount = getCartQuantityCount(group.items);
+            const hasItems = qtyCount > 0;
             const subtotal = cartItemsTotalAmount(group.items);
 
             return (
@@ -138,7 +140,7 @@ const LandingCartModuleList = ({ cartList, onSelectModule }) => {
               >
                 {/* Module Icon with item-count badge */}
                 <Badge
-                  badgeContent={hasItems ? group.items.length : null}
+                  badgeContent={hasItems ? qtyCount : null}
                   color="primary"
                   sx={{
                     "& .MuiBadge-badge": {
@@ -204,8 +206,8 @@ const LandingCartModuleList = ({ cartList, onSelectModule }) => {
                   {hasItems ? (
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography fontSize="12px" color="text.secondary">
-                        {group.items.length}{" "}
-                        {group.items.length === 1 ? t("item") : t("items")}
+                        {qtyCount}{" "}
+                        {qtyCount === 1 ? t("item") : t("items")}
                       </Typography>
                       <Box
                         sx={{

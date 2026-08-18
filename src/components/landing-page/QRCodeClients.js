@@ -3,20 +3,26 @@ import QRCode from "react-qr-code";
 export default function QRCodeClient({
   playStoreLink,
   appStoreLink,
+  customUrl,
+  value,
   size = 200,
   bare = false,
 }) {
-  const redirectPath = `/app-redirect?playStore=${encodeURIComponent(
-    playStoreLink || ""
-  )}&appStore=${encodeURIComponent(appStoreLink || "")}`;
+  let redirectUrl = value || customUrl;
 
-  const redirectUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}${redirectPath}`
-      : `window.location.origin${redirectPath}`;
+  if (!redirectUrl) {
+    const redirectPath = `/app-redirect?playStore=${encodeURIComponent(
+      playStoreLink || ""
+    )}&appStore=${encodeURIComponent(appStoreLink || "")}`;
+
+    redirectUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${redirectPath}`
+        : `window.location.origin${redirectPath}`;
+  }
 
   if (bare) {
-    return <QRCode value={redirectUrl} size={size} />;
+    return <QRCode value={redirectUrl || "https://google.com"} size={size} />;
   }
 
   return (

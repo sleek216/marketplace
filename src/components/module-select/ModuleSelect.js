@@ -11,7 +11,7 @@ import useGetModule from "api-manage/hooks/react-query/useGetModule";
 
 const SidebarWrapper = styled(Box)(({ theme }) => ({
   position: "fixed",
-  zIndex: 1000,
+  zIndex: 1200,
   top: "50%",
   transform: "translateY(-50%)",
   right: 0,

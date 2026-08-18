@@ -43,16 +43,19 @@ import {
 import PricePreviewWithStock from "./PricePreviewWithStock";
 import { ACTION, initialState, reducer } from "./states";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
+import { findMatchingCartItem } from "helper-functions/cartItemMatch";
 import ManualExpectedDeliveryInfo from "../ManualExpectedDeliveryInfo";
 
 export const getItemObject = (productData) => {
+	const unitPrice = Number(productData?.unit_price ?? productData?.price ?? (productData?.quantity ? productData?.totalPrice / productData?.quantity : productData?.totalPrice) ?? 0) || 0;
 	return {
 		guest_id: getGuestId(),
 		model: productData?.available_date_starts ? "ItemCampaign" : "Item",
 		add_on_ids: [],
 		add_on_qtys: [],
 		item_id: productData?.id,
-		price: productData?.totalPrice,
+		price: unitPrice,
 		quantity: productData?.quantity,
 		variation: productData?.selectedOption,
 	};
@@ -191,6 +194,9 @@ const ProductInformation = ({
 		}
 	};
 	const handleAddToCartOnDispatch = () => {
+		if (!checkLocationBeforeCart()) {
+			return;
+		}
 		if (isOutOfStockItem() || isStockExceeded()) {
 			toast.error(t(out_of_stock));
 			return;
@@ -209,12 +215,9 @@ const ProductInformation = ({
 			},
 		});
 
-		const itemIsInCart = cartList?.find((item) => {
-			const isSameId = String(item?.id) === String(productDetailsData?.id || modalItem?.id);
-			if (!isSameId) return false;
-			const itemOpt = JSON.stringify(item?.selectedOption || []);
-			const modalOpt = JSON.stringify(modalItem?.selectedOption || []);
-			return itemOpt === modalOpt || JSON.stringify(item?.selectedOption?.[0]) === JSON.stringify(modalItem?.selectedOption?.[0]);
+		const itemIsInCart = findMatchingCartItem(cartList, {
+			...modalItem,
+			id: productDetailsData?.id || modalItem?.id,
 		});
 
 		if (itemIsInCart) {
@@ -258,7 +261,7 @@ const ProductInformation = ({
 				add_on_ids: [],
 				add_on_qtys: [],
 				item_id: modalItem?.id || productDetailsData?.id,
-				price: resolvedPrice * updateQuantity,
+				price: resolvedPrice,
 				quantity: updateQuantity,
 				variation: modalItem?.selectedOption || [],
 				moduleIdOverride: itemModuleId,
@@ -368,6 +371,9 @@ const ProductInformation = ({
 	};
 
 	const handleUpdateToCart = (cartItem) => {
+		if (!checkLocationBeforeCart()) {
+			return;
+		}
 		if (isOutOfStockItem() || isStockExceeded()) {
 			toast.error(t(out_of_stock));
 			return;
@@ -380,22 +386,30 @@ const ProductInformation = ({
 				icon: "⚠️",
 			});
 		} else {
-			const itemIsInCart = cartList.find((item) => {
-				const isSameId = String(item?.id) === String(productDetailsData?.id || state.modalData[0]?.id);
-				if (!isSameId) return false;
-				const itemOpt = JSON.stringify(item?.selectedOption || []);
-				const modalOpt = JSON.stringify(state.modalData[0]?.selectedOption || []);
-				return itemOpt === modalOpt || JSON.stringify(item?.selectedOption?.[0]) === JSON.stringify(state.modalData[0]?.selectedOption?.[0]);
+			const itemIsInCart = findMatchingCartItem(cartList, {
+				...state.modalData[0],
+				id: productDetailsData?.id || state.modalData[0]?.id,
 			});
 
 			const cartIdToUpdate = itemIsInCart?.cartItemId || itemIsInCart?.id || state.modalData[0]?.cartItemId;
+			const modalItem = state.modalData[0];
+			const updateQty = Number(modalItem?.quantity) || 1;
+			const unitPrice =
+				Number(
+					modalItem?.unit_price ??
+					modalItem?.price ??
+					(updateQty > 0 ? Number(modalItem?.totalPrice) / updateQty : modalItem?.totalPrice) ??
+					0
+				) || 0;
 
 			const updatedProduct = {
-				...state.modalData[0],
-				id: state.modalData[0]?.id || productDetailsData?.id,
+				...modalItem,
+				id: modalItem?.id || productDetailsData?.id,
 				cartItemId: cartIdToUpdate,
-				quantity: state.modalData[0]?.quantity,
-				totalPrice: state.modalData[0]?.totalPrice,
+				quantity: updateQty,
+				price: unitPrice,
+				itemBasePrice: unitPrice,
+				totalPrice: unitPrice * updateQty,
 				isUpdate: true,
 			};
 
@@ -406,15 +420,15 @@ const ProductInformation = ({
 			const cartItemObject = {
 				cart_id: cartIdToUpdate,
 				guest_id: getGuestId(),
-				model: state.modalData[0]?.available_date_starts
+				model: modalItem?.available_date_starts
 					? "ItemCampaign"
 					: "Item",
 				add_on_ids: [],
 				add_on_qtys: [],
-				item_id: state.modalData[0]?.id || productDetailsData?.id,
-				price: state.modalData[0]?.totalPrice,
-				quantity: state.modalData[0]?.quantity,
-				variation: state.modalData[0]?.selectedOption || [],
+				item_id: modalItem?.id || productDetailsData?.id,
+				price: unitPrice,
+				quantity: updateQty,
+				variation: modalItem?.selectedOption || [],
 				moduleIdOverride:
 					productDetailsData?.module_id || productDetailsData?.module?.id,
 			};

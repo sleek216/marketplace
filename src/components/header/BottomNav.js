@@ -72,24 +72,18 @@ const BottomNav = () => {
     }
   }, [cartListData]);
   const handleCartDrawerOpen = () => {
-    cartListRefetch?.();
     setSideDrawerOpen(true);
+    cartListRefetch?.();
   };
 
   useEffect(() => {
     const open = () => {
-      cartListRefetch?.();
       setSideDrawerOpen(true);
+      cartListRefetch?.();
     };
     window.addEventListener(OPEN_CART_DRAWER_EVENT, open);
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
   }, [cartListRefetch]);
-
-  useEffect(() => {
-    if (sideDrawerOpen) {
-      cartListRefetch?.();
-    }
-  }, [sideDrawerOpen, cartListRefetch]);
   const handleWishListsDrawerOpen = () => {
     if (getToken()) {
       setWishListSideDrawerOpen(true);

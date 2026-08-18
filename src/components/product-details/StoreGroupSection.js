@@ -1,9 +1,10 @@
 import { alpha, Box, Stack, Typography } from "@mui/material";
 import useGetStoreDetails from "api-manage/hooks/react-query/store/useGetStoreDetails";
 import React from "react";
+import { t } from "i18next";
 import CustomImageContainer from "../CustomImageContainer";
 
-export const StoreGroupHeader = ({ storeName, storeLogo, storeId, sx }) => {
+export const StoreGroupHeader = ({ storeName, storeLogo, storeId, itemCount, sx }) => {
 	const canFetchStore = Boolean(storeId && storeId !== "__default__");
 	const { data: storeData } = useGetStoreDetails(storeId, {
 		enabled: canFetchStore && !storeLogo,
@@ -49,11 +50,18 @@ export const StoreGroupHeader = ({ storeName, storeLogo, storeId, sx }) => {
 					/>
 				</Box>
 			) : null}
-			{resolvedName ? (
-				<Typography fontWeight={600} fontSize={{ xs: "15px", sm: "16px" }}>
-					{resolvedName}
-				</Typography>
-			) : null}
+			<Stack spacing={0} minWidth={0} flex={1}>
+				{resolvedName ? (
+					<Typography fontWeight={600} fontSize={{ xs: "15px", sm: "16px" }} noWrap>
+						{resolvedName}
+					</Typography>
+				) : null}
+				{itemCount > 0 ? (
+					<Typography fontSize="12px" color="text.secondary">
+						{itemCount} {itemCount === 1 ? t("item") : t("items")}
+					</Typography>
+				) : null}
+			</Stack>
 		</Stack>
 	);
 };

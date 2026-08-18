@@ -8,7 +8,7 @@ import TabsTypeTwo from "../../custom-tabs/TabsTypeTwo";
 import SearchMenu from "../../search/SearchMenu";
 import { useRouter } from "next/router";
 import { useInView } from "react-intersection-observer";
-import { alpha, useMediaQuery, useTheme } from "@mui/material";
+import { useMediaQuery, useTheme } from "@mui/material";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { filterTypeStores } from "components/search/filterTypes";
 import SideBarWithData from "components/search/SideBarWithData";
@@ -381,65 +381,61 @@ const SearchResult = (props) => {
 
   return (
     <CustomContainer>
-      <CustomStackFullWidth alignItems="center" justifyContent="center">
-        <CustomStackFullWidth
-          alignItems="center"
-          justifyContent="center"
-          sx={{ marginTop: "20px", marginBottom: "20px" }}
-        >
-          {selectedBrands?.length == 0 && (
+      <CustomStackFullWidth
+        alignItems="stretch"
+        sx={{ pt: { xs: 2.5, md: 3.5 }, pb: { xs: 3, md: 4 } }}
+      >
+        {selectedBrands?.length == 0 && (
+          <CustomStackFullWidth
+            alignItems="center"
+            sx={{ mb: { xs: 2, md: 2.5 }, mt: { xs: 0.5, md: 1 } }}
+          >
             <TabsTypeTwo
               tabs={tabs}
               currentTab={currentTab}
               setCurrentTab={handleCurrentTab}
             />
-          )}
-        </CustomStackFullWidth>
+          </CustomStackFullWidth>
+        )}
 
-        <SearchMenu
-          currentView={currentView}
-          setCurrentView={setCurrentView}
-          handleSortBy={handleSortBy}
-          sortBy={sortBy}
-          totalDataCount={searchData?.pages[0]?.total_size}
+        <SideBarWithData
+          ref={itemsContainerRef}
+          sidebarRef={sidebarRef}
+          sidebarScrollEnabled={sidebarScrollEnabled}
+          searchValue={searchValue}
+          id={id}
+          brand_id={brand_id}
           currentTab={currentTab}
-          tabs={tabs}
-          setOpenSideDrawer={setOpenSideDrawer}
-          filterDataAndFunctions={filterDataAndFunctions}
+          configData={configData}
+          currentView={currentView}
+          filterData={filterData}
+          selectedCategoriesHandler={selectedCategoriesHandler}
+          selectedBrandsHandler={selectedBrandsHandler}
+          fromAllCategories={fromAllCategories}
+          pageData={searchData}
           isFetchingNextPage={isFetchingNextPage || isLoadingSearch}
-          minMax={minMax}
-          setMinMax={setMinMax}
-          handleSortByNew={handleSortByNew}
-          newSort={newSort}
+          fromNav={fromNav}
+          linkRouteTo={linkRouteTo}
+          toolbar={
+            <SearchMenu
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+              handleSortBy={handleSortBy}
+              sortBy={sortBy}
+              totalDataCount={searchData?.pages[0]?.total_size}
+              currentTab={currentTab}
+              tabs={tabs}
+              setOpenSideDrawer={setOpenSideDrawer}
+              filterDataAndFunctions={filterDataAndFunctions}
+              isFetchingNextPage={isFetchingNextPage || isLoadingSearch}
+              minMax={minMax}
+              setMinMax={setMinMax}
+              handleSortByNew={handleSortByNew}
+              newSort={newSort}
+            />
+          }
         />
-        <CustomBoxFullWidth
-          sx={{
-            borderBottom: (theme) =>
-              `1px solid ${alpha(theme.palette.neutral[400], 0.4)}`,
-          }}
-        ></CustomBoxFullWidth>
-        <CustomBoxFullWidth>
-          <SideBarWithData
-            ref={itemsContainerRef}
-            sidebarRef={sidebarRef}
-            sidebarScrollEnabled={sidebarScrollEnabled}
-            searchValue={searchValue}
-            id={id}
-            brand_id={brand_id}
-            currentTab={currentTab}
-            configData={configData}
-            currentView={currentView}
-            filterData={filterData}
-            selectedCategoriesHandler={selectedCategoriesHandler}
-            selectedBrandsHandler={selectedBrandsHandler}
-            fromAllCategories={fromAllCategories}
-            pageData={searchData}
-            isFetchingNextPage={isFetchingNextPage || isLoadingSearch}
-            fromNav={fromNav}
-            linkRouteTo={linkRouteTo}
-          />
-          {refBoxHandler()}
-        </CustomBoxFullWidth>
+        {refBoxHandler()}
         {openSideDrawer && (
           <MobileSideDrawer
             open={openSideDrawer}

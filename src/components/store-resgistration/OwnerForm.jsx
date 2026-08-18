@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import {
   alpha,
+  Box,
   Grid,
   InputAdornment,
   Typography,
@@ -50,7 +51,7 @@ const OwnerForm = ({
   };
 
   return (
-    <CustomStackFullWidth>
+    <CustomStackFullWidth sx={{ position: "relative", isolation: "isolate", zIndex: 0 }}>
       <Typography fontSize={{xs: "16px", sm: "18px"}} fontWeight="500" textAlign="left" p={{xs: 1.2, sm: 2}} sx={{
           borderBottom: `1px solid ${alpha(
             theme.palette.neutral[400],
@@ -126,19 +127,21 @@ const OwnerForm = ({
               }
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4} sx={{ mt: { xs: 0, sm: 2 } }}>
-            <CustomPhoneInput
-              initCountry={configData?.country}
-              value={RestaurantJoinFormik.values.phone}
-              onHandleChange={phoneHandler}
-              touched={RestaurantJoinFormik.touched.phone}
-              errors={RestaurantJoinFormik.errors.phone}
-              lanDirection={lanDirection}
-              height="45px"
-              borderRadius="10px"
-              required="true"
-              alignWithMuiField
-            />
+          <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ width: "100%", overflow: "visible", pt: "2px" }}>
+              <CustomPhoneInput
+                initCountry={configData?.country}
+                value={RestaurantJoinFormik.values.phone}
+                onHandleChange={phoneHandler}
+                touched={RestaurantJoinFormik.touched.phone}
+                errors={RestaurantJoinFormik.errors.phone}
+                lanDirection={lanDirection}
+                height="45px"
+                borderRadius="10px"
+                required="true"
+                alignWithMuiField
+              />
+            </Box>
           </Grid>
           </Grid>
       </Stack>

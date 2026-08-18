@@ -18,6 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
+import { findMatchingCartItem } from "helper-functions/cartItemMatch";
 import { useDispatch, useSelector } from "react-redux";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import useAddCartItem from "api-manage/hooks/react-query/add-cart/useAddCartItem";
@@ -179,7 +180,7 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
   const { mutate: cartItemRemoveMutate } = useDeleteCartItem();
 
   const imageBaseUrl = configData?.base_urls?.item_image_url;
-  const cartItem = aliasCartList?.find((cart) => String(cart.id) === String(item?.id));
+  const cartItem = findMatchingCartItem(aliasCartList, item);
   const isProductExist = Boolean(cartItem);
   const cartCount = cartItem?.quantity || 0;
 
@@ -353,7 +354,7 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
         add_on_ids: [],
         add_on_qtys: [],
         item_id: item?.id,
-        price: resolvedPrice * updateQuantity,
+        price: resolvedPrice,
         quantity: updateQuantity,
         variation: [],
         moduleIdOverride: item?.module_id || item?.module?.id,
@@ -532,7 +533,7 @@ const LandingProductCard = ({ item, onRequestDetail }) => {
     setQty((prev) => Math.min(maxQty, Math.max(1, prev + delta)));
   };
 
-  const busy = isAddingToCart || updateLoading;
+  const busy = isAddingToCart;
 
   return (
     <Box

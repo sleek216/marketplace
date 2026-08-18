@@ -28,7 +28,6 @@ import LastOrderReview from "./LastOrderReview";
 import SharedProductDeepLink from "./SharedProductDeepLink";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import { useGetWishList } from "api-manage/hooks/react-query/rental-wishlist/useGetWishlist";
-import PromoDealsBanner from "../footer/PromoDealsBanner";
 import { useGetFailedPayment } from "api-manage/hooks/react-query/useGetFailedPayment";
 import IncompleteOrderModal from "components/home/IncompleteOrderModal";
 import PaymentMethod from "components/checkout/PaymentMethod";
@@ -69,8 +68,8 @@ const HomePageComponents = ({ configData, landingPageData }) => {
   const router = useRouter();
   const dispatch = useDispatch();
   const token = getToken();
-  const { welcomeModal } = useSelector((state) => state.utilsData);
-  const moduleType = getCurrentModuleType();
+  const { welcomeModal, selectedModule } = useSelector((state) => state.utilsData);
+  const moduleType = selectedModule?.module_type || getCurrentModuleType();
   const { refetch: refetchFailedPayment, data: failPayment } =
     useGetFailedPayment("", (res) => {
       if (res) {
@@ -252,10 +251,7 @@ const HomePageComponents = ({ configData, landingPageData }) => {
             setCurrentTab={setCurrentTab}
           />
         ) : (
-          <Box width="100%">
-            {getModuleWiseComponents()}
-            {getModuleWiseComponents() ? <PromoDealsBanner /> : null}
-          </Box>
+          <Box width="100%">{getModuleWiseComponents()}</Box>
         )}
       </CustomStackFullWidth>
       {open && (

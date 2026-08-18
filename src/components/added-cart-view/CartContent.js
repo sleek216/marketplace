@@ -3,7 +3,6 @@ import { alpha, Box, Checkbox, Typography } from "@mui/material";
 import CustomImageContainer from "../CustomImageContainer";
 import {
   getAmountWithSign,
-  getDiscountedAmount,
 } from "helper-functions/CardHelpers";
 import { Stack } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -12,10 +11,10 @@ import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  setCartList,
   setDecrementToCartItem,
   setIncrementToCartItem,
   setRemoveItemFromCart,
+  setDeliveryChargeRefreshing,
 } from "redux/slices/cart";
 import {
   mapApiCartRowsToReduxItems,
@@ -38,59 +37,73 @@ import useDeleteCartItem from "../../api-manage/hooks/react-query/add-cart/useDe
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import useCartItemUpdate from "../../api-manage/hooks/react-query/add-cart/useCartItemUpdate";
 import { getItemDataForAddToCart } from "../product-details/product-details-section/helperFunction";
-import Loading from "../custom-loading/Loading";
-import {
-  getTotalVariationsPrice,
-  handleTotalAmountWithAddons,
-} from "utils/CustomFunctions";
+import { getCartItemDiscountedUnitPrice, getCartItemUnitPrice } from "utils/CustomFunctions";
 
 const CartContent = (props) => {
   const { cartItem, imageBaseUrl, isSelected, onToggleSelect, refetch } = props;
   const { configData } = useSelector((state) => state.configData);
-  const { cartList } = useSelector((state) => state.cart);
   const theme = useTheme();
   const dispatch = useDispatch();
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const guestId = localStorage.getItem("guest_id");
   const { mutate, isLoading: removeIsLoading } = useDeleteCartItem();
-  const { mutate: updateMutate, isLoading } = useCartItemUpdate();
+  const { mutate: updateMutate } = useCartItemUpdate();
   const updateTimerRef = React.useRef(null);
+  const deliveryRefetchTimerRef = React.useRef(null);
   const latestRequestVersionRef = React.useRef(0);
+  const rollbackItemRef = React.useRef(null);
+  const latestQtyRef = React.useRef(null);
 
   React.useEffect(() => {
     return () => {
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
       }
+      if (deliveryRefetchTimerRef.current) {
+        clearTimeout(deliveryRefetchTimerRef.current);
+      }
     };
   }, []);
 
-  const handleSyncFromApi = (res) => {
-    if (!res) return;
-    const carts = getCartsFromResponse(res);
-    if (Array.isArray(carts) && carts.length > 0) {
-      const mapped = mapApiCartRowsToReduxItems(carts);
-      const itemModuleId = cartItem?.module_id || cartItem?.module?.id;
-      const itemModuleType = cartItem?.module_type || cartItem?.module?.module_type;
-      const otherModulesItems = (cartList || []).filter((c) => {
-        const cModuleId = c?.module_id || c?.module?.id;
-        const cModuleType = c?.module_type || c?.module?.module_type;
-        if (itemModuleId && cModuleId) return String(cModuleId) !== String(itemModuleId);
-        if (itemModuleType && cModuleType) return cModuleType !== itemModuleType;
-        return true;
-      });
-      const normalizedApiItems = mapped.map((apiItem) => ({
-        ...apiItem,
-        module_id: apiItem?.module_id || itemModuleId,
-        module_type: apiItem?.module_type || itemModuleType,
-      }));
-      dispatch(setCartList([...otherModulesItems, ...normalizedApiItems]));
+  const refreshDeliveryFromCartApi = () => {
+    if (deliveryRefetchTimerRef.current) {
+      clearTimeout(deliveryRefetchTimerRef.current);
     }
+    deliveryRefetchTimerRef.current = setTimeout(() => {
+      refetch?.();
+    }, 0);
   };
 
   const cartUpdateHandleSuccess = (res) => {
-    handleSyncFromApi(res);
-    refetch?.();
+    if (!res) {
+      refetch?.();
+      return;
+    }
+    refreshDeliveryFromCartApi();
+    const carts = getCartsFromResponse(res);
+    if (!Array.isArray(carts) || carts.length === 0) return;
+
+    const mapped = mapApiCartRowsToReduxItems(carts);
+    const currentId = String(cartItem?.cartItemId || cartItem?.id);
+    const matched = mapped.find(
+      (row) =>
+        String(row?.cartItemId) === currentId ||
+        String(row?.id) === String(cartItem?.id)
+    );
+    if (!matched?.cartItemId) return;
+    if (String(matched.cartItemId) === currentId) return;
+
+    const quantity = latestQtyRef.current ?? cartItem?.quantity;
+    const unitPrice = getSingleUnitPrice(cartItem);
+    dispatch(
+      setIncrementToCartItem({
+        ...cartItem,
+        cartItemId: matched.cartItemId,
+        quantity,
+        totalPrice: unitPrice > 0 ? unitPrice * Number(quantity) : cartItem?.totalPrice,
+        isUpdate: true,
+      })
+    );
   };
 
   /**
@@ -120,6 +133,7 @@ const CartContent = (props) => {
    * cartRow.price in GET response is also unit price — they must match.
    */
   const syncQuantityWithApi = (targetItem, targetQuantity, targetTotalPrice, targetUnitPrice) => {
+    latestQtyRef.current = targetQuantity;
     latestRequestVersionRef.current += 1;
     const currentVersion = latestRequestVersionRef.current;
 
@@ -128,7 +142,6 @@ const CartContent = (props) => {
     }
 
     updateTimerRef.current = setTimeout(() => {
-      // Send unit price to backend (NOT total price). Backend stores this as cartRow.price.
       const priceForApi = targetUnitPrice ?? targetTotalPrice;
       const itemObject = {
         ...getItemDataForAddToCart(
@@ -147,18 +160,26 @@ const CartContent = (props) => {
           }
         },
         onError: (err) => {
-          if (currentVersion === latestRequestVersionRef.current) {
-            refetch?.();
-            onErrorResponse(err);
+          if (currentVersion !== latestRequestVersionRef.current) return;
+          if (rollbackItemRef.current) {
+            latestQtyRef.current = rollbackItemRef.current.quantity;
+            dispatch(
+              setIncrementToCartItem({
+                ...rollbackItemRef.current,
+                isUpdate: true,
+              })
+            );
           }
+          dispatch(setDeliveryChargeRefreshing(false));
+          onErrorResponse(err);
         },
       });
-    }, 1200);
+    }, 120);
   };
 
   const handleIncrement = (cartItem) => {
     const updateQuantity = (cartItem?.quantity || 1) + 1;
-    const unitPrice = getSingleUnitPrice(cartItem);
+    const unitPrice = getCartItemUnitPrice(cartItem) || getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
 
     const isFoodItem =
@@ -185,42 +206,53 @@ const CartContent = (props) => {
       }
     }
 
-    // Optimistically update Redux store immediately for 0ms UI response
+    rollbackItemRef.current = {
+      ...cartItem,
+      quantity: cartItem?.quantity,
+      totalPrice: cartItem?.totalPrice,
+    };
+
     const product = {
       ...cartItem,
+      price: unitPrice,
+      itemBasePrice: unitPrice,
       totalPrice: mainPrice,
       quantity: updateQuantity,
     };
+    dispatch(setDeliveryChargeRefreshing(true));
     dispatch(setIncrementToCartItem({ ...product, isUpdate: true }));
-
-    // Debounce server API sync — send UNIT PRICE (not total) to backend
     syncQuantityWithApi(cartItem, updateQuantity, mainPrice, unitPrice);
   };
 
   const handleDecrement = () => {
     const updateQuantity = cartItem?.quantity - 1;
     if (updateQuantity < 1) return;
-    const unitPrice = getSingleUnitPrice(cartItem);
+    const unitPrice = getCartItemUnitPrice(cartItem) || getSingleUnitPrice(cartItem);
     const mainPrice = unitPrice * updateQuantity;
 
-    // Optimistically update Redux store immediately for 0ms UI response
+    rollbackItemRef.current = {
+      ...cartItem,
+      quantity: cartItem?.quantity,
+      totalPrice: cartItem?.totalPrice,
+    };
+
     const decProduct = {
       ...cartItem,
+      price: unitPrice,
+      itemBasePrice: unitPrice,
       totalPrice: mainPrice,
       quantity: updateQuantity,
     };
+    dispatch(setDeliveryChargeRefreshing(true));
     dispatch(setDecrementToCartItem({ ...decProduct, isUpdate: true }));
-
-    // Debounce server API sync — send UNIT PRICE (not total) to backend
     syncQuantityWithApi(cartItem, updateQuantity, mainPrice, unitPrice);
   };
 
   const handleSuccess = () => {
-    dispatch(setRemoveItemFromCart(cartItem));
     toast.success(t(cart_item_remove));
-    refetch?.();
   };
   const handleRemove = () => {
+    dispatch(setRemoveItemFromCart(cartItem));
     const cartIdAndGuestId = {
       cart_id: cartItem?.cartItemId,
       guestId: guestId,
@@ -228,7 +260,10 @@ const CartContent = (props) => {
     };
     mutate(cartIdAndGuestId, {
       onSuccess: handleSuccess,
-      onError: onErrorResponse,
+      onError: (err) => {
+        refetch?.();
+        onErrorResponse(err);
+      },
     });
   };
   const handleUpdateModalOpen = () => {
@@ -347,50 +382,16 @@ const CartContent = (props) => {
             </Typography>
           )}
           <VariationContent cartItem={cartItem} />
-          {/* ── Item price: discount → unit price → × qty → addons ── */}
           <Typography
-            fontWeight={700}
-            fontSize={{ xs: "14px", sm: "15px" }}
-            color="primary.main"
-            lineHeight={1.2}
+            fontWeight={500}
+            fontSize="12px"
+            color="text.secondary"
+            lineHeight={1.3}
+            sx={{ mt: 0.15 }}
           >
-            {(() => {
-              const qty = cartItem?.quantity || 1;
-              /**
-               * Unit price priority (same as getSingleUnitPrice):
-               * 1. itemBasePrice (API cartRow.price — authoritative)
-               * 2. price field
-               * 3. totalPrice÷qty
-               * 4. selectedOption[0].price (variation fallback)
-               */
-              const unitPrice =
-                Number(cartItem?.itemBasePrice) > 0
-                  ? Number(cartItem.itemBasePrice)
-                  : Number(cartItem?.price) > 0
-                  ? Number(cartItem.price)
-                  : qty > 0 && Number(cartItem?.totalPrice) > 0
-                  ? Number(cartItem.totalPrice) / qty
-                  : Number(cartItem?.selectedOption?.[0]?.price) > 0
-                  ? Number(cartItem.selectedOption[0].price)
-                  : 0;
-
-              // Apply per-unit discount (amount OR percent/fixed)
-              let discountedUnitPrice = unitPrice;
-              const discount = Number(cartItem?.discount);
-              const discountType = cartItem?.discount_type;
-              if (discount > 0) {
-                if (discountType === "amount") {
-                  discountedUnitPrice = Math.max(0, unitPrice - discount);
-                } else if (discountType === "percent" || discountType === "fixed") {
-                  discountedUnitPrice = unitPrice - (discount / 100) * unitPrice;
-                }
-              }
-
-              // Total for all units + addons
-              const lineTotal = discountedUnitPrice * qty;
-              const addonsTotal = handleTotalAmountWithAddons(0, cartItem?.selectedAddons);
-              return getAmountWithSign(lineTotal + addonsTotal);
-            })()}
+            {getAmountWithSign(getCartItemDiscountedUnitPrice(cartItem))}
+            {" × "}
+            {cartItem?.quantity || 1}
           </Typography>
         </Stack>
         <CartIncrementStack>
@@ -410,7 +411,6 @@ const CartContent = (props) => {
               aria-label="decrease"
               size="small"
               sx={{ padding: "2px", borderRadius: "2px" }}
-              disabled={isLoading}
               onClick={() => handleDecrement()}
             >
               <RemoveIcon
@@ -422,20 +422,13 @@ const CartContent = (props) => {
               />
             </IconButton>
           )}
-          {isLoading ? (
-            <Stack width="16px" height="18px">
-              <Loading color={theme.palette.primary.main} />
-            </Stack>
-          ) : (
-            <Typography fontSize="12px" fontWeight={600}>
-              {cartItem?.quantity}
-            </Typography>
-          )}
+          <Typography fontSize="12px" fontWeight={600} minWidth="14px" textAlign="center">
+            {cartItem?.quantity}
+          </Typography>
 
           <IconButton
             aria-label="increase"
             sx={{ padding: "2px", borderRadius: "2px" }}
-            disabled={isLoading}
             onClick={() => handleIncrement(cartItem)}
           >
             <AddIcon

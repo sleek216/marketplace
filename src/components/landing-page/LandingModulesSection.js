@@ -109,10 +109,55 @@ const stripHtml = (htmlString) => {
   return String(htmlString).replace(/<[^>]*>?/gm, "").trim();
 };
 
-const LandingModulesSection = () => {
+const MODULE_TYPE_ALIASES = {
+  grocery: "grocery",
+  food: "food",
+  restaurant: "food",
+  pharmacy: "pharmacy",
+  medicine: "pharmacy",
+  ecommerce: "ecommerce",
+  ecom: "ecommerce",
+  shop: "ecommerce",
+  rental: "rental",
+  parcel: "parcel",
+};
+
+const inferModuleType = (item) => {
+  // Prefer visible copy (title/button) so a copied admin card with the wrong
+  // module_type/id still navigates to the module the user actually clicked.
+  const visibleCopy = [
+    item?.title,
+    item?.module_name,
+    item?.name,
+    item?.button_text,
+    item?.action_text,
+    item?.btn_text,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (/e-?commerce|shop now|mega ecom/.test(visibleCopy)) return "ecommerce";
+  if (/pharm|medicine/.test(visibleCopy)) return "pharmacy";
+  if (/food|dining|restaurant|menu/.test(visibleCopy)) return "food";
+  if (/grocery/.test(visibleCopy)) return "grocery";
+  if (/rental/.test(visibleCopy)) return "rental";
+  if (/parcel/.test(visibleCopy)) return "parcel";
+
+  const direct = String(item?.module_type || item?.type || "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  if (MODULE_TYPE_ALIASES[direct]) return MODULE_TYPE_ALIASES[direct];
+  return "";
+};
+
+const LandingModulesSection = ({ landingPageData: propLandingPageData }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const router = useRouter();
+  const reduxLandingPageData = useSelector((state) => state.configData?.landingPageData);
+  const landingPageData = propLandingPageData || reduxLandingPageData;
+
   const { data: modules = [], isLoading } = useGetModule();
   const { selectedModule } = useSelector((state) => state.utilsData);
   const [mounted, setMounted] = useState(false);
@@ -122,19 +167,91 @@ const LandingModulesSection = () => {
     setMounted(true);
   }, []);
 
-  const handleModuleClick = (moduleItem) => {
+  const sectionData =
+    landingPageData?.modules_section ||
+    landingPageData?.module_section ||
+    landingPageData?.services_section ||
+    landingPageData?.business_section;
+
+  // Dynamic status check from Admin Panel (enabled by default unless explicitly disabled)
+  const isEnabled =
+    sectionData?.status !== 0 && sectionData?.status !== false && sectionData?.status !== "0";
+
+  const sectionTag = sectionData?.tag || sectionData?.badge || sectionData?.section_tag;
+
+  const sectionTitle =
+    sectionData?.title?.trim() || "Marketplace Services & Modules";
+
+  const sectionSubtitle =
+    sectionData?.subtitle?.trim() ||
+    sectionData?.sub_title?.trim() ||
+    "Hover over a category card below to expand and discover top stores & products.";
+
+  // Admin can provide custom cards in landingPageData OR fallback to standard modules API
+  const adminCustomCards =
+    sectionData?.cards ||
+    sectionData?.modules ||
+    landingPageData?.modules_list;
+
+  const displayList =
+    Array.isArray(adminCustomCards) && adminCustomCards.length > 0
+      ? adminCustomCards
+      : modules;
+
+  const resolveApiModule = (item) => {
+    const list = Array.isArray(modules) ? modules : [];
+    const type = inferModuleType(item);
+    const itemId = item?.id ?? item?.module_id ?? item?.moduleId;
+
+    if (type) {
+      const byType = list.find(
+        (m) => String(m?.module_type || "").toLowerCase() === type
+      );
+      if (byType) return byType;
+    }
+    if (itemId != null && itemId !== "") {
+      const byId = list.find((m) => String(m?.id) === String(itemId));
+      if (byId) return byId;
+    }
+    return item;
+  };
+
+  const handleModuleClick = (item) => {
+    const moduleItem = resolveApiModule(item);
+    if (!moduleItem?.id) return;
     if (typeof window !== "undefined") {
       localStorage.setItem("module", JSON.stringify(moduleItem));
+      const moduleZoneIds = moduleItem?.zones?.map((zone) => zone.id) || [];
+      let currentZone = null;
+      try {
+        currentZone = JSON.parse(localStorage.getItem("zoneid"));
+      } catch (e) {
+        currentZone = null;
+      }
+      const zoneServesModule =
+        Array.isArray(currentZone) &&
+        currentZone.length > 0 &&
+        (moduleZoneIds.length === 0 ||
+          currentZone.some((id) => moduleZoneIds.includes(id)));
+      if (!zoneServesModule && moduleZoneIds.length > 0) {
+        localStorage.setItem("zoneid", JSON.stringify(moduleZoneIds));
+      }
     }
     dispatch(setResetStoredData());
     dispatch(setSelectedModule(moduleItem));
-    router.push({
-      pathname: "/home",
-      query: { module_id: moduleItem.id },
-    }).then(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    router
+      .push({
+        pathname: "/home",
+        query: { module_id: moduleItem.id },
+      })
+      .then(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
   };
+
+  if (!isEnabled) {
+    return null;
+  }
 
   return (
     <Fade in={mounted} timeout={500}>
@@ -156,6 +273,26 @@ const LandingModulesSection = () => {
             textAlign="left"
             mb={{ xs: 3, md: 4 }}
           >
+            {Boolean(sectionTag) && (
+              <Box
+                sx={{
+                  display: "inline-block",
+                  px: 1.5,
+                  py: 0.35,
+                  borderRadius: "4px",
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  mb: 0.5,
+                }}
+              >
+                {sectionTag}
+              </Box>
+            )}
+
             <Typography
               variant="h4"
               align="left"
@@ -166,19 +303,21 @@ const LandingModulesSection = () => {
                 letterSpacing: "-0.2px",
               }}
             >
-              Marketplace Services & Modules
+              {sectionTitle}
             </Typography>
 
-            <Typography
-              variant="body2"
-              align="left"
-              sx={{
-                color: (theme) => alpha(theme.palette.neutral[500], 0.85),
-                fontSize: { xs: "0.85rem", md: "0.95rem" },
-              }}
-            >
-              Hover over a category card below to expand and discover top stores & products.
-            </Typography>
+            {Boolean(sectionSubtitle) && (
+              <Typography
+                variant="body2"
+                align="left"
+                sx={{
+                  color: (theme) => alpha(theme.palette.neutral[500], 0.85),
+                  fontSize: { xs: "0.85rem", md: "0.95rem" },
+                }}
+              >
+                {sectionSubtitle}
+              </Typography>
+            )}
           </Stack>
 
           {/* Expanding Accordion Cards Container with 4px Border Radius */}
@@ -189,9 +328,11 @@ const LandingModulesSection = () => {
               gap: { xs: 2, md: 2.5 },
               width: "100%",
               minHeight: { xs: "auto", md: "270px" },
+              isolation: "isolate",
+              position: "relative",
             }}
           >
-            {isLoading
+            {isLoading && displayList.length === 0
               ? Array.from({ length: 4 }).map((_, idx) => (
                   <Box
                     key={`skel-${idx}`}
@@ -209,23 +350,60 @@ const LandingModulesSection = () => {
                     />
                   </Box>
                 ))
-              : modules?.map((item, index) => {
-                  const typeKey = (
-                    item?.module_type ||
-                    item?.module_name ||
-                    ""
-                  ).toLowerCase();
+              : displayList?.map((item, index) => {
+                  const typeKey = inferModuleType(item);
 
                   const modTheme =
                     MODULE_LIGHTER_SOLID_THEMES[typeKey] || DEFAULT_THEME;
 
-                  const description =
-                    stripHtml(item?.description) ||
-                    MODULE_DESCRIPTIONS[typeKey] ||
-                    `Explore verified stores in ${item?.module_name}.`;
+                  const cardBgColor =
+                    item?.theme_color ||
+                    item?.color ||
+                    item?.bg_color ||
+                    modTheme.bgColor;
 
+                  const cardHoverGlow =
+                    item?.theme_color || item?.color
+                      ? alpha(item?.theme_color || item?.color, 0.35)
+                      : modTheme.hoverGlow;
+
+                  const actionBtnText =
+                    item?.button_text ||
+                    item?.action_text ||
+                    item?.btn_text ||
+                    modTheme.actionText;
+
+                  const cardTitle =
+                    item?.title ||
+                    item?.module_name ||
+                    item?.name ||
+                    `Module ${index + 1}`;
+
+                  const description =
+                    stripHtml(
+                      item?.description ||
+                      item?.sub_title ||
+                      item?.subtitle ||
+                      item?.short_description
+                    ) ||
+                    MODULE_DESCRIPTIONS[typeKey] ||
+                    `Explore verified stores in ${cardTitle}.`;
+
+                  const badgeText =
+                    item?.badge_text ||
+                    item?.tag ||
+                    item?.badge ||
+                    null;
+
+                  const iconUrl =
+                    item?.icon_full_url ||
+                    item?.icon ||
+                    item?.image_full_url ||
+                    item?.image;
+
+                  const resolvedModule = resolveApiModule(item);
                   const isSelected =
-                    String(selectedModule?.id) === String(item?.id);
+                    String(selectedModule?.id) === String(resolvedModule?.id);
                   const isHovered = hoveredIndex === index;
                   const isAnyHovered = hoveredIndex !== null;
 
@@ -236,13 +414,16 @@ const LandingModulesSection = () => {
 
                   return (
                     <Box
-                      key={item?.id || index}
+                      key={`landing-module-${index}-${typeKey || "module"}-${resolvedModule?.id || item?.id || "x"}`}
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       onClick={() => handleModuleClick(item)}
                       sx={{
                         flex: { xs: "none", md: flexVal },
                         width: { xs: "100%", md: "auto" },
+                        minWidth: 0,
+                        zIndex: isHovered ? 2 : 1,
+                        overflow: "hidden",
                         minHeight: { xs: "230px", sm: "250px", md: "270px" },
                         borderRadius: "4px",
                         p: { xs: 3, md: 3.5 },
@@ -250,13 +431,14 @@ const LandingModulesSection = () => {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         cursor: "pointer",
-                        backgroundColor: modTheme.bgColor,
+                        position: "relative",
+                        backgroundColor: cardBgColor,
                         color: "#ffffff",
                         border: isSelected
                           ? "2px solid #ffffff"
                           : "none",
                         boxShadow: isSelected || isHovered
-                          ? `0px 14px 32px ${modTheme.hoverGlow}`
+                          ? `0px 14px 32px ${cardHoverGlow}`
                           : "0px 4px 14px rgba(0, 0, 0, 0.06)",
                         transform: isHovered ? "translateY(-4px)" : "translateY(0)",
                         transition:
@@ -268,6 +450,29 @@ const LandingModulesSection = () => {
                         },
                       }}
                     >
+                      {/* Optional Top Right Badge if configured by Admin */}
+                      {Boolean(badgeText) && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 14,
+                            right: 14,
+                            backgroundColor: "rgba(255, 255, 255, 0.28)",
+                            backdropFilter: "blur(6px)",
+                            color: "#ffffff",
+                            px: 1.2,
+                            py: 0.3,
+                            borderRadius: "4px",
+                            fontSize: "0.72rem",
+                            fontWeight: 800,
+                            letterSpacing: "0.4px",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {badgeText}
+                        </Box>
+                      )}
+
                       {/* Top Content */}
                       <Box>
                         {/* Frosted Glass Icon Badge */}
@@ -285,10 +490,10 @@ const LandingModulesSection = () => {
                             mb: 2,
                           }}
                         >
-                          {item?.icon_full_url ? (
+                          {iconUrl && typeof iconUrl === "string" ? (
                             <CustomImageContainer
-                              src={item.icon_full_url}
-                              alt={item.module_name}
+                              src={iconUrl}
+                              alt={cardTitle}
                               width="28px"
                               height="28px"
                               objectFit="contain"
@@ -309,7 +514,7 @@ const LandingModulesSection = () => {
                             letterSpacing: "-0.2px",
                           }}
                         >
-                          {item?.module_name}
+                          {cardTitle}
                         </Typography>
 
                         {/* Subtitle / Description */}
@@ -356,7 +561,7 @@ const LandingModulesSection = () => {
                             transition: "all 0.2s ease-in-out",
                           }}
                         >
-                          <span>{modTheme.actionText}</span>
+                          <span>{actionBtnText}</span>
                           <ArrowForwardIcon
                             className="shop-btn-arrow"
                             sx={{

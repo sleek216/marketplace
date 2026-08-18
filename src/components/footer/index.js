@@ -14,11 +14,15 @@ const FooterComponent = (props) => {
   return (
     <CustomStackFullWidth
       sx={{
+        // Space above newsletter so the envelope icon sits in this gap
+        // instead of covering store / section cards above it.
         mt: {
-          xs: "0.75rem",
-          sm: "1rem",
-          md: "1.25rem",
+          xs: "72px",
+          sm: "96px",
+          md: "120px",
         },
+        position: "relative",
+        zIndex: 1,
       }}
     >
       <FooterTop landingPageData={landingPageData} />

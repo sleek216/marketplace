@@ -7,8 +7,7 @@ export const ModuleHomeShell = ({ children, sx }) => (
   <Box
     sx={{
       bgcolor: "background.paper",
-      minHeight: "100vh",
-      pb: { xs: 2, md: 2.5 },
+      pb: 0,
       "& h1, & h2": {
         textAlign: "left !important",
       },

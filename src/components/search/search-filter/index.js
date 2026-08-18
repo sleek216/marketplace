@@ -68,7 +68,7 @@ const SearchFilter = (props) => {
   }, [categoriesData]);
 
   const content = (
-    <CustomStackFullWidth sx={{ padding: !sideDrawer && "1rem" }} spacing={3}>
+    <CustomStackFullWidth spacing={2} sx={{ p: sideDrawer ? 0 : 0 }}>
       {categories?.length > 0 && (
         <MultipleCheckboxWithTitle
           title="Categories"
@@ -101,10 +101,8 @@ const SearchFilter = (props) => {
     return (
       <Box
         sx={{
-          //backgroundColor: "paper.default",
           width: "100%",
-          py: "3px",
-          height: "100%",
+          height: "auto",
         }}
       >
         {content}

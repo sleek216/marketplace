@@ -58,7 +58,7 @@ const AddWithIncrementDecrement = (props) => {
     handleDecrement,
     count,
     isLoading,
-    updateLoading,
+    updateLoading: _updateLoading,
     stacked,
     desktopPillMode,
     mobileCircularAdd,
@@ -180,23 +180,17 @@ const AddWithIncrementDecrement = (props) => {
             >
               <RemoveIcon sx={{ fontSize: mobileStepIconSize }} />
             </Stack>
-            {updateLoading ? (
-              <Stack sx={{ width: mobileIncDecCountWidth, overflow: "hidden", "& > *": { transform: "scale(0.5)" } }}>
-                <Loading color={theme.palette.primary.main} />
-              </Stack>
-            ) : (
-              <Typography
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  width: mobileIncDecCountWidth,
-                  textAlign: "center",
-                  fontSize: mobileCountFontSize,
-                  fontWeight: 700,
-                }}
-              >
-                {count}
-              </Typography>
-            )}
+            <Typography
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                width: mobileIncDecCountWidth,
+                textAlign: "center",
+                fontSize: mobileCountFontSize,
+                fontWeight: 700,
+              }}
+            >
+              {count}
+            </Typography>
             <Stack
               onClick={(e) => incrementHandler(e)}
               alignItems="center"
@@ -289,28 +283,18 @@ const AddWithIncrementDecrement = (props) => {
                 borderLeft: `1px dashed ${alpha(theme.palette.primary.main, 0.45)}`,
               }}
             />
-            {updateLoading ? (
-              <Stack
-                alignItems="center"
-                justifyContent="center"
-                sx={{ width: desktopInCartCountWidth, height: "100%", overflow: "hidden" }}
-              >
-                <Loading color={theme.palette.primary.main} />
-              </Stack>
-            ) : (
-              <Typography
-                onClick={(e) => e.stopPropagation()}
-                textAlign="center"
-                sx={{
-                  width: desktopInCartCountWidth,
-                  fontSize: desktopInCartFontSize,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                }}
-              >
-                {count}
-              </Typography>
-            )}
+            <Typography
+              onClick={(e) => e.stopPropagation()}
+              textAlign="center"
+              sx={{
+                width: desktopInCartCountWidth,
+                fontSize: desktopInCartFontSize,
+                fontWeight: 600,
+                lineHeight: 1,
+              }}
+            >
+              {count}
+            </Typography>
             <Box
               sx={{
                 width: "1px",
@@ -443,22 +427,16 @@ const AddWithIncrementDecrement = (props) => {
                 <RemoveIcon sx={{ fontSize: { xs: "15px", md: "20px" } }} />
               </CustomButton>
 
-              {updateLoading ? (
-                <Stack width="50px">
-                  <Loading color={theme.palette.primary.main} />
-                </Stack>
-              ) : (
-                <Typography
-                  onClick={(e) => e.stopPropagation()}
-                  textAlign="center"
-                  sx={{
-                    width: { xs: "30px", md: "50px" },
-                    transition: "all ease 0.5s",
-                  }}
-                >
-                  {count}
-                </Typography>
-              )}
+              <Typography
+                onClick={(e) => e.stopPropagation()}
+                textAlign="center"
+                sx={{
+                  width: { xs: "30px", md: "50px" },
+                  transition: "all ease 0.5s",
+                }}
+              >
+                {count}
+              </Typography>
 
               <CustomButton fill="true" onClick={(e) => incrementHandler(e)}>
                 <AddIcon
@@ -528,36 +506,18 @@ const AddWithIncrementDecrement = (props) => {
               />
             </CustomButton>
 
-            {updateLoading ? (
-              <Stack
-                alignItems="center"
-                justifyContent="center"
-                sx={{
-                  width: stacked ? "24px" : "50px",
-                  height: stacked ? "16px" : "auto",
-                  overflow: "hidden",
-                  "& > *": {
-                    transform: stacked ? "scale(0.45)" : "scale(0.7)",
-                    transformOrigin: "center",
-                  },
-                }}
-              >
-                <Loading color={theme.palette.primary.main} />
-              </Stack>
-            ) : (
-              <Typography
-                onClick={(e) => e.stopPropagation()}
-                textAlign="center"
-                sx={{
-                  width: stacked ? "24px" : { xs: "30px", md: "50px" },
-                  fontSize: stacked ? { xs: "12px", md: "13px" } : undefined,
-                  lineHeight: stacked ? 1 : undefined,
-                  transition: "all ease 0.5s",
-                }}
-              >
-                {count}
-              </Typography>
-            )}
+            <Typography
+              onClick={(e) => e.stopPropagation()}
+              textAlign="center"
+              sx={{
+                width: stacked ? "24px" : { xs: "30px", md: "50px" },
+                fontSize: stacked ? { xs: "12px", md: "13px" } : undefined,
+                lineHeight: stacked ? 1 : undefined,
+                transition: "all ease 0.5s",
+              }}
+            >
+              {count}
+            </Typography>
 
             <CustomButton fill="true" onClick={(e) => incrementHandler(e)}>
               <AddIcon

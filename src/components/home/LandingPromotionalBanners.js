@@ -29,7 +29,6 @@ const LandingPromotionalBanners = ({ promotionalBanner }) => {
       slides={slides}
       fallbackSideSlides={fallbackSideSlides}
       alwaysShowSideColumn
-      onSlideClick={() => router.push("/search?search=")}
       wrapSection
     />
   );

@@ -14,6 +14,7 @@ import {
   getAmountWithSign,
   getReferDiscount,
 } from "helper-functions/CardHelpers";
+import { getTotalCartDeliveryCharge } from "helper-functions/cartTotals";
 import {getGuestId, getToken} from "helper-functions/getToken";
 import React, {useEffect, useState} from "react";
 import { useTranslation } from "react-i18next";
@@ -22,13 +23,13 @@ import { setTotalAmount } from "redux/slices/cart";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import {
   bad_weather_fees,
+  cartItemsTotalAmount,
   getCalculatedTotal,
+  getCartMerchandiseDiscount,
   getCouponDiscount,
   getDeliveryFees,
   getProductDiscount,
   getSubTotalPrice,
-  getTaxableTotalPrice,
-  handlePurchasedAmount,
 } from "utils/CustomFunctions";
 import CustomDivider from "../../CustomDivider";
 import { CalculationGrid, TotalGrid } from "../CheckOut.style";
@@ -72,15 +73,19 @@ const OrderCalculation = (props) => {
   const { profileInfo } = useSelector((state) => state.profileInfo);
   const tempExtraCharge = extraCharge ?? 0;
   const { cartMeta } = useSelector((state) => state.cart);
-  const parsedBackendDeliveryCharge = Number(
-    cartMeta?.selection_applied && cartMeta?.total_delivery_charge != null
-      ? cartMeta.total_delivery_charge
-      : taxAmount?.delivery_charge ?? taxAmount?.delivery_fee
+  const cartDrawerDeliveryCharge = getTotalCartDeliveryCharge(
+    cartList,
+    cartMeta,
+    storeData
+  );
+  const taxDeliveryCharge = Number(
+    taxAmount?.delivery_charge ?? taxAmount?.delivery_fee
   );
   const backendDeliveryCharge =
-    Number.isFinite(parsedBackendDeliveryCharge) &&
-    parsedBackendDeliveryCharge >= 0
-      ? parsedBackendDeliveryCharge
+    Array.isArray(cartList) && cartList.length > 0
+      ? cartDrawerDeliveryCharge
+      : Number.isFinite(taxDeliveryCharge) && taxDeliveryCharge >= 0
+      ? taxDeliveryCharge
       : null;
   const theme = useTheme();
   let couponType = "coupon";
@@ -154,10 +159,9 @@ const OrderCalculation = (props) => {
   };
 
   const totalAmountForRefer = couponDiscount
-    ? handlePurchasedAmount(cartList) -
-      getProductDiscount(cartList, storeData) -
+    ? cartItemsTotalAmount(cartList) -
       getCouponDiscount(couponDiscount, storeData, cartList)
-    : handlePurchasedAmount(cartList) - getProductDiscount(cartList, storeData);
+    : cartItemsTotalAmount(cartList);
   const dispatch = useDispatch();
   const referDiscount = getReferDiscount(
     totalAmountForRefer,
@@ -190,10 +194,9 @@ const OrderCalculation = (props) => {
     dispatch(setTotalAmount(totalAmount));
     return totalAmount;
   };
-  let diffDiscount={
-    value:0
-  }
-  const discountedPrice = getProductDiscount(cartList, storeData,diffDiscount);
+  const diffDiscount = { value: 0 };
+  getProductDiscount(cartList, storeData, diffDiscount);
+  const discountedPrice = getCartMerchandiseDiscount(cartList);
   const totalAmountAfterPartial = handleOrderAmount() - walletBalance;
   const finalTotalAmount = profileInfo?.is_valid_for_discount
     ? handleOrderAmount() - referDiscount

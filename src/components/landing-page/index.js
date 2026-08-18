@@ -59,7 +59,7 @@ const LandingPage = ({ configData, landingPageData }) => {
         />
 
         {/* Multi-Vendor Marketplace Modules (Food, Grocery, Pharmacy, E-Commerce) */}
-        <LandingModulesSection />
+        <LandingModulesSection landingPageData={landingPageData} />
 
         {/* Platform Features & Value Propositions */}
         <LandingFeaturesSection landingPageData={landingPageData} />

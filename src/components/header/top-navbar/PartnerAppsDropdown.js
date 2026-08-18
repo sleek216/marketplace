@@ -12,10 +12,12 @@ import {
 import { QrCode, Store, Bike } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "react-query";
+import { useSelector } from "react-redux";
 import MainApi from "api-manage/MainApi";
 import { landing_page_api } from "api-manage/ApiRoutes";
 import QRCodeClient from "components/landing-page/QRCodeClients";
 import NextImage from "components/NextImage";
+import CustomImageContainer from "components/CustomImageContainer";
 import appleicon from "../../../../public/static/footer/apple.svg";
 import playstoreicon from "../../../../public/static/footer/playstore.svg";
 
@@ -89,10 +91,13 @@ const StoreBadge = ({ onClick, iconSrc, line1, line2 }) => (
 
 const AppSectionRow = ({
   icon: Icon,
+  iconUrl,
   title,
   subtitle,
   qrPlay,
   qrApp,
+  qrImage,
+  qrCustomUrl,
   playUrl,
   appUrl,
   playStatus,
@@ -108,28 +113,57 @@ const AppSectionRow = ({
       <Box
         sx={{
           flexShrink: 0,
+          width: 84,
+          height: 84,
           p: 0.75,
           borderRadius: CARD_RADIUS,
           backgroundColor: theme.palette.background.paper,
           border: `1px solid ${theme.palette.divider}`,
-          lineHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <QRCodeClient
-          bare
-          size={68}
-          playStoreLink={qrPlay}
-          appStoreLink={qrApp}
-        />
+        {qrImage ? (
+          <Box
+            component="img"
+            src={qrImage}
+            alt={title}
+            sx={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          <QRCodeClient
+            bare
+            size={68}
+            customUrl={qrCustomUrl}
+            playStoreLink={qrPlay}
+            appStoreLink={qrApp}
+          />
+        )}
       </Box>
 
       <Stack spacing={0.75} flex={1} minWidth={0}>
         <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Icon
-            size={14}
-            color={theme.palette.primary.main}
-            style={{ flexShrink: 0 }}
-          />
+          {iconUrl ? (
+            <CustomImageContainer
+              src={iconUrl}
+              alt={title}
+              width="16px"
+              height="16px"
+              objectFit="contain"
+            />
+          ) : Icon ? (
+            <Icon
+              size={14}
+              color={theme.palette.primary.main}
+              style={{ flexShrink: 0 }}
+            />
+          ) : null}
           <Typography
             fontWeight={700}
             fontSize="13px"
@@ -179,7 +213,11 @@ const PartnerAppsDropdown = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const timerRef = useRef(null);
 
-  const { data } = useQuery(
+  const reduxLandingPageData = useSelector(
+    (state) => state.configData?.landingPageData
+  );
+
+  const { data: apiData } = useQuery(
     "partner-apps-qr",
     async () => {
       const { data } = await MainApi.get(landing_page_api);
@@ -188,10 +226,64 @@ const PartnerAppsDropdown = () => {
     { staleTime: 300000, retry: 1, refetchOnWindowFocus: false }
   );
 
+  const data = apiData || reduxLandingPageData;
+
+  // Master Section Data from Admin (if provided in header_qr_section or partner_apps_section)
+  const masterSection =
+    data?.header_qr_section ||
+    data?.partner_apps_section ||
+    data?.qr_section;
+
+  // Master Status Toggle
+  const isMasterEnabled =
+    masterSection?.status !== 0 &&
+    masterSection?.status !== false &&
+    masterSection?.status !== "0" &&
+    data?.header_partner_apps_status !== 0 &&
+    data?.header_partner_apps_status !== "0";
+
+  const sellerSection = data?.seller_app_download_section;
+  const dmSection = data?.deliveryman_app_download_section;
+
+  const isSellerEnabled =
+    sellerSection?.status !== 0 &&
+    sellerSection?.status !== false &&
+    sellerSection?.status !== "0";
+
+  const isDmEnabled =
+    dmSection?.status !== 0 &&
+    dmSection?.status !== false &&
+    dmSection?.status !== "0";
+
+  // Check if admin provides a custom array of apps
+  const customAppsList =
+    masterSection?.apps ||
+    masterSection?.cards ||
+    masterSection?.list;
+
+  const hasCustomApps =
+    Array.isArray(customAppsList) && customAppsList.length > 0;
+
+  // If master is disabled OR everything inside is disabled, hide the icon completely
+  if (
+    !isMasterEnabled ||
+    (!hasCustomApps && !isSellerEnabled && !isDmEnabled)
+  ) {
+    return null;
+  }
+
+  const headerTitle =
+    masterSection?.title?.trim() ||
+    t("Partner & Vendor Applications");
+
   const sl =
-    data?.seller_app_download_section?.download_seller_app_links || {};
+    sellerSection?.download_seller_app_links ||
+    sellerSection?.links ||
+    {};
   const dml =
-    data?.deliveryman_app_download_section?.download_dm_app_links || {};
+    dmSection?.download_dm_app_links ||
+    dmSection?.links ||
+    {};
 
   const clearTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -213,6 +305,7 @@ const PartnerAppsDropdown = () => {
         onMouseEnter={openPopover}
         onClick={(e) => (anchorEl ? setAnchorEl(null) : openPopover(e))}
         size="small"
+        aria-label="Partner Applications QR Codes"
         sx={{
           width: 32,
           height: 32,
@@ -269,7 +362,7 @@ const PartnerAppsDropdown = () => {
             color={theme.palette.neutral[1000]}
             sx={{ letterSpacing: "0.01em" }}
           >
-            {t("Partner & Vendor Applications")}
+            {headerTitle}
           </Typography>
 
           <Stack
@@ -278,37 +371,116 @@ const PartnerAppsDropdown = () => {
               <Divider sx={{ borderColor: theme.palette.divider }} />
             }
           >
-            <AppSectionRow
-              icon={Store}
-              title="Vendor App"
-              subtitle="Scan QR code to download app and manage your store, products and orders."
-              qrPlay={
-                sl?.playstore_url_status === 1 ? sl?.playstore_url : null
-              }
-              qrApp={
-                sl?.apple_store_url_status === 1 ? sl?.apple_store_url : null
-              }
-              playUrl={sl?.playstore_url}
-              appUrl={sl?.apple_store_url}
-              playStatus={sl?.playstore_url_status}
-              appStatus={sl?.apple_store_url_status}
-            />
+            {hasCustomApps ? (
+              customAppsList.map((appItem, idx) => (
+                <AppSectionRow
+                  key={appItem?.id || idx}
+                  icon={appItem?.type === "delivery" ? Bike : Store}
+                  iconUrl={appItem?.icon_full_url || appItem?.icon}
+                  title={appItem?.title || `App ${idx + 1}`}
+                  subtitle={
+                    appItem?.subtitle ||
+                    appItem?.sub_title ||
+                    appItem?.description ||
+                    ""
+                  }
+                  qrImage={
+                    appItem?.qr_image_full_url ||
+                    appItem?.qr_code_image_url ||
+                    appItem?.qr_image
+                  }
+                  qrCustomUrl={appItem?.qr_url || appItem?.custom_qr_url}
+                  qrPlay={appItem?.playstore_url}
+                  qrApp={appItem?.apple_store_url}
+                  playUrl={appItem?.playstore_url}
+                  appUrl={appItem?.apple_store_url}
+                  playStatus={appItem?.playstore_url_status ?? 1}
+                  appStatus={appItem?.apple_store_url_status ?? 1}
+                />
+              ))
+            ) : (
+              <>
+                {isSellerEnabled && (
+                  <AppSectionRow
+                    icon={Store}
+                    iconUrl={
+                      sellerSection?.icon_full_url ||
+                      sellerSection?.icon
+                    }
+                    title={sellerSection?.title || "Vendor App"}
+                    subtitle={
+                      sellerSection?.subtitle ||
+                      sellerSection?.sub_title ||
+                      sellerSection?.description ||
+                      "Scan QR code to download app and manage your store, products and orders."
+                    }
+                    qrImage={
+                      sellerSection?.qr_image_full_url ||
+                      sellerSection?.qr_code_image_url ||
+                      sellerSection?.qr_image
+                    }
+                    qrCustomUrl={
+                      sellerSection?.qr_url ||
+                      sellerSection?.custom_qr_url
+                    }
+                    qrPlay={
+                      Number(sl?.playstore_url_status) === 1
+                        ? sl?.playstore_url
+                        : null
+                    }
+                    qrApp={
+                      Number(sl?.apple_store_url_status) === 1
+                        ? sl?.apple_store_url
+                        : null
+                    }
+                    playUrl={sl?.playstore_url}
+                    appUrl={sl?.apple_store_url}
+                    playStatus={sl?.playstore_url_status}
+                    appStatus={sl?.apple_store_url_status}
+                  />
+                )}
 
-            <AppSectionRow
-              icon={Bike}
-              title="Delivery Man App"
-              subtitle="Scan QR code to download app and start delivering orders on your schedule."
-              qrPlay={
-                dml?.playstore_url_status === 1 ? dml?.playstore_url : null
-              }
-              qrApp={
-                dml?.apple_store_url_status === 1 ? dml?.apple_store_url : null
-              }
-              playUrl={dml?.playstore_url}
-              appUrl={dml?.apple_store_url}
-              playStatus={dml?.playstore_url_status}
-              appStatus={dml?.apple_store_url_status}
-            />
+                {isDmEnabled && (
+                  <AppSectionRow
+                    icon={Bike}
+                    iconUrl={
+                      dmSection?.icon_full_url ||
+                      dmSection?.icon
+                    }
+                    title={dmSection?.title || "Delivery Man App"}
+                    subtitle={
+                      dmSection?.subtitle ||
+                      dmSection?.sub_title ||
+                      dmSection?.description ||
+                      "Scan QR code to download app and start delivering orders on your schedule."
+                    }
+                    qrImage={
+                      dmSection?.qr_image_full_url ||
+                      dmSection?.qr_code_image_url ||
+                      dmSection?.qr_image
+                    }
+                    qrCustomUrl={
+                      dmSection?.qr_url ||
+                      dmSection?.custom_qr_url
+                    }
+                    qrPlay={
+                      Number(dml?.playstore_url_status) === 1
+                        ? dml?.playstore_url
+                        : null
+                    }
+                    qrApp={
+                      Number(dml?.apple_store_url_status) === 1
+                        ? dml?.apple_store_url
+                        : null
+                    }
+                    playUrl={dml?.playstore_url}
+                    appUrl={dml?.apple_store_url}
+                    playStatus={dml?.playstore_url_status}
+                    appStatus={dml?.apple_store_url_status}
+                  />
+                )}
+              </>
+            )}
           </Stack>
         </Stack>
       </Popover>

@@ -81,9 +81,15 @@ const MainLayout = ({ children, configData }) => {
 				storedZone.some((id) => moduleZoneIds.includes(id)));
 		if (!zoneOk && moduleZoneIds.length > 0) {
 			localStorage.setItem("zoneid", JSON.stringify(moduleZoneIds));
-			// Refetch everything with the corrected zone header.
-			queryClient.invalidateQueries();
-			setRerenderUi((prevState) => !prevState);
+			// Only invalidate content queries — not config/landing/modules
+			const contentQueryPrefixes = [
+				"banner", "store", "popular", "new-arrival", "best-reviewed",
+				"special-food", "campaign", "flash", "feature", "category",
+				"recommend", "visit", "love", "top-offer", "cart-itemss",
+			];
+			contentQueryPrefixes.forEach((prefix) => {
+				queryClient.invalidateQueries({ queryKey: [prefix], exact: false });
+			});
 		}
 	}, [data]);
 	const { landingPageData } = useSelector((state) => state.configData);
@@ -95,14 +101,19 @@ const MainLayout = ({ children, configData }) => {
 	}, []);
 
 	return (
-		<ModuleLayoutRoot justifyContent="space-between" key={rerenderUi}>
+		<ModuleLayoutRoot justifyContent="flex-start">
 			<header>
 				<HeaderComponent />
 			</header>
 			<CustomStackFullWidth
 				mt={!isSmall ? "5.9rem" : isMobile ? "5.5rem" : "3.5rem"}
 			>
-				<CustomStackFullWidth sx={{ minHeight: router.pathname === "/track-order" ? "35vh" : "70vh" }}>
+				<CustomStackFullWidth
+					sx={{
+						minHeight: router.pathname === "/track-order" ? "35vh" : "auto",
+						pb: { xs: 1, md: 2 },
+					}}
+				>
 					{children}
 				</CustomStackFullWidth>
 			</CustomStackFullWidth>

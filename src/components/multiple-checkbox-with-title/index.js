@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CustomStackFullWidth } from "../../styled-components/CustomStyles.style";
 import {
+  alpha,
   Skeleton,
   styled,
   Typography,
@@ -21,12 +22,18 @@ import { useDispatch, useSelector } from "react-redux";
 import CustomCheckbox from "../CustomCheckbox";
 import CheckboxWithChild from "../store-details/middle-section/CheckboxWithChild";
 export const CustomPaperBox = styled(Box)(({ theme }) => ({
-  backgroundColor: "paper.default",
-  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.05)",
-  borderRadius: "10px",
-  p: "1rem",
+  backgroundColor: theme.palette.background.paper,
+  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.04)",
+  borderRadius: "14px",
+  border: `2px solid ${alpha(theme.palette.divider, 0.65)}`,
+  overflow: "hidden",
   color: theme.palette.neutral[900],
+  transition: "box-shadow 0.2s ease",
+  "&:hover": {
+    boxShadow: "0px 8px 24px rgba(0, 0, 0, 0.07)",
+  },
 }));
+
 const MultipleCheckboxWithTitle = (props) => {
   const {
     title,
@@ -168,30 +175,53 @@ const MultipleCheckboxWithTitle = (props) => {
 
   return (
     <CustomStackFullWidth>
-      <Typography
-        fontWeight="bold"
-        sx={{
-          color: (theme) => theme.palette.neutral[1000],
-          paddingBottom: "1rem",
-        }}
-      >
-        {t(title)}
-      </Typography>
       <CustomPaperBox>
-        <CustomStackFullWidth p="1rem">
-          <Scrollbar style={{ maxHeight: "330px" }} scrollbarMinSize={1}>
+        <Box
+          sx={{
+            p: "14px 18px",
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.background.paper, 0.4)
+                : alpha(theme.palette.neutral[100] || "#F8FAFC", 0.7),
+          }}
+        >
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: "15px",
+              color: theme.palette.text.primary,
+              letterSpacing: "-0.2px",
+            }}
+          >
+            {t(title)}
+          </Typography>
+        </Box>
+        <CustomStackFullWidth p="12px 14px">
+          <Scrollbar style={{ maxHeight: "380px" }} scrollbarMinSize={1}>
             {showAll && (
-              <CustomCheckbox
-                item={{ name: "All", id: "all" }}
-                checkHandler={allCheckHandler}
-                isChecked={isAllSelected}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-              />
+              <Box
+                sx={{
+                  borderRadius: "2px",
+                  px: 0.5,
+                  py: 0.15,
+                  "&:hover": {
+                    bgcolor: (th) => alpha(th.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                <CustomCheckbox
+                  item={{ name: "All", id: "all" }}
+                  checkHandler={allCheckHandler}
+                  isChecked={isAllSelected}
+                  selectedId={selectedId}
+                  setSelectedId={setSelectedId}
+                />
+              </Box>
             )}
             {data?.map((item, index) => {
               return (
-                <>
+                <React.Fragment key={item?.id || index}>
                   {isSmall ? (
                     <CheckboxWithChild
                       key={index}
@@ -207,7 +237,7 @@ const MultipleCheckboxWithTitle = (props) => {
                       selectedItems={selectedItems}
                     />
                   )}
-                </>
+                </React.Fragment>
               );
             })}
             {isFetching &&

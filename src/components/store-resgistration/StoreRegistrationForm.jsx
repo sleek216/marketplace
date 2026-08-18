@@ -615,6 +615,9 @@ const StoreRegistrationForm = ({
             backgroundColor: theme.palette.neutral[100],
             borderRadius: "8px",
             boxShadow: shadows[1],
+            position: "relative",
+            isolation: "isolate",
+            zIndex: 0,
           }}
         >
           <OwnerForm

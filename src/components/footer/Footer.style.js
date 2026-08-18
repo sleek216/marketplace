@@ -28,6 +28,6 @@ export const StyledFooterTop = styled(CustomStackFullWidth)(({ theme }) => ({
 	width: "100%",
 	borderRadius: "16px",
 	[theme.breakpoints.down("md")]: {
-		paddingBottom:"20px"
+		paddingBottom: "20px",
 	},
 }));

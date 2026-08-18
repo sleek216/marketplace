@@ -25,6 +25,7 @@ import { getCurrentModuleType } from "../../../helper-functions/getCurrentModule
 import Loading from "../../custom-loading/Loading";
 import { isVariationAvailable } from "components/product-details/product-details-section/helperFunction";
 import { getToken, hasValidAuthToken } from "helper-functions/getToken";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
 import { not_logged_in_message } from "utils/toasterMessages";
 import { OPEN_AUTH_MODAL_EVENT } from "components/header/second-navbar/SecondNavbar";
 
@@ -110,6 +111,7 @@ const ProductInformationBottomSection = ({
   };
 
   const handleRedirect = () => {
+    if (!checkLocationBeforeCart()) return;
     if (!requireLoginForCheckout()) return;
 
     if (productDetailsData?.isCampaignItem) {

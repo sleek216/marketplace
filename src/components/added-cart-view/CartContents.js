@@ -11,10 +11,14 @@ import { useSelector } from "react-redux";
 import { t } from "i18next";
 import { getAmountWithSign } from "helper-functions/CardHelpers";
 import { cartItemsTotalAmount } from "utils/CustomFunctions";
+import {
+  getCartQuantityCount,
+  isCartItemSelected,
+  resolveStoreDeliveryCharge,
+} from "helper-functions/cartTotals";
+import DeliveryFeeAmount from "./DeliveryFeeAmount";
 
-import { CircularProgress } from "@mui/material";
-
-const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal, isFetchingApi }) => {
+const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal, deliveryLoading }) => {
   const theme = useTheme();
   return (
     <Stack
@@ -40,25 +44,18 @@ const StoreGroupTotals = ({ subtotal, deliveryCharge, storeTotal, isFetchingApi 
         <Typography fontSize="13px" color="text.secondary">
           {t("Delivery Fee")}
         </Typography>
-        <Typography fontSize="13px" fontWeight={600}>
-          {isFetchingApi ? (
-            <CircularProgress size={12} thickness={5} color="primary" />
-          ) : (
-            getAmountWithSign(deliveryCharge)
-          )}
-        </Typography>
+        <DeliveryFeeAmount amount={deliveryCharge} loading={deliveryLoading} />
       </Stack>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography fontSize="13px" fontWeight={600}>
           {t("Store Total")}
         </Typography>
-        <Typography fontSize="13px" fontWeight={700} color="primary.main">
-          {isFetchingApi ? (
-            <CircularProgress size={13} thickness={5} color="primary" />
-          ) : (
-            getAmountWithSign(storeTotal)
-          )}
-        </Typography>
+        <DeliveryFeeAmount
+          amount={storeTotal}
+          loading={deliveryLoading}
+          fontWeight={700}
+          color="primary.main"
+        />
       </Stack>
     </Stack>
   );
@@ -70,9 +67,9 @@ const CartContents = ({
   refetch,
   selectedCartIds,
   onToggleSelect,
-  isFetchingApi,
+  storeData,
 }) => {
-  const { cartMeta } = useSelector((state) => state.cart);
+  const { cartMeta, deliveryChargeRefreshing } = useSelector((state) => state.cart);
   const theme = useTheme();
 
   const storeGroups = useMemo(() => {
@@ -84,78 +81,42 @@ const CartContents = ({
         (sg) => String(sg?.store_id) === String(group.storeId)
       );
 
-      // Only count selected items in this store for real-time store totals
       const selectedGroupItems = group.items.filter(({ item }) =>
-        Array.isArray(selectedCartIds) &&
-        selectedCartIds.some((id) => String(id) === String(item?.cartItemId || item?.id))
+        isCartItemSelected(item, selectedCartIds)
       );
 
-      const hasSelected = selectedGroupItems.length > 0;
-      const allSelected = selectedGroupItems.length === group.items.length;
+      const itemCount = getCartQuantityCount(group.items.map(({ item }) => item));
 
-      if (!hasSelected) {
+      if (selectedGroupItems.length === 0) {
         return {
           ...group,
           storeName: apiGroup?.store_name || group.storeName,
+          itemCount,
           subtotal: 0,
           deliveryCharge: 0,
           storeTotal: 0,
-          hasApiTotals: Boolean(apiGroup),
         };
       }
 
-      const itemsSubtotal = cartItemsTotalAmount(
+      const subtotal = cartItemsTotalAmount(
         selectedGroupItems.map(({ item }) => item)
       );
-
-      const firstItem = group.items[0]?.item || {};
-      const storeObj =
-        firstItem?.store ||
-        firstItem?.store_details ||
-        firstItem?.item?.store ||
-        firstItem?.item?.store_details ||
-        firstItem;
-
-      const isFreeDelivery = storeObj?.free_delivery || firstItem?.free_delivery;
-
-      // For multi-product stores: pick the MAX delivery charge across all items
-      // (matches backend behavior)
-      let maxFallbackCharge = 0;
-      group.items.forEach(({ item }) => {
-        const itm = item?.item || item || {};
-        const store = itm?.store || itm?.store_details || itm;
-        const charge =
-          Number(store?.minimum_shipping_charge) ||
-          Number(store?.minimum_delivery_charge) ||
-          Number(store?.delivery_charge) ||
-          Number(itm?.minimum_shipping_charge) ||
-          Number(itm?.minimum_delivery_charge) ||
-          Number(itm?.delivery_charge) ||
-          0;
-        if (charge > maxFallbackCharge) maxFallbackCharge = charge;
-      });
-
-      const deliveryCharge = isFreeDelivery
-        ? 0
-        : apiGroup?.delivery_charge != null && Number(apiGroup.delivery_charge) >= 0
-        ? Number(apiGroup.delivery_charge)
-        : maxFallbackCharge > 0
-        ? maxFallbackCharge
-        : 60;
-
-      const subtotal = itemsSubtotal;
-      const storeTotal = subtotal + deliveryCharge;
+      const deliveryCharge = resolveStoreDeliveryCharge(
+        selectedGroupItems,
+        apiGroup,
+        storeData
+      );
 
       return {
         ...group,
         storeName: apiGroup?.store_name || group.storeName,
+        itemCount,
         subtotal,
         deliveryCharge,
-        storeTotal,
-        hasApiTotals: Boolean(apiGroup),
+        storeTotal: subtotal + deliveryCharge,
       };
     });
-  }, [cartList, cartMeta, selectedCartIds]);
+  }, [cartList, cartMeta, selectedCartIds, storeData]);
 
   return (
     <CustomStackFullWidth
@@ -186,6 +147,7 @@ const CartContents = ({
               storeName={group.storeName}
               storeLogo={group.storeLogo}
               storeId={group.storeId}
+              itemCount={group.itemCount}
               sx={{
                 px: 1.25,
                 py: 1,
@@ -214,7 +176,7 @@ const CartContents = ({
                 subtotal={group.subtotal}
                 deliveryCharge={group.deliveryCharge}
                 storeTotal={group.storeTotal}
-                isFetchingApi={isFetchingApi}
+                deliveryLoading={deliveryChargeRefreshing}
               />
             </Box>
           </Box>

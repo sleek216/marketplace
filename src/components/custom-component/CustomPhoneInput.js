@@ -14,18 +14,14 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
   shouldForwardProp: (prop) => prop !== "alignWithMuiField",
 })(
   ({ theme, languageDirection, borderRadius, background, alignWithMuiField }) => ({
-    ...(alignWithMuiField && {
-      "&.react-tel-input": {
+    "&.react-tel-input": {
+      position: "relative",
+      overflow: "visible",
+      isolation: "isolate",
+      ...(alignWithMuiField && {
         marginTop: 0,
         paddingTop: 0,
-        position: "relative",
-        overflow: "visible",
-        zIndex: 5,
-      },
-    }),
-    "&.react-tel-input": {
-      // Prevent the floating label from being clipped
-      overflow: "visible",
+      }),
     },
     "&.react-tel-input .special-label": {
       fontSize: "12px !important",
@@ -35,7 +31,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
       top: alignWithMuiField ? "-9px !important" : "-8px !important",
       backgroundColor: background || theme.palette.background.paper,
       padding: "0 4px !important",
-      zIndex: 9999,
+      zIndex: 2,
       display: "inline-block",
       whiteSpace: "nowrap",
       ...(alignWithMuiField && {
@@ -107,6 +103,7 @@ const CustomPhoneNumberInputStyled = styled(PhoneInput, {
     "&.react-tel-input .country-list": {
       backgroundColor: theme.palette.background.custom2,
       width: "300px",
+      zIndex: 20,
 
       [theme.breakpoints.down("sm")]: {
         width: "300px",
@@ -228,17 +225,21 @@ const CustomPhoneInput = ({
       <CustomStackFullWidth
         alignItems="flex-start"
         spacing={alignWithMuiField ? 0 : 0.8}
-        sx={
-          alignWithMuiField
+        sx={{
+          width: "100%",
+          position: "relative",
+          isolation: "isolate",
+          overflow: "visible",
+          zIndex: 0,
+          ...(alignWithMuiField
             ? {
-                width: "100%",
                 "& .react-tel-input": {
                   marginTop: 0,
                   paddingTop: 0,
                 },
               }
-            : undefined
-        }
+            : null),
+        }}
       >
         {lanDirection && (
           <CustomPhoneNumberInputStyled

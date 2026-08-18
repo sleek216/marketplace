@@ -37,7 +37,7 @@ import {
 } from "helper-functions/userDisplay";
 import { resolveImageSrc } from "helper-functions/resolveImageSrc";
 import useGetAllCartList from "../../../api-manage/hooks/react-query/add-cart/useGetAllCartList";
-import { setCartList, setCartMeta } from "redux/slices/cart";
+import { setCartList, setCartMeta, clearPendingCartQty } from "redux/slices/cart";
 import { clearOfflinePaymentInfo } from "redux/slices/offlinePaymentData";
 import { Truck as LocalShippingOutlinedIcon } from "lucide-react";
 import { getModule } from "helper-functions/getLanguage";
@@ -103,22 +103,17 @@ const Cart = ({ isLoading, cartListRefetch }) => {
 
   useEffect(() => {
     const open = () => {
-      cartListRefetch?.();
       setSideDrawerOpen(true);
+      cartListRefetch?.();
     };
     window.addEventListener(OPEN_CART_DRAWER_EVENT, open);
     return () => window.removeEventListener(OPEN_CART_DRAWER_EVENT, open);
   }, [cartListRefetch]);
 
   const handleIconClick = () => {
-    cartListRefetch?.();
     setSideDrawerOpen(true);
+    cartListRefetch?.();
   };
-  useEffect(() => {
-    if (sideDrawerOpen) {
-      cartListRefetch?.();
-    }
-  }, [sideDrawerOpen, cartListRefetch]);
 
   return (
     <>
@@ -398,15 +393,10 @@ const SecondNavBar = ({ configData }) => {
       }
     }
   }, [
-    selectedModule?.id,
-    router.pathname,
     data,
     moduleType,
     bookingLists,
-    cartListRefetch,
-    bookingRefetch,
     dispatch,
-    queryClient,
   ]);
 
   useEffect(() => {
@@ -427,6 +417,7 @@ const SecondNavBar = ({ configData }) => {
         queryClient.removeQueries({ queryKey: ["cart-itemss"], exact: false });
         const result = await cartListRefetch();
         if (result?.data) {
+          dispatch(clearPendingCartQty());
           const apiRows = mapApiCartRowsToReduxItems(getCartsFromResponse(result.data));
           dispatch(setCartMeta(getCartMetaFromResponse(result.data)));
           dispatch(setCartList(apiRows));

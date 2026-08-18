@@ -27,15 +27,13 @@ import { useAddToWishlist } from "api-manage/hooks/react-query/wish-list/useAddW
 import { useWishListDelete } from "api-manage/hooks/react-query/wish-list/useWishListDelete";
 import AmountWithDiscountedAmount from "../AmountWithDiscountedAmount";
 import { getGuestId } from "helper-functions/getToken";
+import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
+import { findMatchingCartItem } from "helper-functions/cartItemMatch";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import useAddCartItem from "../../api-manage/hooks/react-query/add-cart/useAddCartItem";
 import Loading from "../custom-loading/Loading";
 
-import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
-
 import useCartItemUpdate from "../../api-manage/hooks/react-query/add-cart/useCartItemUpdate";
-import { setIncrementToCartItem } from "redux/slices/cart";
 
 const actionButtonSx = (theme, variant = "default") => ({
   width: 36,
@@ -70,7 +68,7 @@ const actionButtonSx = (theme, variant = "default") => ({
 const WishListCard = ({ item }) => {
   const theme = useTheme();
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [itemQty, setItemQty] = useState(1);
+  const itemQty = 1;
   const reduxDispatch = useDispatch();
   const { cartList } = useSelector((state) => state.cart);
   const [openModal, setOpenModal] = React.useState(false);
@@ -86,24 +84,10 @@ const WishListCard = ({ item }) => {
   const { mutate: updateMutate, isLoading: updateIsLoading } = useCartItemUpdate();
   const isLoading = addIsLoading || updateIsLoading;
 
-  const existingCartItem = (cartList || []).find(
-    (c) => String(c?.id) === String(item?.id)
-  );
+  const existingCartItem = findMatchingCartItem(cartList, item);
 
   const handleClose = () => {
     setOpenItemModal(false);
-  };
-
-  const handleIncrementQty = (e) => {
-    e.stopPropagation();
-    setItemQty((prev) => prev + 1);
-  };
-
-  const handleDecrementQty = (e) => {
-    e.stopPropagation();
-    if (itemQty > 1) {
-      setItemQty((prev) => prev - 1);
-    }
   };
 
   useEffect(() => {
@@ -140,6 +124,9 @@ const WishListCard = ({ item }) => {
   };
 
   const addToCartHandler = () => {
+    if (!checkLocationBeforeCart()) {
+      return;
+    }
     if (existingCartItem) {
       const newQty = (existingCartItem?.quantity || 1) + itemQty;
       const updatePayload = {
@@ -372,46 +359,6 @@ const WishListCard = ({ item }) => {
           flexShrink={0}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Quantity Selector Stepper */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              height: 36,
-              borderRadius: "4px",
-              border: `1px solid ${alpha(theme.palette.divider, 0.85)}`,
-              bgcolor: theme.palette.background.paper,
-              px: 0.5,
-            }}
-          >
-            <IconButton
-              size="small"
-              onClick={handleDecrementQty}
-              disabled={itemQty <= 1}
-              sx={{ p: 0.4, color: theme.palette.text.secondary }}
-            >
-              <RemoveIcon sx={{ fontSize: 15 }} />
-            </IconButton>
-            <Typography
-              sx={{
-                fontSize: "13px",
-                fontWeight: 700,
-                px: 0.8,
-                minWidth: "18px",
-                textAlign: "center",
-              }}
-            >
-              {itemQty}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={handleIncrementQty}
-              sx={{ p: 0.4, color: theme.palette.primary.main }}
-            >
-              <AddIcon sx={{ fontSize: 15 }} />
-            </IconButton>
-          </Box>
-
           {/* Add to Cart Button */}
           <IconButton
             onClick={addToCart}

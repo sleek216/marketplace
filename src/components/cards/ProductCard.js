@@ -20,6 +20,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { checkLocationBeforeCart } from "helper-functions/headerSessionSync";
+import { findMatchingCartItem } from "helper-functions/cartItemMatch";
 import {
   setCart,
   setCartList,
@@ -79,6 +80,7 @@ import {
   getItemDataForAddToCart,
   getPriceAfterQuantityChange,
 } from "../product-details/product-details-section/helperFunction";
+import { getCartItemUnitPrice } from "utils/CustomFunctions";
 import Body2 from "../typographies/Body2";
 import H3 from "../typographies/H3";
 import AddWithIncrementDecrement from "./AddWithIncrementDecrement";
@@ -151,11 +153,11 @@ export const CardWrapper = styled(Card)(
     overflow: "hidden",
     transition: "all 0.25s ease-in-out",
     boxShadow: "none",
-    border: `1px solid ${
+    border: `2px solid ${
       getCurrentModuleType() === ModuleTypes.ECOMMERCE ||
       landingmarketplacecard === "true"
         ? theme.palette.divider
-        : alpha(theme.palette.divider, 0.1)
+        : alpha(theme.palette.divider, 0.18)
     }`,
     marginBottom: pharmaCommon && "20px !important",
 
@@ -420,22 +422,24 @@ const ProductCard = (props) => {
     const isInCart = getItemFromCartlist();
     if (isInCart) {
       setIsProductExist(true);
-      setCount(1);
+      setCount(Number(isInCart?.quantity) || 1);
     } else {
       setIsProductExist(false);
       setCount(0);
     }
   }, [aliasCartList, item?.id]);
   const getItemFromCartlist = () => {
-    // First try within the current module's cart (normal case)
+    const candidate = {
+      ...item,
+      selectedOption: state?.modalData?.[0]?.selectedOption || item?.selectedOption || [],
+      food_variations: item?.food_variations,
+      selectedAddons: item?.selectedAddons,
+    };
     const moduleCart = getCartListModuleWise(aliasCartList);
-    const found = moduleCart?.find((things) => String(things.id) === String(item?.id));
-    if (found) return found;
-    // Fallback: search across the entire cart (handles landing page / cross-module)
-    if (Array.isArray(aliasCartList)) {
-      return aliasCartList.find((things) => String(things.id) === String(item?.id)) || null;
-    }
-    return null;
+    return (
+      findMatchingCartItem(moduleCart, candidate) ||
+      findMatchingCartItem(aliasCartList, candidate)
+    );
   };
   useEffect(() => {
     wishlistItemExistHandler();
@@ -618,7 +622,7 @@ const ProductCard = (props) => {
         ...getItemDataForAddToCart(
           existingCartItem,
           updateQuantity,
-          getPriceAfterQuantityChange(existingCartItem, updateQuantity),
+          getCartItemUnitPrice(existingCartItem) || resolvedPrice,
           getGuestId()
         ),
         moduleIdOverride: itemModuleId,
@@ -739,135 +743,101 @@ const ProductCard = (props) => {
   };
 
   const quickViewHandleClick = () => { };
-  const cartUpdateHandleSuccess = (res) => {
-    if (res) {
-      res?.forEach((item) => {
-        if (isInCart?.cartItemId === item?.id) {
-          const product = {
-            ...item?.item,
-            cartItemId: item?.id,
-            totalPrice: item?.price,
-            quantity: item?.quantity,
-            food_variations: item?.item?.food_variations,
-            selectedAddons: item?.item?.addons,
-            itemBasePrice: item?.item?.price,
-            selectedOption: item?.variation,
-          };
-
-          reduxDispatch(setIncrementToCartItem({ ...product, isUpdate: true })); // Sync exact server quantity
-        }
-      });
-    }
-  };
-  const cartUpdateHandleSuccessDecrement = (res) => {
-    if (res) {
-      res?.forEach((item) => {
-        const product = {
-          ...item?.item,
-          cartItemId: item?.id,
-          totalPrice: item?.price,
-          quantity: item?.quantity,
-          food_variations: item?.item?.food_variations,
-          selectedAddons: item?.item?.addons,
-          itemBasePrice: item?.item?.price,
-          selectedOption: item?.variation,
-        };
-        reduxDispatch(setDecrementToCartItem({ ...product, isUpdate: true }));
-      });
-    }
-  };
   const handleIncrement = () => {
     const isExisted = getItemFromCartlist();
-    const updateQuantity = isInCart?.quantity + 1;
+    if (!isExisted) return;
+
+    const updateQuantity = (isInCart?.quantity || isExisted?.quantity || 1) + 1;
+    const unitPrice =
+      getCartItemUnitPrice(isInCart) ||
+      Number(getPriceAfterQuantityChange(isInCart, 1)) ||
+      Number(isInCart?.price) ||
+      0;
+    const lineTotal = unitPrice * updateQuantity;
+
+    if (item?.maximum_cart_quantity && item.maximum_cart_quantity < updateQuantity) {
+      toast.error(t(out_of_limits));
+      return;
+    }
+    if (getCurrentModuleType() !== "food" && hasFiniteStock && updateQuantity > resolvedStock) {
+      toast.error(t(out_of_stock));
+      return;
+    }
+
+    setCount(updateQuantity);
+    reduxDispatch(
+      setIncrementToCartItem({
+        ...isInCart,
+        quantity: updateQuantity,
+        price: unitPrice,
+        itemBasePrice: unitPrice,
+        totalPrice: lineTotal || unitPrice * updateQuantity,
+        isUpdate: true,
+      })
+    );
+
     const itemObject = getItemDataForAddToCart(
       isInCart,
       updateQuantity,
-      getPriceAfterQuantityChange(isInCart, updateQuantity),
+      unitPrice,
       getGuestId()
     );
-    if (isExisted) {
-      if (getCurrentModuleType() === "food") {
-        if (false) {
-          // stock check disabled for food module
-        } else if (item?.maximum_cart_quantity) {
-          if (item?.maximum_cart_quantity <= isExisted?.quantity) {
-            toast.error(t(out_of_limits));
-          } else {
-            updateMutate(itemObject, {
-              onSuccess: cartUpdateHandleSuccess,
-              onError: onErrorResponse,
-            });
-          }
-        } else {
-          updateMutate(itemObject, {
-            onSuccess: cartUpdateHandleSuccess,
-            onError: onErrorResponse,
-          });
-        }
-      } else {
-        if (!hasFiniteStock || isExisted?.quantity + 1 <= resolvedStock) {
-          if (item?.maximum_cart_quantity) {
-            if (item?.maximum_cart_quantity <= isExisted?.quantity) {
-              toast.error(t(out_of_limits));
-            } else {
-              updateMutate(itemObject, {
-                onSuccess: cartUpdateHandleSuccess,
-                onError: onErrorResponse,
-              });
-            }
-          } else {
-            updateMutate(itemObject, {
-              onSuccess: cartUpdateHandleSuccess,
-              onError: onErrorResponse,
-            });
-            reduxDispatch(
-              setIncrementToCartItem({
-                ...isInCart,
-                quantity: updateQuantity,
-                totalPrice: mainPrice,
-                isUpdate: true,
-              })
-            );
-          }
-        } else {
-          toast.error(t(out_of_stock));
-        }
-      }
-    }
+    updateMutate(itemObject, {
+      onError: onErrorResponse,
+    });
   };
   const handleClose = () => {
     dispatch({ type: ACTION.setOpenModal, payload: false });
   };
 
-  const handleSuccessRemoveItem = () => {
-    reduxDispatch(setRemoveItemFromCart(isInCart));
-    toast.success(t("Removed from cart."));
-  };
   const handleDecrement = () => {
-    const updateQuantity = isInCart?.quantity - 1;
-
     const isExisted = getItemFromCartlist();
-    if (isExisted?.quantity === 1) {
-      const cartIdAndGuestId = {
-        cart_id: isInCart?.cartItemId,
-        guestId: getGuestId(),
-      };
-      cartItemRemoveMutate(cartIdAndGuestId, {
-        onSuccess: handleSuccessRemoveItem,
-        onError: onErrorResponse,
-      });
-    } else {
-      const itemObject = getItemDataForAddToCart(
-        isInCart,
-        updateQuantity,
-        getPriceAfterQuantityChange(isInCart, updateQuantity),
-        getGuestId()
+    if (!isExisted) return;
+    const updateQuantity = (isInCart?.quantity || isExisted?.quantity || 1) - 1;
+
+    if (isExisted?.quantity === 1 || updateQuantity < 1) {
+      reduxDispatch(setRemoveItemFromCart(isInCart));
+      setCount(0);
+      setIsProductExist(false);
+      cartItemRemoveMutate(
+        {
+          cart_id: isInCart?.cartItemId,
+          guestId: getGuestId(),
+        },
+        {
+          onError: onErrorResponse,
+        }
       );
-      updateMutate(itemObject, {
-        onSuccess: cartUpdateHandleSuccessDecrement,
-        onError: onErrorResponse,
-      });
+      return;
     }
+
+    const unitPrice =
+      getCartItemUnitPrice(isInCart) ||
+      Number(getPriceAfterQuantityChange(isInCart, 1)) ||
+      Number(isInCart?.price) ||
+      0;
+    const lineTotal = unitPrice * updateQuantity;
+    setCount(updateQuantity);
+    reduxDispatch(
+      setDecrementToCartItem({
+        ...isInCart,
+        quantity: updateQuantity,
+        price: unitPrice,
+        itemBasePrice: unitPrice,
+        totalPrice: lineTotal,
+        isUpdate: true,
+      })
+    );
+
+    const itemObject = getItemDataForAddToCart(
+      isInCart,
+      updateQuantity,
+      unitPrice,
+      getGuestId()
+    );
+    updateMutate(itemObject, {
+      onError: onErrorResponse,
+    });
   };
   const lanDirection = getLanguage() ? getLanguage() : "ltr";
   const popularCardUi = () => {

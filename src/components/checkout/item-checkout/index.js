@@ -28,7 +28,7 @@ import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "react-query";
 import { useDispatch, useSelector } from "react-redux";
-import { setCartList, setClearCart, setRemoveItemFromCart } from "redux/slices/cart";
+import { setCartList, setClearCart, setRemoveItemFromCart, setCartMeta } from "redux/slices/cart";
 import {
 	setOfflineInfoStep,
 	setOfflineMethod,
@@ -48,7 +48,7 @@ import {
 	getInfoFromZoneData,
 	getMinimumOrderShortfall,
 	getOrderSubtotalAfterProductDiscount,
-	getProductDiscount,
+	getCartMerchandiseDiscount,
 	getStoreMinimumOrderAmount,
 	getTaxableTotalPrice,
 	getVariation,
@@ -108,6 +108,12 @@ import {
 import { savePlaceOrderSuccess, isMultiStorePlaceOrderResponse } from "helper-functions/placeOrderResponse";
 import { safeRouterPush } from "helper-functions/safeRouterPush";
 import PlaceOrderSuccessSummary from "../PlaceOrderSuccessSummary";
+import useGetAllCartList from "api-manage/hooks/react-query/add-cart/useGetAllCartList";
+import {
+	getCartMetaFromResponse,
+	getCartsFromResponse,
+	mapApiCartRowsToReduxItems,
+} from "helper-functions/normalizeCartListResponse";
 export const deepEqual = (obj1, obj2) => {
 	if (obj1 === obj2) return true;
 
@@ -244,6 +250,26 @@ const ItemCheckout = (props) => {
 		isLoading: offlineIsLoading,
 	} = useGetOfflinePaymentOptions();
 	const { mutate: taxMutate, data } = useGetTax();
+
+	const handleCheckoutCartSync = (res) => {
+		const rows = mapApiCartRowsToReduxItems(getCartsFromResponse(res));
+		if (rows.length > 0) {
+			dispatch(setCartList(rows));
+		}
+		dispatch(setCartMeta(getCartMetaFromResponse(res)));
+	};
+
+	const { refetch: refetchCheckoutCart } = useGetAllCartList(
+		guest_id,
+		handleCheckoutCartSync,
+		isSelectedCartCheckout ? selectedCartIdsFromQuery : undefined
+	);
+
+	useEffect(() => {
+		if (page === "cart") {
+			refetchCheckoutCart();
+		}
+	}, [page, selectedCartIdsFromQuery.join(",")]);
 
 	const passwordHandler = (value) => {
 		formik.setFieldValue("password", value);
@@ -532,7 +558,7 @@ const ItemCheckout = (props) => {
 			formData.append("coupon_discount_amount", couponDiscount?.discount);
 			formData.append("coupon_discount_title", couponDiscount?.title);
 
-			formData.append("discount_amount", getProductDiscount(productList));
+			formData.append("discount_amount", getCartMerchandiseDiscount(productList));
 			formData.append(
 				"distance",
 				handleDistance(distanceData?.data, originData, address)
@@ -623,7 +649,7 @@ const ItemCheckout = (props) => {
 				coupon_code: couponDiscount?.code,
 				coupon_discount_amount: couponDiscount?.discount,
 				coupon_discount_title: couponDiscount?.title,
-				discount_amount: getProductDiscount(productList),
+				discount_amount: getCartMerchandiseDiscount(productList),
 				distance: dDistance || tempDistance,
 				order_amount: totalAmount,
 				dm_tips: deliveryTip,
@@ -1444,7 +1470,9 @@ const ItemCheckout = (props) => {
 									/>
 									<OrderCalculation
 										usePartialPayment={usePartialPayment}
-										cartList={page === "campaign" ? campaignItemList : cartList}
+										cartList={
+											page === "campaign" ? campaignItemList : checkoutCartList
+										}
 										storeData={storeData}
 										couponDiscount={couponDiscount}
 										taxAmount={data}

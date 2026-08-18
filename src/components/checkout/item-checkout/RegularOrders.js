@@ -1,9 +1,9 @@
 import { alpha, Box, Grid, Stack, Typography } from "@mui/material";
 import Skeleton from "@mui/material/Skeleton";
 import { useTheme } from "@mui/material/styles";
-import { getAmountWithSign, getDiscountedAmount } from "../../../helper-functions/CardHelpers";
+import { getAmountWithSign } from "../../../helper-functions/CardHelpers";
 import { CustomStackFullWidth } from "../../../styled-components/CustomStyles.style";
-import { handleProductValueWithOutDiscount } from "../../../utils/CustomFunctions";
+import { getCartItemLineTotal } from "../../../utils/CustomFunctions";
 import CustomImageContainer from "../../CustomImageContainer";
 import VariationContent from "../../added-cart-view/VariationContent";
 import ManualExpectedDeliveryInfo from "../../product-details/ManualExpectedDeliveryInfo";
@@ -195,23 +195,7 @@ const RegularOrders = (props) => {
 													whiteSpace: "nowrap",
 												}}
 											>
-												{getAmountWithSign(
-													item?.totalPrice != null
-														? getDiscountedAmount(
-																item?.totalPrice,
-																item?.discount,
-																item?.discount_type,
-																item?.store_discount,
-																item?.quantity
-														  )
-														: getDiscountedAmount(
-																handleProductValueWithOutDiscount(item) * (item?.quantity || 1),
-																item?.discount,
-																item?.discount_type,
-																item?.store_discount,
-																item?.quantity || 1
-														  )
-												)}
+												{getAmountWithSign(getCartItemLineTotal(item))}
 											</Typography>
 										</Stack>
 									</Stack>

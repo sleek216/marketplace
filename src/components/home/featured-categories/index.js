@@ -12,10 +12,11 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import {
   useGetFeaturedCategories,
-  useGetAllModulesCategories,
 } from "api-manage/hooks/react-query/all-category/all-categorys";
 import CustomContainer from "../../container";
 import LandingCategoryTile from "../LandingCategoryTile";
+import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+import { useSelector } from "react-redux";
 
 const CategoryStripShimmer = () => (
   <Stack
@@ -51,11 +52,13 @@ const CategoryStripShimmer = () => (
 const FeaturedCategories = ({ landingPageData }) => {
   const theme = useTheme();
   const scrollRef = useRef(null);
+  const { selectedModule } = useSelector((state) => state.utilsData);
   const { data: featuredData, isLoading: featuredLoading } =
     useGetFeaturedCategories();
-  const { data: allData, isLoading: allLoading } =
-    useGetAllModulesCategories();
   const [activeBtn, setActiveBtn] = useState("right");
+
+  const moduleId = selectedModule?.id || getCurrentModuleId();
+  const moduleType = selectedModule?.module_type || getCurrentModuleType();
 
   // Dynamic admin config checks
   const isEnabled =
@@ -65,11 +68,21 @@ const FeaturedCategories = ({ landingPageData }) => {
     landingPageData?.categories_section?.title || "Featured Categories";
   const sectionSubtitle = landingPageData?.categories_section?.subtitle;
 
-  const categories =
-    featuredData?.data && featuredData?.data?.length > 0
-      ? featuredData?.data
-      : allData?.data || [];
-  const isLoading = (featuredLoading || allLoading) && categories.length === 0;
+  const categories = React.useMemo(() => {
+    const raw = Array.isArray(featuredData?.data) ? featuredData.data : [];
+    const moduleScoped = raw.filter((cat) => {
+      const catModuleId = cat?.module_id || cat?.module?.id;
+      const catModuleType = cat?.module_type || cat?.module?.module_type;
+      if (moduleId && catModuleId) return String(catModuleId) === String(moduleId);
+      if (moduleType && catModuleType) return catModuleType === moduleType;
+      return true;
+    });
+    const featuredOnly = moduleScoped.filter(
+      (cat) => cat?.featured === 1 || cat?.featured === true
+    );
+    return featuredOnly.length > 0 ? featuredOnly : moduleScoped;
+  }, [featuredData, moduleId, moduleType]);
+  const isLoading = featuredLoading && categories.length === 0;
 
   const isDarkMode = theme.palette.mode === "dark";
 

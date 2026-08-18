@@ -3,7 +3,10 @@ import { useQuery } from "react-query";
 import { categories_api } from "../../../ApiRoutes";
 import MainApi from "../../../MainApi";
 import { onErrorResponse } from "../../../api-error-response/ErrorResponses";
-import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
+import {
+  getCurrentModuleId,
+  getCurrentModuleType,
+} from "helper-functions/getCurrentModuleType";
 
 const getData = async (searchKey) => {
   if (searchKey && searchKey !== "") {
@@ -30,21 +33,29 @@ export const useGetCategories = (
   );
 };
 
-const getFeaturedData = async () => {
-  return await MainApi.get(`${categories_api}`);
+const getFeaturedData = async (moduleId) => {
+  return await MainApi.get(`${categories_api}`, {
+    ...(moduleId ? { moduleIdOverride: moduleId } : {}),
+  });
 };
 export const useGetFeaturedCategories = (handleSuccess) => {
-  return useQuery(["featured-categories-lists",getCurrentModuleType()], () => getFeaturedData(), {
-     enabled: true,
-    cacheTime: 1000 * 60,        // 1 minute
-    staleTime: 1000 * 30,        // 30 seconds
-    onError: onErrorResponse,
-    onSuccess: (data) => {
-      if (handleSuccess) {
-        handleSuccess(data); // Call handleSuccess if provided
-      }
-    },
-  });
+  const moduleId = getCurrentModuleId();
+  const moduleType = getCurrentModuleType();
+  return useQuery(
+    ["featured-categories-lists", moduleId || moduleType || "none"],
+    () => getFeaturedData(moduleId),
+    {
+      enabled: Boolean(moduleId || moduleType),
+      cacheTime: 1000 * 60,
+      staleTime: 1000 * 30,
+      onError: onErrorResponse,
+      onSuccess: (data) => {
+        if (handleSuccess) {
+          handleSuccess(data);
+        }
+      },
+    }
+  );
 };
 
 // Landing page: all categories across every module (no moduleId header).

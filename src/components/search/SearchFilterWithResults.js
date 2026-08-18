@@ -8,7 +8,7 @@ import SearchResult from "./SearchResult";
 import { Grid, useMediaQuery } from "@mui/material";
 import TabsTypeOne from "../custom-tabs/TabsTypeOne";
 import { t } from "i18next";
-import ProductCard from "../cards/ProductCard";
+import ModuleMarketplaceProductCard from "../home/ModuleMarketplaceProductCard";
 import CustomPagination from "../custom-pagination";
 import CustomEmptyResult from "../custom-empty-result";
 import noData from "../../../public/static/nodata.png";
@@ -83,8 +83,9 @@ const SearchFilterWithResults = ({
 											sm={4}
 											xs={12}
 											key={item.id}
+											sx={{ display: "flex", "& > *": { width: "100%" } }}
 										>
-											<ProductCard item={item} />
+											<ModuleMarketplaceProductCard item={item} />
 										</Grid>
 									))}
 

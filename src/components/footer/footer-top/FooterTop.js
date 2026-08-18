@@ -28,13 +28,24 @@ const FooterTop = (props) => {
             justifyContent="center"
             sx={{ height: "100%" }}
           >
-            <Grid item xs={8} sm={6} md={3} position="relative">
+            <Grid
+              item
+              xs={8}
+              sm={6}
+              md={3}
+              position="relative"
+              sx={{ minHeight: { sm: 170, md: 190 } }}
+            >
               <Box
                 sx={{
-                  mt: "-65px",
+                  mt: { xs: "-40px", sm: "-65px" },
                   textAlign: { xs: "center", md: "left" },
                   ml: { md: "-30px" },
-                  position: { sm: "absolute", bottom: "5px" },
+                  position: { xs: "relative", sm: "absolute" },
+                  bottom: { sm: "5px" },
+                  left: 0,
+                  zIndex: 2,
+                  pointerEvents: "none",
                 }}
               >
                 <SubscribeImage />

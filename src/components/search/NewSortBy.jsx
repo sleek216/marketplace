@@ -1,15 +1,27 @@
 import React from "react";
-import { Button, Popover, Stack, styled, Typography } from "@mui/material";
+import { Button, Popover, Stack, styled, Typography, alpha } from "@mui/material";
 import sort from "../../sort/assets/sort.png";
 import { useTranslation } from "react-i18next";
 import { ChevronDown as KeyboardArrowDownIcon, ChevronUp as KeyboardArrowUpIcon } from "lucide-react";
 import CustomImageContainer from "components/CustomImageContainer";
 
-const Wrapper = styled(Button)(({ theme, border }) => ({
-  border: border === "true" && `1px solid ${theme.palette.neutral[400]}`,
-  borderRadius: "5px",
-  padding: "7px 16px",
-  textTransform: "capitalize",
+const Wrapper = styled(Button)(({ theme, active }) => ({
+  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+  borderRadius: "8px",
+  minHeight: "36px",
+  padding: "6px 14px",
+  textTransform: "none",
+  backgroundColor:
+    active === "true"
+      ? alpha(theme.palette.primary.main, 0.08)
+      : theme.palette.background.paper,
+  color: theme.palette.text.primary,
+  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+  },
 }));
 
 const NewSortBy = ({ handleSortBy, newSort }) => {
@@ -43,7 +55,7 @@ const NewSortBy = ({ handleSortBy, newSort }) => {
         direction="row"
         alignItems="center"
         justifyContent="center"
-        spacing={2}
+        spacing={1}
       >
         <CustomImageContainer
           src={sort.src}
@@ -52,20 +64,17 @@ const NewSortBy = ({ handleSortBy, newSort }) => {
           objectFit="contain"
         />
         <Typography
-          fontSize="13px"
-          sx={{ color: (theme) => theme.palette.neutral[600] }}
+          fontSize="12.5px"
+          fontWeight={600}
+          sx={{ color: (theme) => theme.palette.text.primary }}
         >
           {t(label)}
         </Typography>
         {showArrow === "true" &&
           (open ? (
-            <KeyboardArrowUpIcon
-              sx={{ color: (theme) => theme.palette.text.secondary }}
-            />
+            <KeyboardArrowUpIcon size={16} />
           ) : (
-            <KeyboardArrowDownIcon
-              sx={{ color: (theme) => theme.palette.text.secondary }}
-            />
+            <KeyboardArrowDownIcon size={16} />
           ))}
       </Stack>
     );
@@ -73,7 +82,7 @@ const NewSortBy = ({ handleSortBy, newSort }) => {
 
   return (
     <div>
-      <Wrapper border="true" onClick={handleClick}>
+      <Wrapper active={open ? "true" : "false"} onClick={handleClick}>
         {getContent(newSort?.replace("_", " ") || "Sort by", "true")}
       </Wrapper>
 
@@ -86,17 +95,54 @@ const NewSortBy = ({ handleSortBy, newSort }) => {
           vertical: "bottom",
           horizontal: "left",
         }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "left",
+        }}
         PaperProps={{
-          style: {
+          sx: {
+            mt: 1,
+            p: 0.75,
+            borderRadius: "10px",
+            border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
             width: anchorEl?.clientWidth || "auto",
+            minWidth: "160px",
           },
         }}
       >
-        {demoData?.map((option) => (
-          <Wrapper key={option} onClick={() => handleSelect(option?.value)}>
-            {getContent(` ${option?.name}`, "false")}
-          </Wrapper>
-        ))}
+        <Stack spacing={0.5}>
+          {demoData?.map((option) => (
+            <Button
+              key={option.value}
+              fullWidth
+              onClick={() => handleSelect(option.value)}
+              sx={{
+                justifyContent: "flex-start",
+                py: 0.8,
+                px: 1.5,
+                borderRadius: "6px",
+                textTransform: "none",
+                fontSize: "12.5px",
+                fontWeight: newSort === option.value ? 700 : 500,
+                color:
+                  newSort === option.value
+                    ? "primary.main"
+                    : "text.primary",
+                backgroundColor:
+                  newSort === option.value
+                    ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                    : "transparent",
+                "&:hover": {
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.06),
+                },
+              }}
+            >
+              {t(option?.name)}
+            </Button>
+          ))}
+        </Stack>
       </Popover>
     </div>
   );

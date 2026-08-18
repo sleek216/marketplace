@@ -1,8 +1,7 @@
 import MainApi from "../../../MainApi";
 import { cart_item_update, item_add_to_cart, all_cart_list } from "../../../ApiRoutes";
-import { useMutation, useQueryClient } from "react-query";
+import { useMutation } from "react-query";
 import { getGuestId, getToken, hasValidAuthToken } from "helper-functions/getToken";
-import { getCurrentModuleId } from "helper-functions/getCurrentModuleType";
 
 const sanitizeGuestId = (id) => {
   if (typeof id !== "string") return null;
@@ -59,14 +58,5 @@ const addData = async (postData) => {
 };
 
 export default function useCartItemUpdate() {
-  const queryClient = useQueryClient();
-  return useMutation("updated_cart_item", addData, {
-    onSuccess: (data) => {
-      const queryKey = ["cart-itemss"];
-      if (Array.isArray(data)) {
-        queryClient.setQueryData(queryKey, data);
-      }
-      queryClient.invalidateQueries("cart-itemss");
-    },
-  });
+  return useMutation("updated_cart_item", addData);
 }

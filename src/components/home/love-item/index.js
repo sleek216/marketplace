@@ -1,161 +1,264 @@
-import { Box, Skeleton, Stack, useMediaQuery, useTheme } from "@mui/material";
-import { useGetRecommendProductsForHome } from "api-manage/hooks/react-query/useGetRecommendProductsForHome";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import Slider from "react-slick";
-import { setYouWillLoveItems } from "redux/slices/storedData";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CustomStackFullWidth,
-  SliderCustom,
-} from "styled-components/CustomStyles.style";
-import ProductCardSimmer from "../../Shimmer/ProductCardSimmer";
-import H2 from "../../typographies/H2";
+  alpha,
+  Box,
+  IconButton,
+  Skeleton,
+  Stack,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { useGetRecommendProductsForHome } from "api-manage/hooks/react-query/useGetRecommendProductsForHome";
+import { useDispatch, useSelector } from "react-redux";
+import { setYouWillLoveItems } from "redux/slices/storedData";
 import { HomeComponentsWrapper } from "../HomePageComponents";
+import MarketplaceSectionHeader from "../MarketplaceSectionHeader";
 import ModuleMarketplaceProductCard from "../ModuleMarketplaceProductCard";
-import { loveItemSettings } from "./loveItemSettings";
+import RecentlyViewedViewAllModal from "../RecentlyViewedViewAllModal";
 import Menus from "./Menus";
+import {
+  marketplaceStripCardSx,
+  marketplaceStripGapSx,
+} from "components/landing-page/marketplaceCardLayout";
 
-const LoveItem = (props) => {
-  const [menu, setMenu] = useState([]);
-  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
-  const [filteredData, setFilteredData] = useState([]);
-  const [reRender, setReRender] = useState(false);
-  const { t } = useTranslation();
+const CardSkeleton = () => {
   const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
-  const params = {
-    offset: 1,
-    limit: 15,
-  };
-  const { data, refetch, isLoading, isFetched } =
-    useGetRecommendProductsForHome(params);
-  useEffect(() => {
-    refetch();
-  }, []);
-  const { youWillLoveItems } = useSelector((state) => state.storedData);
-  const dispatch = useDispatch();
-  const getCategoryIds = () => {
-    const categoryIds = [];
-    if (youWillLoveItems && youWillLoveItems?.products) {
-      youWillLoveItems?.products?.forEach((product) => {
-        if (product.category_ids) {
-          product?.category_ids?.forEach((categoryId) => {
-            categoryIds?.push(categoryId);
-          });
-        }
-      });
-    }
-    return categoryIds;
-  };
-  const uniqueCategories = [
-    ...new Set(getCategoryIds()?.map((item) => JSON.stringify(item))),
-  ].map(JSON.parse);
-
-  useEffect(() => {
-    if (youWillLoveItems?.products?.length === 0) {
-      refetch();
-    }
-    // Mount-only — empty API results must not re-trigger refetch forever.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (data) {
-      dispatch(setYouWillLoveItems(data));
-    }
-  }, [data]);
-  useEffect(() => {
-    if (data?.total_size > 0) {
-      setMenu(["Recommended", ...uniqueCategories?.map((item) => item.name)]);
-      setFilteredData(setYouWillLoveItems.products);
-    }
-  }, [setYouWillLoveItems.products]);
-
-  useEffect(() => {
-    if (selectedMenuIndex == 0) {
-      setFilteredData(youWillLoveItems?.products);
-      setReRender(true);
-    } else {
-      const categoryWiseData = youWillLoveItems?.products?.filter((item) => {
-        return item?.category_ids?.some((categoryId) => {
-          return uniqueCategories[selectedMenuIndex - 1]?.id === categoryId?.id;
-        });
-      });
-
-      setFilteredData(categoryWiseData);
-      setReRender(true);
-    }
-  }, [selectedMenuIndex]);
-
   return (
-    <>
-      {!isFetched || data?.items?.length > 0 ? (<HomeComponentsWrapper>
-        <CustomStackFullWidth
-            alignItems="center"
-            justyfyContent="center"
-            mt="30px"
-            spacing={1}
-        >
-          <CustomStackFullWidth
-              alignItems="center"
-              justifyContent="space-between"
-              direction="row"
-          >
-            {!isFetched ? (
-                <Skeleton variant="text" width="110px" />
-            ) : (
-                <>
-                  {data?.items?.length > 0 && (
-                      <H2 text="Item That You’ll Love" component="h2" />
-                  )}
-                </>
-            )}
-            <Stack maxWidth="960px" width={isSmall ? "initial" : "100%"}>
-              {data?.items?.length ? (
-                  <>
-                    {menu?.length > 0 && (
-                        <Menus
-                            selectedMenuIndex={selectedMenuIndex}
-                            setSelectedMenuIndex={setSelectedMenuIndex}
-                            menus={menu}
-                        />
-                    )}
-                  </>
-              ) : null}
-            </Stack>
-          </CustomStackFullWidth>
-          <CustomStackFullWidth>
-            {!isFetched ? (
-                <SliderCustom nopadding="true">
-                  <Slider {...loveItemSettings}>
-                    {[...Array(5)].map((_, index) => {
-                      return <ProductCardSimmer key={index} />;
-                    })}
-                  </Slider>
-                </SliderCustom>
-            ) : (
-                <SliderCustom nopadding="true">
-                  <Slider {...loveItemSettings}>
-                    {data?.items?.map((item, index) => {
-                      return (
-                          <Box key={item?.id} sx={{ px: 0.5 }}>
-                            <ModuleMarketplaceProductCard item={item} />
-                          </Box>
-                      );
-                    })}
-                  </Slider>
-                </SliderCustom>
-            )}
-          </CustomStackFullWidth>
-        </CustomStackFullWidth>
-      </HomeComponentsWrapper>) : null}
-    </>
+    <Box
+      sx={{
+        ...marketplaceStripCardSx,
+        borderRadius: "2px",
+        overflow: "hidden",
+        border: `1px solid ${alpha(theme.palette.divider, 0.35)}`,
+        bgcolor: "background.paper",
+      }}
+    >
+      <Skeleton variant="rectangular" sx={{ pt: "85%" }} />
+      <Stack spacing={0.4} sx={{ px: 1, pt: 0.6, pb: 0.85 }}>
+        <Skeleton variant="text" width="40%" height={10} />
+        <Skeleton variant="text" width="90%" height={13} />
+        <Skeleton variant="text" width="55%" height={16} />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={30}
+          sx={{ borderRadius: "2px" }}
+        />
+      </Stack>
+    </Box>
   );
 };
 
-LoveItem.propTypes = {};
+const getProductList = (payload) =>
+  payload?.items || payload?.products || [];
+
+const LoveItem = () => {
+  const theme = useTheme();
+  const dispatch = useDispatch();
+  const scrollRef = useRef(null);
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const { youWillLoveItems } = useSelector((state) => state.storedData);
+
+  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const [openSeeAll, setOpenSeeAll] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isStripHovered, setIsStripHovered] = useState(false);
+
+  const { data, refetch, isLoading, isFetched } =
+    useGetRecommendProductsForHome({
+      offset: 1,
+      limit: 50,
+    });
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    if (data) dispatch(setYouWillLoveItems(data));
+  }, [data, dispatch]);
+
+  const allProducts = useMemo(
+    () => getProductList(data) || getProductList(youWillLoveItems) || [],
+    [data, youWillLoveItems]
+  );
+
+  const uniqueCategories = useMemo(() => {
+    const categoryIds = [];
+    allProducts.forEach((product) => {
+      product?.category_ids?.forEach((categoryId) => {
+        categoryIds.push(categoryId);
+      });
+    });
+    return [
+      ...new Set(categoryIds.map((item) => JSON.stringify(item))),
+    ].map(JSON.parse);
+  }, [allProducts]);
+
+  const menus = useMemo(
+    () =>
+      uniqueCategories.length > 0
+        ? ["Recommended", ...uniqueCategories.map((item) => item.name)]
+        : [],
+    [uniqueCategories]
+  );
+
+  const filteredProducts = useMemo(() => {
+    if (selectedMenuIndex === 0 || uniqueCategories.length === 0) {
+      return allProducts;
+    }
+    const selectedCategory = uniqueCategories[selectedMenuIndex - 1];
+    return allProducts.filter((item) =>
+      item?.category_ids?.some(
+        (categoryId) => selectedCategory?.id === categoryId?.id
+      )
+    );
+  }, [allProducts, selectedMenuIndex, uniqueCategories]);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < maxScroll - 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollState();
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [filteredProducts, isLoading, updateScrollState]);
+
+  const scrollStrip = (direction) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = Math.max(el.clientWidth * 0.7, 220);
+    el.scrollBy({ left: direction * amount, behavior: "smooth" });
+  };
+
+  if (isFetched && allProducts.length === 0) return null;
+
+  const showLoading = !isFetched || (isLoading && allProducts.length === 0);
+  const showNav =
+    isDesktop &&
+    filteredProducts.length > 0 &&
+    (canScrollLeft || canScrollRight);
+
+  const navSx = (visible) => ({
+    position: "absolute",
+    top: "40%",
+    transform: "translateY(-50%)",
+    zIndex: 3,
+    width: 36,
+    height: 36,
+    borderRadius: "2px",
+    bgcolor: "background.paper",
+    border: `1px solid ${alpha(theme.palette.divider, 0.35)}`,
+    boxShadow: `0 2px 10px ${alpha(theme.palette.common.black, 0.1)}`,
+    opacity: visible && isStripHovered ? 1 : 0,
+    pointerEvents: visible && isStripHovered ? "auto" : "none",
+    transition: "opacity 0.2s ease",
+    "&:hover": {
+      bgcolor: "primary.main",
+      color: "primary.contrastText",
+      borderColor: "primary.main",
+    },
+  });
+
+  return (
+    <HomeComponentsWrapper>
+      {showLoading ? (
+        <Skeleton variant="text" width="240px" height={28} sx={{ mb: 1.5 }} />
+      ) : (
+        <MarketplaceSectionHeader
+          title="Item That You’ll Love"
+          subtitle="Recommended picks chosen just for you"
+          onSeeAll={() => setOpenSeeAll(true)}
+          seeAllLabel="See all"
+          mb={menus.length > 1 ? 1 : 1.5}
+        />
+      )}
+
+      {menus.length > 1 ? (
+        <Box sx={{ mb: 1.25, width: "100%", overflow: "hidden" }}>
+          <Menus
+            selectedMenuIndex={selectedMenuIndex}
+            setSelectedMenuIndex={setSelectedMenuIndex}
+            menus={menus}
+          />
+        </Box>
+      ) : null}
+
+      <Box
+        onMouseEnter={() => setIsStripHovered(true)}
+        onMouseLeave={() => setIsStripHovered(false)}
+        sx={{ position: "relative", width: "100%" }}
+      >
+        {showNav && (
+          <>
+            <IconButton
+              aria-label="Previous products"
+              onClick={() => scrollStrip(-1)}
+              sx={{ ...navSx(canScrollLeft), left: 0 }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+            <IconButton
+              aria-label="Next products"
+              onClick={() => scrollStrip(1)}
+              sx={{ ...navSx(canScrollRight), right: 0 }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          </>
+        )}
+
+        <Box
+          ref={scrollRef}
+          sx={{
+            display: "flex",
+            gap: marketplaceStripGapSx,
+            overflowX: "auto",
+            overflowY: "hidden",
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+            pb: 0.5,
+          }}
+        >
+          {showLoading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={`love-skel-${i}`} />
+              ))
+            : filteredProducts.map((item) => (
+                <Box key={item?.id} sx={marketplaceStripCardSx}>
+                  <ModuleMarketplaceProductCard item={item} />
+                </Box>
+              ))}
+        </Box>
+      </Box>
+
+      <RecentlyViewedViewAllModal
+        open={openSeeAll}
+        onClose={() => setOpenSeeAll(false)}
+        products={allProducts}
+        title="Item That You’ll Love"
+        subTitle="Browse all recommended products"
+        emptyLabel="No recommended items found"
+      />
+    </HomeComponentsWrapper>
+  );
+};
 
 export default LoveItem;

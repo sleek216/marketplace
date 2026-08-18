@@ -90,7 +90,7 @@ const LandingCategoryTile = ({ category, imageUrl }) => {
           justifyContent: "center",
           transition: "all 0.25s ease-in-out",
           position: "relative",
-          p: img ? 1.2 : 0,
+          p: 0,
         }}
       >
         {img ? (
@@ -99,9 +99,11 @@ const LandingCategoryTile = ({ category, imageUrl }) => {
             src={img}
             alt={name}
             sx={{
+              position: "absolute",
+              inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: "cover",
               objectPosition: "center",
             }}
           />
