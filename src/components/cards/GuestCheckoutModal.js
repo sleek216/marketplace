@@ -52,13 +52,11 @@ const GuestCheckoutModal = ({
     setModalFor("sign-in");
     setOpenAuth(true);
     setOpen(false);
-    // setSideDrawerOpen(false);
   };
   const handleSignUp = () => {
     setModalFor("sign-up");
     setOpenAuth(true);
     setOpen(false);
-    // setSideDrawerOpen(false);
   };
   return (
     <CustomModal openModal={open} handleClose={() => setOpen(false)}>

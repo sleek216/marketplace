@@ -132,6 +132,11 @@ const AddressForm = ({
       try {
         let newData = {
           ...values,
+          contact_person_email: (
+            values.contact_person_email ||
+            values.email ||
+            ""
+          ).trim(),
           address_type:
             values.address_label !== ""
               ? values.address_label
@@ -221,7 +226,7 @@ const AddressForm = ({
     addAddressFormik.setFieldValue("floor", value);
   };
   const emailHandler = (value) => {
-    addAddressFormik.setFieldValue("email", value);
+    addAddressFormik.setFieldValue("contact_person_email", value);
   };
   useEffect(() => {
     if (deliveryAddress) {
@@ -314,12 +319,14 @@ const AddressForm = ({
             <Grid item xs={12} md={6}>
               <CustomTextFieldWithFormik
                 required
+                type="email"
                 label={t("Email")}
                 touched={addAddressFormik.touched.contact_person_email}
                 errors={addAddressFormik.errors.contact_person_email}
-                fieldProps={addAddressFormik.getFieldProps(
-                  "contact_person_email"
-                )}
+                fieldProps={{
+                  ...addAddressFormik.getFieldProps("contact_person_email"),
+                  autoComplete: "email",
+                }}
                 onChangeHandler={emailHandler}
                 value={addAddressFormik.values.contact_person_email}
               />
@@ -332,7 +339,10 @@ const AddressForm = ({
               label={t("House")}
               touched={addAddressFormik.touched.house}
               errors={addAddressFormik.errors.house}
-              fieldProps={addAddressFormik.getFieldProps("house")}
+              fieldProps={{
+                ...addAddressFormik.getFieldProps("house"),
+                autoComplete: "address-line2",
+              }}
               onChangeHandler={houseHandler}
               value={addAddressFormik.values.house}
             />
@@ -343,7 +353,10 @@ const AddressForm = ({
               label={t("Floor")}
               touched={addAddressFormik.touched.floor}
               errors={addAddressFormik.errors.floor}
-              fieldProps={addAddressFormik.getFieldProps("floor")}
+              fieldProps={{
+                ...addAddressFormik.getFieldProps("floor"),
+                autoComplete: "off",
+              }}
               onChangeHandler={floorHandler}
               value={addAddressFormik.values.floor}
             />
@@ -354,7 +367,10 @@ const AddressForm = ({
               label={t("Road")}
               touched={addAddressFormik.touched.road}
               errors={addAddressFormik.errors.road}
-              fieldProps={addAddressFormik.getFieldProps("road")}
+              fieldProps={{
+                ...addAddressFormik.getFieldProps("road"),
+                autoComplete: "address-line3",
+              }}
               onChangeHandler={roadHandler}
               value={addAddressFormik.values.road}
             />

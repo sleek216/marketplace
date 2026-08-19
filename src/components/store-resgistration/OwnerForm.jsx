@@ -21,6 +21,7 @@ const OwnerForm = ({
   fNameHandler,
   lNameHandler,
   phoneHandler,
+  phoneReady = true,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -129,18 +130,22 @@ const OwnerForm = ({
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <Box sx={{ width: "100%", overflow: "visible", pt: "2px" }}>
-              <CustomPhoneInput
-                initCountry={configData?.country}
-                value={RestaurantJoinFormik.values.phone}
-                onHandleChange={phoneHandler}
-                touched={RestaurantJoinFormik.touched.phone}
-                errors={RestaurantJoinFormik.errors.phone}
-                lanDirection={lanDirection}
-                height="45px"
-                borderRadius="10px"
-                required="true"
-                alignWithMuiField
-              />
+              {phoneReady ? (
+                <CustomPhoneInput
+                  initCountry={configData?.country}
+                  value={RestaurantJoinFormik.values.phone}
+                  onHandleChange={phoneHandler}
+                  touched={RestaurantJoinFormik.touched.phone}
+                  errors={RestaurantJoinFormik.errors.phone}
+                  lanDirection={lanDirection}
+                  height="45px"
+                  borderRadius="10px"
+                  required="true"
+                  alignWithMuiField
+                />
+              ) : (
+                <Box sx={{ height: "45px" }} />
+              )}
             </Box>
           </Grid>
           </Grid>

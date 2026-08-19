@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { styled } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
@@ -184,31 +184,48 @@ const CustomPhoneInput = ({
   };
 
   const defaultCountry = initCountry?.toLowerCase();
-  const [selectedDialCode, setSelectedDialCode] = useState(
-    getDialCodeFromCountry(defaultCountry)
-  );
-  const [phoneNumber, setPhoneNumber] = useState("");
-
+  const lockedCountryRef = useRef(defaultCountry);
+  if (defaultCountry) {
+    lockedCountryRef.current = defaultCountry;
+  }
+  const country = lockedCountryRef.current || defaultCountry;
   const getDigits = (val) => `${val || ""}`.replace(/\D/g, "");
   const getLocalNumber = (fullNumber, dialCode) => {
     const digits = getDigits(fullNumber);
     if (!dialCode || !digits.startsWith(dialCode)) return digits;
     return digits.slice(dialCode.length);
   };
+  const [selectedDialCode, setSelectedDialCode] = useState(
+    getDialCodeFromCountry(defaultCountry)
+  );
+  const [phoneNumber, setPhoneNumber] = useState(() =>
+    getLocalNumber(value, getDialCodeFromCountry(defaultCountry))
+  );
   const changeHandler = (phone, countryData) => {
     const dialCode = countryData?.dialCode || selectedDialCode || "";
     const currentValue = getDigits(phone);
     const nationalNumber = getLocalNumber(currentValue, dialCode);
+    const existingDigits = getDigits(value);
+    const hasRestoredNumber =
+      existingDigits.length > String(dialCode || "").length;
+
+    // Library fires a late onChange with only +92 when country/config loads.
+    if (!nationalNumber && hasRestoredNumber) {
+      setSelectedDialCode(dialCode);
+      setPhoneNumber(getLocalNumber(existingDigits, dialCode));
+      return;
+    }
+
     setSelectedDialCode(dialCode);
     setPhoneNumber(nationalNumber);
-    onHandleChange(nationalNumber ? `${dialCode}${nationalNumber}` : dialCode);
+    onHandleChange(nationalNumber ? `${dialCode}${nationalNumber}` : "");
   };
   const { configData } = useSelector((state) => state.configData);
   const { t } = useTranslation();
   useEffect(() => {
-    const initialDialCode = getDialCodeFromCountry(defaultCountry);
-    setSelectedDialCode(initialDialCode);
-  }, [defaultCountry]);
+    const initialDialCode = getDialCodeFromCountry(country);
+    if (initialDialCode) setSelectedDialCode(initialDialCode);
+  }, [country]);
 
   useEffect(() => {
     const fullDigits = getDigits(value);
@@ -216,10 +233,13 @@ const CustomPhoneInput = ({
     setPhoneNumber(localNumber);
   }, [value, selectedDialCode]);
 
-  const displayValue = useMemo(
-    () => `${selectedDialCode}${phoneNumber}`,
-    [selectedDialCode, phoneNumber]
-  );
+  const displayValue = useMemo(() => {
+    const fromProp = getDigits(value);
+    if (fromProp.length > String(selectedDialCode || "").length) {
+      return fromProp;
+    }
+    return `${selectedDialCode || ""}${phoneNumber || ""}`;
+  }, [value, selectedDialCode, phoneNumber]);
   return (
     <NoSsr>
       <CustomStackFullWidth
@@ -278,7 +298,7 @@ const CustomPhoneInput = ({
                 t("Phone")
               ))
             }
-            country={defaultCountry}
+            country={country}
             searchStyle={{ margin: "0", width: "95%", height: "50px" }}
             inputStyle={{
               width: "100%",

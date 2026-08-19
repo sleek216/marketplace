@@ -31,6 +31,7 @@ import walletIcon from "./assets/wallet-icon.png";
 import IconButton from "@mui/material/IconButton";
 import { X as CloseIcon } from "lucide-react";
 import { getLanguage } from "../../helper-functions/getLanguage";
+import { normalizePaymentRedirectLink } from "helper-functions/normalizePaymentRedirectLink";
 import "simplebar-react/dist/simplebar.min.css";
 import SimpleBar from "simplebar-react";
 
@@ -38,22 +39,6 @@ const validationSchema = Yup.object({
   amount: Yup.string().required("Please Enter amount"),
   payment_method: Yup.string().required("Payment method is required"),
 });
-
-const normalizeRedirectLink = (redirectLink) => {
-  if (!redirectLink || typeof window === "undefined") return redirectLink;
-  try {
-    const parsed = new URL(redirectLink, window.location.origin);
-    const isLocalHost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
-    if (isLocalHost) {
-      // Local dev usually runs over http, not https.
-      parsed.protocol = window.location.protocol || "http:";
-      parsed.host = window.location.host;
-    }
-    return parsed.toString();
-  } catch (e) {
-    return redirectLink;
-  }
-};
 
 const WalletBoxComponent = (props) => {
   const {
@@ -102,7 +87,7 @@ const WalletBoxComponent = (props) => {
     mutate(payloadData, {
       onSuccess: async (response) => {
         setLoading(false);
-        const url = normalizeRedirectLink(response?.redirect_link);
+        const url = normalizePaymentRedirectLink(response?.redirect_link);
         Router.push(url);
       },
       onError: (error) => {

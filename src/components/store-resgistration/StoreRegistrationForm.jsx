@@ -34,6 +34,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getZoneWiseModule } from "components/store-resgistration/helper";
 import {
   setAllData,
+  setActiveStep,
   setFieldErrors,
   setInZone,
 } from "redux/slices/storeRegistrationData";
@@ -45,13 +46,37 @@ import { toast } from "react-hot-toast";
 import {
   formatPhoneNumber,
   formatPhoneNumberForApi,
+  isCompletePhoneNumber,
 } from "utils/CustomFunctions";
+import {
+  draftHasFormContent,
+  isUsableUpload,
+  loadPendingStoreId,
+  loadStoreRegistrationDraft,
+  saveStoreRegistrationDraft,
+  serializeStoreRegistrationDraft,
+  deserializeStoreRegistrationDraft,
+} from "helper-functions/storeRegistrationDraft";
 import useGetZoneList from "api-manage/hooks/react-query/zone-list/zone-list";
 import { ActonButtonsSection } from "components/deliveryman-registration/CustomStylesDeliveryman";
 import BusinessTin from "components/store-resgistration/BusinessTin";
 import { shadows } from "@mui/system";
 
-/** Maps vendor check-contact API reasons to user-facing copy (vendor/store scoped). */
+/** Pending/unpaid applications can continue; only block truly taken accounts. */
+function isResumableVendorReason(reason) {
+  const key = String(reason || "").toLowerCase();
+  return (
+    key === "pending_store" ||
+    key === "pending" ||
+    key === "unpaid" ||
+    key === "incomplete"
+  );
+}
+
+function isBlockingVendorReason(reason) {
+  const key = String(reason || "").toLowerCase();
+  return key === "active_store" || key === "denied";
+}
 function getVendorContactReasonMessage(reason, kind, t) {
   const isEmail = kind === "email";
   switch (reason) {
@@ -80,8 +105,8 @@ export const generateInitialValues = (languages, allData) => {
     restaurant_address: {},
     min_delivery_time: allData?.min_delivery_time || "15",
     max_delivery_time: allData?.max_delivery_time || "45",
-    logo: allData?.logo ? allData?.logo : "",
-    cover_photo: allData?.cover_photo ? allData?.cover_photo : "",
+    logo: isUsableUpload(allData?.logo) ? allData.logo : "",
+    cover_photo: isUsableUpload(allData?.cover_photo) ? allData.cover_photo : "",
     f_name: allData?.f_name || "",
     l_name: allData?.l_name || "",
     phone: allData?.phone || "",
@@ -96,11 +121,16 @@ export const generateInitialValues = (languages, allData) => {
     pickup_zone_id: allData?.pickup_zone_id || "",
     tin: allData?.tin || "",
     tin_expire_date: allData?.tin_expire_date || "",
-    tin_certificate_image: allData?.tin_certificate_image || "",
-    tandc: allData?.tandc || false,
+    tin_certificate_image: isUsableUpload(allData?.tin_certificate_image)
+      ? allData.tin_certificate_image
+      : "",
+    tandc: Boolean(allData?.tandc),
+    vat: allData?.vat || "",
+    business_plan: allData?.business_plan || "",
+    package_id: allData?.package_id ?? "",
+    store_id: allData?.store_id || "",
   };
 
-  // Set initial values for each language
   languages?.forEach((lang) => {
     initialValues.restaurant_name[lang.key] =
       allData?.restaurant_name?.[lang.key] || "";
@@ -108,11 +138,31 @@ export const generateInitialValues = (languages, allData) => {
       allData?.restaurant_address?.[lang.key] || "";
   });
 
+  if (
+    allData?.restaurant_name &&
+    typeof allData.restaurant_name === "object"
+  ) {
+    initialValues.restaurant_name = {
+      ...initialValues.restaurant_name,
+      ...allData.restaurant_name,
+    };
+  }
+  if (
+    allData?.restaurant_address &&
+    typeof allData.restaurant_address === "object"
+  ) {
+    initialValues.restaurant_address = {
+      ...initialValues.restaurant_address,
+      ...allData.restaurant_address,
+    };
+  }
+
   return initialValues;
 };
 
 const StoreRegistrationForm = ({
   setActiveStep,
+  onGoToStep,
   setFormValues,
   clearRegistrationError,
 }) => {
@@ -136,6 +186,7 @@ const StoreRegistrationForm = ({
   const initialValues = generateInitialValues(configData?.language, allData);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [draftReady, setDraftReady] = useState(false);
   const isBottomMenu = useMediaQuery("(max-width: 1180px)");
   const { mutateAsync: checkVendorContact, isLoading: isCheckingContact } =
     useVendorCheckContact();
@@ -164,6 +215,97 @@ const StoreRegistrationForm = ({
       } catch (err) { }
     },
   });
+
+  const restoredFromDraftRef = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const draft = await loadStoreRegistrationDraft();
+        if (cancelled) return;
+        const restored = deserializeStoreRegistrationDraft(draft);
+        const source = draftHasFormContent(restored)
+          ? restored
+          : draftHasFormContent(allData)
+            ? allData
+            : null;
+        if (!source) return;
+
+        const nextValues = generateInitialValues(configData?.language, source);
+        RestaurantJoinFormik.setValues(nextValues, false);
+        dispatch(setAllData({ ...(allData || {}), ...source, ...nextValues }));
+
+        if (source.inZone != null) {
+          dispatch(setInZone(source.inZone));
+        }
+        if (source.tin_expire_date) {
+          const raw = source.tin_expire_date;
+          const iso =
+            raw instanceof Date
+              ? raw.toISOString().slice(0, 10)
+              : String(raw).slice(0, 10);
+          if (iso && iso !== "Invalid Date") {
+            setSelectedDates([iso]);
+          }
+        }
+        if (isUsableUpload(nextValues.tin_certificate_image)) {
+          setFile(nextValues.tin_certificate_image);
+        }
+        restoredFromDraftRef.current = true;
+      } catch (_) {
+        // keep empty form if draft cannot be read
+      } finally {
+        if (!cancelled) setDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Restore all fields once on mount from IndexedDB (hard refresh).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady || !configData?.language?.length) return;
+    const names = RestaurantJoinFormik.values.restaurant_name || {};
+    const missingLang = configData.language.some((lang) => !(lang.key in names));
+    if (!missingLang) return;
+    RestaurantJoinFormik.setValues(
+      generateInitialValues(configData.language, RestaurantJoinFormik.values),
+      false
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configData?.language, draftReady]);
+
+  useEffect(() => {
+    if (!draftReady) return undefined;
+    if (!draftHasFormContent(RestaurantJoinFormik.values)) return undefined;
+    const handle = setTimeout(() => {
+      const valuesToSave = { ...RestaurantJoinFormik.values };
+      if (
+        !isCompletePhoneNumber(valuesToSave.phone) &&
+        isCompletePhoneNumber(allData?.phone)
+      ) {
+        valuesToSave.phone = allData.phone;
+      }
+      serializeStoreRegistrationDraft(valuesToSave, {
+        activeStep,
+        inZone,
+        business_plan: allData?.business_plan,
+        package_id: allData?.package_id,
+      })
+        .then(saveStoreRegistrationDraft)
+        .catch(() => {});
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [
+    draftReady,
+    RestaurantJoinFormik.values,
+    activeStep,
+    inZone,
+    allData?.business_plan,
+    allData?.package_id,
+  ]);
 
   // Apply API validation errors returned from a later step (e.g. logo required).
   useEffect(() => {
@@ -249,37 +391,82 @@ const StoreRegistrationForm = ({
   }, [RestaurantJoinFormik?.values?.zoneId, activeStep]);
   const formSubmitOnSuccess = async (values) => {
     clearRegistrationError?.();
-    try {
-      const res = await checkVendorContact({
-        email: (values.email || "").trim(),
-        phone: formatPhoneNumberForApi(values.phone),
-      });
-      if (!res?.email_available) {
-        toast.error(
-          getVendorContactReasonMessage(res?.email_reason, "email", t)
-        );
+    let pendingStoreId = allData?.store_id || values?.store_id || loadPendingStoreId() || "";
+    const sameEmail =
+      String(values.email || "").trim().toLowerCase() ===
+      String(allData?.email || "").trim().toLowerCase();
+    const samePhone =
+      formatPhoneNumberForApi(values.phone) ===
+      formatPhoneNumberForApi(allData?.phone);
+    const skipContactCheck = Boolean(pendingStoreId && sameEmail && samePhone);
+
+    if (!skipContactCheck) {
+      try {
+        const res = await checkVendorContact({
+          email: (values.email || "").trim(),
+          phone: formatPhoneNumberForApi(values.phone),
+        });
+        if (!res?.email_available && isBlockingVendorReason(res?.email_reason)) {
+          toast.error(
+            getVendorContactReasonMessage(res?.email_reason, "email", t)
+          );
+          return;
+        }
+        if (!res?.phone_available && isBlockingVendorReason(res?.phone_reason)) {
+          toast.error(
+            getVendorContactReasonMessage(res?.phone_reason, "phone", t)
+          );
+          return;
+        }
+        const canResume =
+          Boolean(pendingStoreId || res?.store_id) ||
+          isResumableVendorReason(res?.email_reason) ||
+          isResumableVendorReason(res?.phone_reason);
+        if (!res?.email_available && !canResume) {
+          toast.error(
+            getVendorContactReasonMessage(res?.email_reason, "email", t)
+          );
+          return;
+        }
+        if (!res?.phone_available && !canResume) {
+          toast.error(
+            getVendorContactReasonMessage(res?.phone_reason, "phone", t)
+          );
+          return;
+        }
+        if (res?.store_id) pendingStoreId = res.store_id;
+      } catch (e) {
+        onErrorResponse(e);
         return;
       }
-      if (!res?.phone_available) {
-        toast.error(
-          getVendorContactReasonMessage(res?.phone_reason, "phone", t)
-        );
-        return;
-      }
-    } catch (e) {
-      onErrorResponse(e);
-      return;
     }
 
-    setFormValues(values);
-
-    dispatch(setActiveStep(1));
+    const nextValues = {
+      ...values,
+      store_id: pendingStoreId || values?.store_id || allData?.store_id,
+    };
+    setFormValues(nextValues);
+    try {
+      await saveStoreRegistrationDraft(
+        await serializeStoreRegistrationDraft(nextValues, {
+          activeStep: 1,
+          store_id: nextValues.store_id,
+        })
+      );
+    } catch (_) {
+      // ignore
+    }
+    dispatch(setAllData({ ...(allData || {}), ...nextValues }));
+    if (onGoToStep) {
+      onGoToStep(1);
+    } else {
+      dispatch(setActiveStep(1));
+    }
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: "smooth",
     });
-    dispatch(setAllData(values));
 
     //formSubmit(values)
   };
@@ -370,7 +557,12 @@ const StoreRegistrationForm = ({
     }
   }, [selectedDates]);
   const phoneHandler = (values) => {
-    RestaurantJoinFormik.setFieldValue("phone", formatPhoneNumber(values));
+    const next = formatPhoneNumber(values);
+    const current = RestaurantJoinFormik.values.phone;
+    if (!isCompletePhoneNumber(next) && isCompletePhoneNumber(current)) {
+      return;
+    }
+    RestaurantJoinFormik.setFieldValue("phone", next);
   };
   const emailHandler = (value) => {
     RestaurantJoinFormik.setFieldValue("email", value);
@@ -625,6 +817,7 @@ const StoreRegistrationForm = ({
             fNameHandler={fNameHandler}
             lNameHandler={lNameHandler}
             phoneHandler={phoneHandler}
+            phoneReady={draftReady && Boolean(configData?.country)}
           />
         </CustomStackFullWidth>
         <Stack

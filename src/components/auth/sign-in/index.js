@@ -458,13 +458,7 @@ const onlyOtp=centralize_login?.otp_login_status && !centralize_login?.manual_lo
 
   const handleSignUp = () => {
     setModalFor("sign-up");
-    //handleClose();
   };
-  useEffect(() => {
-    if (modalFor === "sign-up") {
-      handleClose();
-    }
-  }, [modalFor]);
 
 
   const handleFormBasedOnDirection = () => {

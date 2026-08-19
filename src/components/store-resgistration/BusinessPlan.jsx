@@ -1,31 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, alpha, Grid, Typography, useTheme } from "@mui/material";
-import {
-  CustomStackFullWidth,
-  SliderCustom,
-} from "styled-components/CustomStyles.style";
+import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import { Stack } from "@mui/system";
 import { t } from "i18next";
 import { CheckCircle2 as CheckCircleIcon } from "lucide-react";
 import Plan from "components/store-resgistration/Plan";
-import FormSubmitButton from "components/profile/FormSubmitButton";
 import { useDispatch, useSelector } from "react-redux";
-import useGetSubscriptionPackage from "api-manage/hooks/react-query/store-registration/useGetSubscriptionPackage";
-import "slick-carousel/slick/slick.css";
-import Slider from "react-slick";
-import Box from "@mui/material/Box";
+import useGetSubscriptionPackage, {
+  normalizeSubscriptionPackages,
+} from "api-manage/hooks/react-query/store-registration/useGetSubscriptionPackage";
 import { setActiveStep } from "redux/slices/storeRegistrationData";
 import { ResetButton } from "components/profile/basic-information/BasicInformationForm";
 import { SaveButton } from "components/profile/basic-information/Profile.style";
-import {
-  NextFood,
-  PrevFood,
-} from "components/home/best-reviewed-items/SliderSettings";
 
 const BusinessPlan = ({
   formSubmit,
   isLoading,
   registrationResponse = {},
+  onBack,
   onBackToGeneralInfo,
   registrationError,
   clearRegistrationError,
@@ -35,7 +27,13 @@ const BusinessPlan = ({
   const { configData } = useSelector((state) => state.configData);
   const { allData } = useSelector((state) => state.storeRegData);
   const [selectedPlan, setSelectedPlan] = useState("commission");
-  const { data } = useGetSubscriptionPackage(selectedPlan);
+  const formModuleId = allData?.module_id;
+  const { data, isLoading: isPackagesLoading, isFetching: isPackagesFetching } =
+    useGetSubscriptionPackage(selectedPlan, formModuleId);
+  const packages = useMemo(
+    () => normalizeSubscriptionPackages(data),
+    [data]
+  );
   const [selectedPackage, setSelectedPackage] = useState(null);
 
   useEffect(() => {
@@ -60,52 +58,6 @@ const BusinessPlan = ({
     registrationResponse?.type,
     registrationResponse?.package_id,
   ]);
-  const [isHover, setIsHover] = useState(false);
-  const packageCount = data?.packages?.length ?? 0;
-  const settings = {
-    autoplay: true,
-    autoplaySpeed: 3000,
-    infinite: true,
-    pauseOnHover: true,
-    speed: 600,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    arrows: false,
-    responsive: [
-      {
-        breakpoint: 1400,
-        settings: {
-          slidesToShow: 3,
-          slidesToScroll: 1,
-          infinite: true,
-        },
-      },
-      {
-        breakpoint: 1100,
-        settings: {
-          slidesToShow: 2.2,
-          slidesToScroll: 1,
-          infinite: true,
-        },
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1.5,
-          slidesToScroll: 1,
-          infinite: true,
-        },
-      },
-      {
-        breakpoint: 520,
-        settings: {
-          slidesToShow: 1.1,
-          slidesToScroll: 1,
-          infinite: true,
-        },
-      },
-    ],
-  };
   const handleSubmit = () => {
     const tempValues = {
       business_plan: selectedPlan,
@@ -305,7 +257,7 @@ const BusinessPlan = ({
             </Stack>
           )}
       </CustomStackFullWidth>
-      {selectedPlan === "subscription" && data?.packages?.length > 0 && (
+      {selectedPlan === "subscription" && packages.length > 0 && (
         <Stack width="100%" mt={{ xs: 2.5, md: 3.5 }} spacing={2}>
           <Stack spacing={0.5}>
             <Typography
@@ -320,34 +272,48 @@ const BusinessPlan = ({
             </Typography>
           </Stack>
 
-          <Box
-            onMouseEnter={() => setIsHover(true)}
-            onMouseLeave={() => setIsHover(false)}
-            sx={{
-              mx: { xs: -0.5, md: 0 },
-              "& .slick-list": { margin: "0 -6px", padding: "12px 0" },
-              "& .slick-slide > div": { height: "100%" },
-              "& .slick-track": { display: "flex", alignItems: "stretch" },
-            }}
-          >
-            <SliderCustom padding="0">
-              <Slider {...settings}>
-                {data?.packages?.map((item, index) => (
-                  <Plan
-                    key={item.id}
-                    item={item}
-                    isPopular={index === 2 || item?.package_name?.toLowerCase().includes("premium")}
-                    setSelectedPackage={(id) => {
-                      clearRegistrationError?.();
-                      setSelectedPackage(id);
-                    }}
-                    selectedPackage={selectedPackage}
-                  />
-                ))}
-              </Slider>
-            </SliderCustom>
-          </Box>
+          <Grid container spacing={2} alignItems="stretch">
+            {packages.map((item, index) => (
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                key={item?.id ?? `pkg-${index}`}
+                sx={{ display: "flex" }}
+              >
+                <Plan
+                  item={item}
+                  isPopular={
+                    Boolean(item?.is_recommended) ||
+                    item?.package_name?.toLowerCase().includes("premium")
+                  }
+                  setSelectedPackage={(id) => {
+                    clearRegistrationError?.();
+                    setSelectedPackage(id);
+                  }}
+                  selectedPackage={selectedPackage}
+                />
+              </Grid>
+            ))}
+          </Grid>
         </Stack>
+      )}
+      {selectedPlan === "subscription" &&
+        !isPackagesLoading &&
+        !isPackagesFetching &&
+        packages.length === 0 && (
+        <Alert
+          severity="info"
+          sx={{
+            mt: 2.5,
+            borderRadius: "8px",
+            textAlign: "left",
+            fontSize: "14px",
+          }}
+        >
+          {t("No subscription packages are available for this module yet.")}
+        </Alert>
       )}
       {registrationError && (
         <Alert
@@ -372,7 +338,11 @@ const BusinessPlan = ({
         <ResetButton
           onClick={() => {
             onBackToGeneralInfo?.();
-            dispatch(setActiveStep(0));
+            if (onBack) {
+              onBack();
+            } else {
+              dispatch(setActiveStep(0));
+            }
           }}
           variant="outlined"
         >

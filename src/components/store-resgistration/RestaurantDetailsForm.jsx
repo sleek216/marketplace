@@ -365,6 +365,8 @@ const RestaurantDetailsForm = ({
                   helperText={
                     RestaurantJoinFormik.touched.tin &&
                     RestaurantJoinFormik.errors.tin
+                      ? RestaurantJoinFormik.errors.tin
+                      : t("Optional. If entered, NTN must be 7 to 13 digits.")
                   }
                   sx={{
                     "& .MuiInputBase-root": {

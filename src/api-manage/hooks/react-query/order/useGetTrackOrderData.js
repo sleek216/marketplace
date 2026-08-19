@@ -4,7 +4,7 @@ import { useQuery } from "react-query";
 import { handleTokenExpire } from "../../../api-error-response/ErrorResponses";
 import { getToken } from "helper-functions/getToken";
 
-const getData = async (order_id, phone, guestId) => {
+export const getTrackOrderData = async (order_id, phone, guestId) => {
   const userToken = getToken();
   try {
     const params = !userToken
@@ -24,7 +24,7 @@ export default function useGetTrackOrderData(
   setShowOrderDetails,
   handleSuccess
 ) {
-  return useQuery(["track-order-data", order_id], () => getData(order_id, phone, guestId), {
+  return useQuery(["track-order-data", order_id, phone], () => getTrackOrderData(order_id, phone, guestId), {
     onSuccess: handleSuccess,
     enabled: false,
     retry: 1,

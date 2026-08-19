@@ -9,11 +9,19 @@ import CustomImageContainer from "components/CustomImageContainer";
 import successGif from "../../assets/GIF 1.gif";
 import failGif from "../../assets/GIF 2.gif";
 
-const SuccessStoreRegistration = ({ flag }) => {
+const SuccessStoreRegistration = ({ flag, onBack, onGoToStep }) => {
   const theme = useTheme();
   const router = useRouter();
   const dispatch = useDispatch();
   const tryAgain = () => {
+    if (onGoToStep) {
+      onGoToStep(2);
+      return;
+    }
+    if (onBack) {
+      onBack();
+      return;
+    }
     router.replace(
       {
         pathname: router.pathname,

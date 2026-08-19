@@ -77,11 +77,61 @@ const GoogleLoginComp = (props) => {
       setOpenModal(true);
     }
   };
+  const callbackRef = useRef(null);
+
   useEffect(() => {
     if (otpData?.phone !== "") {
       setOpenOtpModal(true);
     }
   }, [otpData]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const mountGoogleButton = () => {
+      if (cancelled || !buttonDiv.current || !window.google?.accounts?.id) {
+        return false;
+      }
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (res) => callbackRef.current(res),
+      });
+      const width = Math.max(
+        240,
+        Math.floor(buttonDiv.current.parentElement?.clientWidth || 320)
+      );
+      window.google.accounts.id.renderButton(buttonDiv.current, {
+        theme: "outline",
+        size: "large",
+        type: "standard",
+        width,
+      });
+      return true;
+    };
+
+    if (mountGoogleButton()) return undefined;
+    const retry = setInterval(() => {
+      if (mountGoogleButton()) clearInterval(retry);
+    }, 200);
+    const stop = setTimeout(() => clearInterval(retry), 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(retry);
+      clearTimeout(stop);
+    };
+  }, [clientId, buttonWidth, socialLength]);
+
+  const handleGoogleClick = () => {
+    const googleId = window.google?.accounts?.id;
+    if (!googleId) {
+      toast.error(t("Google Sign-In is not ready. Please try again."));
+      return;
+    }
+    googleId.initialize({
+      client_id: clientId,
+      callback: (res) => callbackRef.current(res),
+    });
+    googleId.prompt();
+  };
 
   const handlePostRequestOnSuccess = (response) => {
     const res = response;
@@ -131,20 +181,7 @@ const GoogleLoginComp = (props) => {
       handleSuccess(token);
     };
   };
-  useEffect(() => {
-    // Initialize Google button
-    if (typeof window !== undefined) {
-      window?.google?.accounts?.id?.initialize({
-        client_id: clientId,
-        callback: handleCallBackResponse,
-      });
-      window?.google?.accounts?.id?.renderButton(buttonDiv.current, {
-        theme: "outline",
-        size: "large", // Set button size to 'large' for better scaling
-        logo_alignment: "left",
-      });
-    }
-  }, []);
+  callbackRef.current = handleCallBackResponse;
 
   const handleView = () => {
     // Handle conditional rendering for social login button style
@@ -155,6 +192,7 @@ const GoogleLoginComp = (props) => {
           spacing={1}
           width="100%"
           height="50px"
+          onClick={handleGoogleClick}
         >
           <CustomImageContainer
             src={googleLatest.src}
@@ -174,7 +212,7 @@ const GoogleLoginComp = (props) => {
     switch (socialLength) {
       case 1:
         return (
-          <CustomGoogleButton direction="row" spacing={1} width="100%" height="50px">
+          <CustomGoogleButton direction="row" spacing={1} width="100%" height="50px" onClick={handleGoogleClick}>
             <CustomImageContainer
               src={googleLatest.src}
               alt="google"
@@ -195,6 +233,7 @@ const GoogleLoginComp = (props) => {
             spacing={1}
             width="100%"
             height="50px"
+            onClick={handleGoogleClick}
           >
             <CustomImageContainer
               src={googleLatest.src}
@@ -216,6 +255,7 @@ const GoogleLoginComp = (props) => {
             width="100%"
             spacing={1}
             height="50px"
+            onClick={handleGoogleClick}
           >
             <CustomImageContainer
               src={googleLatest.src}
@@ -245,6 +285,7 @@ const GoogleLoginComp = (props) => {
           width: socialLength !== 3 ? "100%" : buttonWidth,
           overflow: "hidden",
           cursor: "pointer",
+          height: "50px",
         }}
       >
         <div
@@ -254,8 +295,10 @@ const GoogleLoginComp = (props) => {
             left: 0,
             width: "100%",
             height: "100%",
-            filter: "opacity(0)",
-            zIndex: 9999,
+            opacity: 0,
+            zIndex: 2,
+            overflow: "hidden",
+            pointerEvents: "none",
           }}
         >
           <div ref={buttonDiv} style={{ width: "100%", height: "100%" }} />

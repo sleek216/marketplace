@@ -22,13 +22,21 @@ export const AppBarStyle = styled(AppBar)(
       color: theme.palette.text.primary,
       backgroundColor: alpha(theme.palette.background.paper, 0.96),
       backgroundImage: "none",
-      backdropFilter: "blur(14px)",
-      WebkitBackdropFilter: "blur(14px)",
+      overflow: "visible",
       borderBottom: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
       boxShadow: scrolling
         ? `0 8px 24px ${alpha(theme.palette.common.black, 0.08)}`
         : "none",
       transition: "top 0.28s ease, box-shadow 0.22s ease",
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        inset: 0,
+        zIndex: -1,
+        pointerEvents: "none",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+      },
     };
   }
 );

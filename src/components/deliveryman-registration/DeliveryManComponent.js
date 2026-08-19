@@ -21,7 +21,7 @@ import IdentityInfo from "./IdentityInfo";
 import AccountInfo from "./AccountInfo";
 import DeliverymanFormWrapper from "./DeliverymanFormWrapper";
 import { useFormik } from "formik";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePostDeliveryManRegisterInfo } from "api-manage/hooks/react-query/deliveryman-registration/useRegisterDeliveryMan";
 import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 import toast from "react-hot-toast";
@@ -35,6 +35,16 @@ import {
 import { objectToFormData } from "helper-functions/objectToFormData";
 import { FORM_TITLE } from "./constants";
 import useScrollToTop from "api-manage/hooks/custom-hooks/useScrollToTop";
+import { isCompletePhoneNumber } from "utils/CustomFunctions";
+import {
+  clearDeliverymanRegistrationDraft,
+  deserializeDeliverymanRegistrationDraft,
+  draftHasFormContent,
+  isUsableUpload,
+  loadDeliverymanRegistrationDraft,
+  saveDeliverymanRegistrationDraft,
+  serializeDeliverymanRegistrationDraft,
+} from "helper-functions/deliverymanRegistrationDraft";
 
 const formatIdentityNumberForUI = (value, identityType) => {
   if (identityType === "passport") {
@@ -82,6 +92,22 @@ const normalizeIdentityNumberForBackend = (value, identityType) => {
   return (value || "").replace(/\D/g, "");
 };
 
+const EMPTY_VALUES = {
+  f_name: "",
+  l_name: "",
+  email: "",
+  earning: "",
+  referral_code: "",
+  zone_id: "",
+  vehicle_id: "",
+  identity_type: "cnic",
+  identity_number: "",
+  phone: "",
+  password: "",
+  confirm_password: "",
+  tandc: false,
+};
+
 const DeliveryManComponent = ({ configData }) => {
   useScrollToTop();
   const router = useRouter();
@@ -89,25 +115,13 @@ const DeliveryManComponent = ({ configData }) => {
   const isBottomMenu = useMediaQuery("(max-width: 1180px)");
   const [image, setImage] = useState("");
   const [identityImage, setIdentityImage] = useState("");
+  const [draftReady, setDraftReady] = useState(false);
+  const lastCompletePhoneRef = useRef("");
   const { mutate: registerDeliveryman, isLoading } =
     usePostDeliveryManRegisterInfo();
 
   const deliveryManFormik = useFormik({
-    initialValues: {
-      f_name: "",
-      l_name: "",
-      email: "",
-      earning: "",
-      referral_code: "",
-      zone_id: "",
-      vehicle_id: "",
-      identity_type: "cnic",
-      identity_number: "",
-      phone: "",
-      password: "",
-      confirm_password: "",
-      tandc: false,
-    },
+    initialValues: EMPTY_VALUES,
     validationSchema: deliveryManValidationSchema(),
     validationOptions: {
       abortEarly: false,
@@ -133,6 +147,8 @@ const DeliveryManComponent = ({ configData }) => {
             helpers.resetForm();
             setImage("");
             setIdentityImage("");
+            lastCompletePhoneRef.current = "";
+            clearDeliverymanRegistrationDraft().catch(() => {});
             router.push("/home");
           },
           onError: onErrorResponse,
@@ -157,13 +173,93 @@ const DeliveryManComponent = ({ configData }) => {
       return;
     }
 
+    if (field === "phone") {
+      if (
+        !isCompletePhoneNumber(value) &&
+        isCompletePhoneNumber(deliveryManFormik.values.phone)
+      ) {
+        return;
+      }
+      deliveryManFormik.setFieldValue(field, value);
+      return;
+    }
+
     deliveryManFormik.setFieldValue(field, value);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const draft = await loadDeliverymanRegistrationDraft();
+        if (cancelled) return;
+        const restored = deserializeDeliverymanRegistrationDraft(draft);
+        if (!draftHasFormContent(restored)) return;
+        const { image: restoredImage, identity_image: restoredIdentity, ...formFields } =
+          restored;
+        if (isCompletePhoneNumber(formFields.phone)) {
+          lastCompletePhoneRef.current = formFields.phone;
+        }
+        deliveryManFormik.setValues(
+          {
+            ...EMPTY_VALUES,
+            ...formFields,
+            zone_id: formFields.zone_id || "",
+            vehicle_id: formFields.vehicle_id || "",
+            earning: formFields.earning || "",
+            identity_type: formFields.identity_type || "cnic",
+            tandc: Boolean(formFields.tandc),
+          },
+          false
+        );
+        if (isUsableUpload(restoredImage)) {
+          setImage(restoredImage);
+        }
+        if (Array.isArray(restoredIdentity) && restoredIdentity.some((item) => isUsableUpload(item))) {
+          setIdentityImage(restoredIdentity);
+        }
+      } catch (_) {
+        // keep empty form if draft cannot be read
+      } finally {
+        if (!cancelled) setDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Restore once on mount from IndexedDB (hard refresh).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return undefined;
+    const valuesToSave = {
+      ...deliveryManFormik.values,
+      image: isUsableUpload(image) ? image : deliveryManFormik.values.image,
+      identity_image: Array.isArray(identityImage)
+        ? identityImage
+        : deliveryManFormik.values.identity_image,
+    };
+    if (isCompletePhoneNumber(valuesToSave.phone)) {
+      lastCompletePhoneRef.current = valuesToSave.phone;
+    } else if (lastCompletePhoneRef.current) {
+      valuesToSave.phone = lastCompletePhoneRef.current;
+    }
+    if (!draftHasFormContent(valuesToSave)) return undefined;
+    const handle = setTimeout(() => {
+      serializeDeliverymanRegistrationDraft(valuesToSave)
+        .then(saveDeliverymanRegistrationDraft)
+        .catch(() => {});
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [draftReady, deliveryManFormik.values, image, identityImage]);
 
   const handleReset = () => {
     deliveryManFormik.resetForm();
     setImage("");
     setIdentityImage("");
+    lastCompletePhoneRef.current = "";
+    clearDeliverymanRegistrationDraft().catch(() => {});
   };
 
   return (
@@ -213,6 +309,7 @@ const DeliveryManComponent = ({ configData }) => {
                     configData={configData}
                     {...{ deliveryManFormik }}
                     handleFieldChange={handleFieldChange}
+                    phoneReady={draftReady && Boolean(configData?.country)}
                   />
                 }
               />

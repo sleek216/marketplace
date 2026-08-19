@@ -610,7 +610,14 @@ const ItemCheckout = (props) => {
 			);
 			formData.append(
 				"contact_person_email",
-				guestUserInfo?.contact_person_email
+				token
+					? address?.contact_person_email ||
+					  address?.email ||
+					  profileInfo?.email ||
+					  ""
+					: guestUserInfo?.contact_person_email ||
+					  guestUserInfo?.email ||
+					  ""
 			);
 			if (isImageSelected?.length > 0) {
 				isImageSelected?.forEach((item) =>
@@ -669,7 +676,14 @@ const ItemCheckout = (props) => {
 							: profileInfo?.phone
 						: `${guestUserInfo?.contact_person_number}`
 				),
-				contact_person_email: guestUserInfo?.contact_person_email,
+				contact_person_email: token
+					? address?.contact_person_email ||
+					  address?.email ||
+					  profileInfo?.email ||
+					  ""
+					: guestUserInfo?.contact_person_email ||
+					  guestUserInfo?.email ||
+					  "",
 				house: token ? address?.house : guestUserInfo?.house,
 				floor: token ? address?.floor : guestUserInfo?.floor,
 				road: token ? address?.road : guestUserInfo?.road,

@@ -143,6 +143,26 @@ const handleVariationValuesSum = (productVariations) => {
   return sum;
 };
 
+const resolveUnitPriceWithFoodVariations = (unit, item) => {
+  const variationExtra = handleVariationValuesSum(item?.food_variations);
+  if (variationExtra <= 0 || !Number.isFinite(unit) || unit <= 0) return unit;
+
+  const catalogBase =
+    Number(item?.unit_price) > 0
+      ? Number(item.unit_price)
+      : Number(item?.item?.price) > 0
+        ? Number(item.item.price)
+        : unit;
+
+  const expectedFull = roundMoney(catalogBase + variationExtra);
+  if (unit >= expectedFull - 0.01) return unit;
+
+  if (Math.abs(unit - catalogBase) < 0.01 || unit < expectedFull) {
+    return expectedFull;
+  }
+  return unit;
+};
+
 export const roundMoney = (value) => {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
@@ -157,7 +177,7 @@ export const getSelectedCartAddons = (item) => {
   );
 };
 
-/** Cart/API unit price already includes selected variations. Never add extras on top. */
+/** Normalize cart/API stored price to a per-unit value (may still be base-only for food). */
 export const coerceToUnitPrice = (rawPrice, quantity, extras = {}) => {
   const n = Number(rawPrice);
   const qty = Number(quantity) || 1;
@@ -180,15 +200,22 @@ export const getCartItemUnitPrice = (item) => {
   if (!item) return 0;
   const qty = Number(item?.quantity) || 1;
   const extras = item;
+
   const fromBase = coerceToUnitPrice(item?.itemBasePrice, qty, extras);
-  if (fromBase > 0) return fromBase;
+  if (fromBase > 0) return resolveUnitPriceWithFoodVariations(fromBase, item);
   const fromPrice = coerceToUnitPrice(item?.price, qty, extras);
-  if (fromPrice > 0) return fromPrice;
+  if (fromPrice > 0) return resolveUnitPriceWithFoodVariations(fromPrice, item);
   if (qty > 0 && Number(item?.totalPrice) > 0) {
-    return roundMoney(Number(item.totalPrice) / qty);
+    return resolveUnitPriceWithFoodVariations(
+      roundMoney(Number(item.totalPrice) / qty),
+      item
+    );
   }
   if (Number(item?.selectedOption?.[0]?.price) > 0) {
-    return coerceToUnitPrice(item.selectedOption[0].price, qty, extras);
+    return resolveUnitPriceWithFoodVariations(
+      coerceToUnitPrice(item.selectedOption[0].price, qty, extras),
+      item
+    );
   }
   let productPrice = Number(item?.price || 0);
   if (item?.food_variations?.length > 0) {

@@ -134,6 +134,8 @@ const AddressReselectPopover = (props) => {
     <>
       <Popover
         disableScrollLock={true}
+        disablePortal={false}
+        container={typeof document !== "undefined" ? document.body : undefined}
         anchorEl={anchorEl}
         anchorOrigin={{
           vertical: "bottom",
@@ -142,11 +144,13 @@ const AddressReselectPopover = (props) => {
         keepMounted
         onClose={onClose}
         open={open}
+        transitionDuration={2}
+        {...other}
+        style={{ zIndex: 2000 }}
+        sx={{ zIndex: 2000 }}
         PaperProps={{
           sx: { width: { xs: 300, sm: 320, md: 350 }, p: "1rem" },
         }}
-        transitionDuration={2}
-        {...other}
       >
         <Stack justifyContent="center" textAlign="center" spacing={2}>
           {savedLocation && savedLocation !== "Default Location" && (

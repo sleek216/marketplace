@@ -23,6 +23,7 @@ const FooterComponent = (props) => {
         },
         position: "relative",
         zIndex: 1,
+        overflowAnchor: "none",
       }}
     >
       <FooterTop landingPageData={landingPageData} />

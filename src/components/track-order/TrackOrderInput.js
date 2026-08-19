@@ -10,10 +10,14 @@ import { getLanguage, getModule } from "helper-functions/getLanguage";
 import { PrimaryButton } from "../Map/map.style";
 import TrackOrderDetails from "./TrackOrderDetails";
 import { getGuestId } from "helper-functions/getToken";
-import useGetTrackOrderData from "../../api-manage/hooks/react-query/order/useGetTrackOrderData";
+import useGetTrackOrderData, {
+  getTrackOrderData,
+} from "../../api-manage/hooks/react-query/order/useGetTrackOrderData";
 import { useDispatch, useSelector } from "react-redux";
 import { setConfigData } from "redux/slices/configData";
 import { Search } from "lucide-react";
+import { useQueryClient } from "react-query";
+import { onErrorResponse } from "api-manage/api-error-response/ErrorResponses";
 
 import Router from "next/router";
 import { useGetTripDetails } from "api-manage/hooks/react-query/useGetTripDetails";
@@ -23,6 +27,8 @@ const FIELD_RADIUS = "2px";
 const TrackOrderInput = ({ configData }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
+  const guestId = getGuestId();
+  const queryClient = useQueryClient();
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const { selectedModule } = useSelector((state) => state.utilsData);
 
@@ -37,16 +43,28 @@ const TrackOrderInput = ({ configData }) => {
       order_id: "",
       contact_person_number: "",
     },
-    onSubmit: async (values, helpers) => {
+    onSubmit: async (values) => {
       try {
         dispatch(setGuestUserInfo(values));
-        setShowOrderDetails(true);
         if (getModule()?.module_type === "rental") {
+          setShowOrderDetails(true);
           refetchData();
-        } else {
-          refetchTrackOrder();
+          return;
         }
-      } catch (err) {}
+        await queryClient.fetchQuery(
+          ["track-order-data", values.order_id, values.contact_person_number],
+          () =>
+            getTrackOrderData(
+              values.order_id,
+              values.contact_person_number,
+              guestId
+            )
+        );
+        setShowOrderDetails(true);
+      } catch (err) {
+        setShowOrderDetails(false);
+        onErrorResponse(err);
+      }
     },
   });
   const lanDirection = getLanguage() ? getLanguage() : "ltr";
@@ -56,7 +74,6 @@ const TrackOrderInput = ({ configData }) => {
   const numberHandler = (value) => {
     trackOrderFormik.setFieldValue("contact_person_number", `+${value}`);
   };
-  const guestId = getGuestId();
   const handleSuccess = () => {
     setShowOrderDetails(true);
   };

@@ -334,8 +334,11 @@ const PartnerAppsDropdown = () => {
         transformOrigin={{ vertical: "top", horizontal: "center" }}
         disableRestoreFocus
         disableScrollLock
+        disablePortal={false}
+        container={typeof document !== "undefined" ? document.body : undefined}
         ModalProps={{ hideBackdrop: true }}
-        sx={{ pointerEvents: "none" }}
+        style={{ zIndex: 2000 }}
+        sx={{ pointerEvents: "none", zIndex: 2000 }}
         slotProps={{
           paper: {
             onMouseEnter: clearTimer,

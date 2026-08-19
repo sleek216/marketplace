@@ -1,4 +1,4 @@
-import { handleProductValueWithOutDiscount, coerceToUnitPrice } from "utils/CustomFunctions";
+import { handleProductValueWithOutDiscount, coerceToUnitPrice, getTotalVariationsPrice } from "utils/CustomFunctions";
 import { getCurrentModuleId, getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { applySelectedFoodVariations } from "helper-functions/cartItemMatch";
 
@@ -124,7 +124,7 @@ export const mapApiCartRowsToReduxItems = (carts) => {
 
     const qty = Number(cartRow?.quantity) || 1;
     const catalogUnit = Number(product?.price || product?.unit_price || 0);
-    const rowUnitPrice =
+    let rowUnitPrice =
       coerceToUnitPrice(
         Number(cartRow?.price) > 0
           ? Number(cartRow.price)
@@ -135,6 +135,16 @@ export const mapApiCartRowsToReduxItems = (carts) => {
         qty,
         { unit_price: catalogUnit, catalogPrice: catalogUnit }
       ) || catalogUnit;
+
+    if (isFood && foodVariations?.length > 0) {
+      const variationExtra = getTotalVariationsPrice(foodVariations);
+      if (variationExtra > 0 && catalogUnit > 0) {
+        const expectedFull = catalogUnit + variationExtra;
+        if (rowUnitPrice < expectedFull - 0.01) {
+          rowUnitPrice = expectedFull;
+        }
+      }
+    }
 
     return {
       ...product,

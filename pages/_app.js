@@ -27,6 +27,7 @@ import useScrollToTop from "../src/api-manage/hooks/custom-hooks/useScrollToTop"
 import PullToRefresh from "../src/components/pull-to-refresh/PullToRefresh";
 import ErrorBoundary from "../src/components/error-boundary/ErrorBoundary";
 import React, { useEffect } from "react";
+import RouteTransition from "../src/components/page-skeleton/RouteTransition";
 
 const GlobalPushNotificationListener = dynamic(
   () => import("components/GlobalPushNotificationListener"),
@@ -141,7 +142,9 @@ function MyApp(props) {
                             <GlobalPushNotificationListener />
                             <PullToRefresh>
                               <ErrorBoundary>
-                                {getLayout(<Component {...pageProps} />)}
+                                <RouteTransition>
+                                  {getLayout(<Component {...pageProps} />)}
+                                </RouteTransition>
                               </ErrorBoundary>
                             </PullToRefresh>
                           </ChatUnreadBadgeProvider>

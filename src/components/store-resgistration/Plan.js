@@ -105,7 +105,7 @@ const Plan = ({ setSelectedPackage, selectedPackage, item, isPopular }) => {
   ];
 
   return (
-    <Box sx={{ height: "100%", py: 1.5, px: 1, width: "100%" }}>
+    <Box sx={{ height: "100%", py: 0.5, px: 0, width: "100%", flex: 1 }}>
       <CardWrapper
         isActive={isActive}
         isPopular={isPopular}

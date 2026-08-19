@@ -46,6 +46,8 @@ import {
   getOrderDetailsLineItems,
   getOrderDetailsMeta,
   getOrderDetailsModuleType,
+  getOrderItemPriceParts,
+  getOrderItemVariationLabels,
 } from "helper-functions/orderDetails";
 import ManualExpectedDeliveryInfo, {
 	hasManualExpectedDelivery,
@@ -66,6 +68,195 @@ const getAddOnsNames = (addOns) => {
   );
 
   return names.join(" ");
+};
+
+const MetaChip = ({ children, tone = "neutral" }) => {
+  const theme = useTheme();
+  const isDiscount = tone === "discount";
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        px: 0.85,
+        py: 0.25,
+        borderRadius: "2px",
+        fontSize: "11px",
+        fontWeight: 500,
+        lineHeight: 1.25,
+        whiteSpace: "nowrap",
+        color: isDiscount
+          ? theme.palette.error.main
+          : theme.palette.text.secondary,
+        backgroundColor: isDiscount
+          ? alpha(theme.palette.error.main, 0.08)
+          : alpha(theme.palette.text.primary, 0.05),
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
+const OrderLineItem = ({ product, isLast, t }) => {
+  const theme = useTheme();
+  const variationLabels = getOrderItemVariationLabels(product);
+  const priceParts = getOrderItemPriceParts(product);
+  const unitType = product?.item_details?.unit_type;
+  const unitTypeIsVariation = variationLabels.some(
+    (row) => row.value.toLowerCase() === String(unitType || "").toLowerCase()
+  );
+  const showUnit =
+    Boolean(unitType) &&
+    !unitTypeIsVariation &&
+    variationLabels.length === 0;
+  const quantity = product?.quantity || 1;
+  const hasDiscount =
+    priceParts.discountPerUnit > 0 && priceParts.baseUnit > priceParts.finalUnit;
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={1.5}
+      sx={{
+        px: { xs: 1.25, sm: 1.75 },
+        py: 1.35,
+        ...(!isLast && {
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.55)}`,
+        }),
+      }}
+    >
+      <Box
+        sx={{
+          position: "relative",
+          flexShrink: 0,
+          width: { xs: 56, sm: 64 },
+          height: { xs: 56, sm: 64 },
+        }}
+      >
+        <CustomImageContainer
+          src={product?.image_full_url}
+          height="64px"
+          width="64px"
+          smHeight="56px"
+          smWidth="56px"
+          loading="lazy"
+          borderRadius="8px"
+          objectfit="cover"
+        />
+        <Box
+          aria-label={`${t("Qty")} ${quantity}`}
+          sx={{
+            position: "absolute",
+            top: -6,
+            right: -6,
+            minWidth: 22,
+            height: 22,
+            px: quantity > 9 ? 0.5 : 0,
+            borderRadius: "50%",
+            bgcolor: "common.black",
+            color: "common.white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "11px",
+            fontWeight: 700,
+            lineHeight: 1,
+            border: `2px solid ${
+              theme.palette.mode === "dark"
+                ? theme.palette.grey[900]
+                : theme.palette.background.paper
+            }`,
+          }}
+        >
+          {quantity}
+        </Box>
+      </Box>
+
+      <Stack
+        direction="row"
+        alignItems="flex-start"
+        justifyContent="space-between"
+        flex={1}
+        minWidth={0}
+        spacing={1.25}
+      >
+        <Stack minWidth={0} spacing={0.6} flex={1}>
+          <Typography
+            fontWeight={600}
+            fontSize={{ xs: "13px", sm: "14px" }}
+            lineHeight={1.35}
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              wordBreak: "break-word",
+            }}
+          >
+            {t(product?.item_details?.name)}
+            {product?.item_details?.halal_tag_status &&
+            product?.item_details?.is_halal ? (
+              <FoodHalalHaram
+                position="relative"
+                width={23}
+                style={{
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                  marginLeft: "4px",
+                }}
+              />
+            ) : null}
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.6}>
+            {variationLabels.map((row, variationIndex) => (
+              <MetaChip key={`${row.name}-${row.value}-${variationIndex}`}>
+                {row.name ? `${t(row.name)}: ${row.value}` : row.value}
+              </MetaChip>
+            ))}
+            {showUnit && (
+              <MetaChip>
+                {t("Unit")}: {t(unitType)}
+              </MetaChip>
+            )}
+            {hasDiscount && (
+              <MetaChip tone="discount">
+                {t("Discount")} {getAmountWithSign(priceParts.discountPerUnit)}
+              </MetaChip>
+            )}
+            {product?.add_ons?.length > 0 && (
+              <MetaChip>
+                {t("Addons")}: {getAddOnsNames(product?.add_ons)}
+              </MetaChip>
+            )}
+          </Stack>
+        </Stack>
+        <Stack alignItems="flex-end" spacing={0.15} flexShrink={0} pt={0.15}>
+          <Typography
+            fontSize={{ xs: "14px", sm: "15px" }}
+            fontWeight={700}
+            color="text.primary"
+            whiteSpace="nowrap"
+          >
+            {getAmountWithSign(priceParts.finalUnit)}
+          </Typography>
+          {hasDiscount && (
+            <Typography
+              fontSize="12px"
+              color="text.disabled"
+              sx={{ textDecoration: "line-through" }}
+              whiteSpace="nowrap"
+            >
+              {getAmountWithSign(priceParts.baseUnit)}
+            </Typography>
+          )}
+        </Stack>
+      </Stack>
+    </Stack>
+  );
 };
 
 
@@ -189,121 +380,20 @@ const OrderSummery = (props) => {
                   />
                   <Box
                     sx={{
-                      backgroundColor:
-                        theme.palette.mode === "dark"
-                          ? alpha(theme.palette.common.white, 0.04)
-                          : alpha(theme.palette.primary.main, 0.03),
+                      backgroundColor: theme.palette.background.paper,
                       borderRadius: "2px",
                       border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
                       overflow: "hidden",
                     }}
                   >
-              {orderLineItems.map((product, index) => (
-                  <Grid
-                    container
-                    alignItems="flex-start"
-                    md={12}
-                    xs={12}
-                    spacing={{ xs: 1.5, md: 2 }}
-                    key={product?.id}
-                    sx={{
-                      px: { xs: 1.25, sm: 1.75 },
-                      py: 1.5,
-                      ...(index < orderLineItems.length - 1 && {
-                        borderBottom: `1px solid ${alpha(
-                          theme.palette.neutral[300],
-                          0.2
-                        )}`,
-                      }),
-                    }}
-                  >
-                    <Grid item xs={3} sm={1.2} md={1.2}>
-                      {product.item_campaign_id ? (
-                        <CustomImageContainer
-                          src={product?.image_full_url}
-                          height="70px"
-                          maxWidth="70px"
-                          width="100%"
-                          loading="lazy"
-                          smHeight="60px"
-                          borderRadius="2px"
-                          sx={{
-                            border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                          }}
-                        />
-                      ) : (
-                        <CustomImageContainer
-                          src={product?.image_full_url}
-                          height="70px"
-                          maxWidth="70px"
-                          width="100%"
-                          loading="lazy"
-                          smHeight="70px"
-                          borderRadius="2px"
-                          sx={{
-                            border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                          }}
-                        />
-                      )}
-                    </Grid>
-                    <Grid item md={10.8} xs={9} sm={10.8} align="left">
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="flex-start"
-                        paddingBottom={{ xs: "4px", md: "0px" }}
-                      >
-                        <Stack flex={1} mr={1} minWidth={0}>
-                          <Typography
-                            fontWeight="500"
-                            fontSize="13px"
-                            lineHeight={1.4}
-                            sx={{
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {t(product?.item_details?.name)}
-                            {product?.item_details?.halal_tag_status &&
-                              product?.item_details?.is_halal ? (
-                              <FoodHalalHaram
-                                position="relative"
-                                width={23}
-                                style={{ display: "inline-block", verticalAlign: "middle", marginLeft: "4px" }}
-                              />
-                            ) : null}
-                          </Typography>
-                          <Stack spacing={0.3} mt={0.5}>
-                            {product?.item_details?.unit_type && (
-                              <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
-                                {t(product?.item_details?.unit_type)}
-                              </Typography>
-                            )}
-                            <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
-                              {t("Unit Price")} :{" "}
-                              {getAmountWithSign(product?.item_details?.price)}
-                            </Typography>
-                            <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
-                              {t("Qty")}: {product?.quantity}
-                            </Typography>
-                            {product?.add_ons?.length > 0 && (
-                              <Typography fontSize="12px" color="text.secondary" lineHeight={1.3}>
-                                {t("Addons")}: {getAddOnsNames(product?.add_ons)}
-                              </Typography>
-                            )}
-                          </Stack>
-                        </Stack>
-                        <Typography fontSize="14px" fontWeight="bold" flexShrink={0}>
-                          {getAmountWithSign(product?.item_details?.price)}
-                        </Typography>
-                      </Stack>
-                    </Grid>
-                  </Grid>
-                ))}
+                    {orderLineItems.map((product, index) => (
+                      <OrderLineItem
+                        key={product?.id || index}
+                        product={product}
+                        isLast={index === orderLineItems.length - 1}
+                        t={t}
+                      />
+                    ))}
                     {(showDeliveredFooter || showEstimatedFooter) && (
                       <ManualExpectedDeliveryInfo
                         record={

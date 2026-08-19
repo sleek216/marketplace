@@ -104,6 +104,10 @@ const nextConfig = {
         destination: `${apiBase}/payment-mobile/:path*`,
       },
       {
+        source: "/payment/:path*",
+        destination: `${apiBase}/payment/:path*`,
+      },
+      {
         source: "/refund",
         destination: `${apiBase}/refund`,
       },

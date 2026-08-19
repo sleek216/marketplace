@@ -1,24 +1,28 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import {
+  disableBrowserScrollRestoration,
+  instantScrollToTop,
+} from "helper-functions/scrollToTop";
 
 const useScrollToTop = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
+    disableBrowserScrollRestoration();
+    instantScrollToTop();
   }, []);
 
   useEffect(() => {
     const handleRouteChange = () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      instantScrollToTop();
     };
 
+    router.events.on("routeChangeStart", handleRouteChange);
     router.events.on("routeChangeComplete", handleRouteChange);
 
-// Cleanup the event listener on unmount
     return () => {
+      router.events.off("routeChangeStart", handleRouteChange);
       router.events.off("routeChangeComplete", handleRouteChange);
     };
   }, [router]);

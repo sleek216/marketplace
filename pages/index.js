@@ -60,7 +60,7 @@ const Root = () => {
 		return (
 			<>
 				<CssBaseline />
-				<PageBootLoader message="Unable to load. Please refresh the page." />
+				<PageBootLoader message="Unable to load. Please refresh the page." error />
 			</>
 		);
 	}

@@ -18,7 +18,7 @@ import { loginSuccessFull } from "utils/toasterMessages";
 import { setWishList } from "redux/slices/wishList";
 import { useUpdateUserInfo } from "api-manage/hooks/react-query/auth/useUpdateUserInfo";
 import { ProfileApi } from "api-manage/another-formated-api/profileApi";
-import { useQuery } from "react-query";
+import { useQuery, useQueryClient } from "react-query";
 import { setUser } from "redux/slices/profileInfo";
 import { auth } from "firebase";
 import PhoneInputForm from "components/auth/sign-in/social-login/PhoneInputForm";
@@ -27,7 +27,7 @@ import { t } from "i18next";
 import { getCurrentModuleType } from "helper-functions/getCurrentModuleType";
 import { useGetWishList } from "api-manage/hooks/react-query/rental-wishlist/useGetWishlist";
 import { notifyHeaderSessionSync } from "helper-functions/headerSessionSync";
-import { useQueryClient } from "react-query";
+import { useRouter } from "next/router";
 import useGetAllCartList from "api-manage/hooks/react-query/add-cart/useGetAllCartList";
 import {
   getCartMetaFromResponse,
@@ -77,6 +77,15 @@ const AuthModal = ({ modalFor, open, handleClose, setModalFor }) => {
   const recaptchaWrapperRef = useRef(null);
   const { mutate, isLoading } = useUpdateUserInfo();
   const { mutate: loginMutation, isLoading: loginIsLoading } = useSignIn();
+  const router = useRouter();
+
+  useEffect(() => {
+    const closeOnNavigate = () => handleClose?.();
+    router.events.on("routeChangeStart", closeOnNavigate);
+    return () => {
+      router.events.off("routeChangeStart", closeOnNavigate);
+    };
+  }, [router.events, handleClose]);
   const userOnSuccessHandler = (res) => {
     dispatch(setUser(res?.data));
   };

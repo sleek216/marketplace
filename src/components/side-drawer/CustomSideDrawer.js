@@ -5,16 +5,17 @@ import { styled } from "@mui/material/styles";
 import { Drawer } from "@mui/material";
 const CustomDrawerForSidebar = styled(Drawer)(
 	({ theme, height, width, maxWidth }) => ({
-		zIndex: theme.zIndex.appBar + 100,
+		zIndex: theme.zIndex.modal,
 		maxWidth: maxWidth,
 		width: width,
-		height: height||"100%",
+		height: height || "100%",
 
 		"& .MuiDrawer-paper": {
 			maxWidth: maxWidth,
 			width: width,
-			height: height||"100%",
-			backgroundColor:theme.palette.neutral[100],
+			height: height || "100%",
+			top: 0,
+			backgroundColor: theme.palette.neutral[100],
 		},
 	})
 );

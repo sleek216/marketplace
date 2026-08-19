@@ -4,12 +4,11 @@ import { Box, Stack } from "@mui/system";
 import { CustomStackFullWidth } from "../../styled-components/CustomStyles.style";
 
 export const CartDrawer = styled(Drawer)(({ theme }) => ({
-  width: "420px",
-  height: "714px",
   zIndex: "1300",
   "& .MuiDrawer-paper": {
     width: "420px",
-    height: "714px",
+    height: "100vh",
+    top: 0,
   },
 }));
 

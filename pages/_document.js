@@ -22,6 +22,11 @@ class CustomDocument extends Document {
         </Head>
 
         <body>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";if(!location.hash){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}}catch(e){}})();`,
+            }}
+          />
           <Main />
           <NextScript />
         </body>

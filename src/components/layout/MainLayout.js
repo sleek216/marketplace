@@ -107,6 +107,13 @@ const MainLayout = ({ children, configData }) => {
 			</header>
 			<CustomStackFullWidth
 				mt={!isSmall ? "5.9rem" : isMobile ? "5.5rem" : "3.5rem"}
+				sx={{
+					flexGrow: 1,
+					minHeight: {
+						xs: "calc(100dvh - 5.5rem)",
+						md: "calc(100dvh - 5.9rem)",
+					},
+				}}
 			>
 				<CustomStackFullWidth
 					sx={{
@@ -117,7 +124,7 @@ const MainLayout = ({ children, configData }) => {
 					{children}
 				</CustomStackFullWidth>
 			</CustomStackFullWidth>
-			<footer>
+			<footer style={{ overflowAnchor: "none" }}>
 				{!hideMobileFooter && (
 					<FooterComponent
 						configData={configData}

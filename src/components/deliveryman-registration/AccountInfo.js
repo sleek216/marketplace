@@ -10,10 +10,12 @@ import { getLanguage } from "helper-functions/getLanguage";
 import HttpsIcon from "@mui/icons-material/Https";
 import { useTheme } from "@emotion/react";
 import { formatPhoneNumber } from "utils/CustomFunctions";
+import { Box } from "@mui/system";
 const AccountInfo = ({
   configData,
   deliveryManFormik,
   handleFieldChange,
+  phoneReady = true,
 }) => {
   const theme = useTheme();
   const lanDirection = getLanguage() ? getLanguage() : "ltr";
@@ -22,19 +24,23 @@ const AccountInfo = ({
     <>
       <Grid container columnSpacing={3}>
         <Grid item xs={12} lg={4}  sx={{ minHeight: "5rem" }}>
-          <CustomPhoneInput
-            required
-            value={deliveryManFormik.values.phone}
-            onHandleChange={(value) => {
-              handleFieldChange("phone", formatPhoneNumber(value));
-            }}
-            initCountry={configData?.country}
-            touched={deliveryManFormik.touched.phone}
-            errors={deliveryManFormik.errors.phone}
-            rtlChange="true"
-            lanDirection={lanDirection}
-            height="45px"
-          />
+          {phoneReady ? (
+            <CustomPhoneInput
+              required
+              value={deliveryManFormik.values.phone}
+              onHandleChange={(value) => {
+                handleFieldChange("phone", formatPhoneNumber(value));
+              }}
+              initCountry={configData?.country}
+              touched={deliveryManFormik.touched.phone}
+              errors={deliveryManFormik.errors.phone}
+              rtlChange="true"
+              lanDirection={lanDirection}
+              height="45px"
+            />
+          ) : (
+            <Box sx={{ height: "45px" }} />
+          )}
         </Grid>
         <Grid item xs={12} lg={4}>
           <CustomTextFieldWithFormik

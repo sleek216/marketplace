@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import CustomContainer from "components/container";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
 import { NoSsr, Typography, useMediaQuery } from "@mui/material";
@@ -20,7 +20,18 @@ import {
   setFieldErrors,
   setInZone,
 } from "redux/slices/storeRegistrationData";
+import { normalizePaymentRedirectLink } from "helper-functions/normalizePaymentRedirectLink";
 import { parseRegistrationApiErrors } from "components/store-resgistration/registrationErrorMapper";
+import {
+  clearStoreRegistrationDraft,
+  deserializeStoreRegistrationDraft,
+  isUsableUpload,
+  loadPendingStoreId,
+  loadStoreRegistrationDraft,
+  savePendingStoreId,
+  saveStoreRegistrationDraft,
+  serializeStoreRegistrationDraft,
+} from "helper-functions/storeRegistrationDraft";
 import useScrollToTop from "api-manage/hooks/custom-hooks/useScrollToTop";
 import { useTheme } from "@mui/styles";
 
@@ -35,10 +46,231 @@ const StoreRegistration = () => {
   const isSmallSize = useMediaQuery(theme.breakpoints.down("md"));
   const { flag, active, plan, package: pa } = router.query;
 
-  const { allData, activeStep } = useSelector((state) => state.storeRegData);
+  const getPaymentFlag = useCallback(() => {
+    if (typeof window !== "undefined") {
+      return String(
+        new URLSearchParams(window.location.search).get("flag") || ""
+      ).toLowerCase();
+    }
+    const q = flag;
+    return String(Array.isArray(q) ? q[0] : q || "").toLowerCase();
+  }, [flag]);
+
+  const paymentFlag = getPaymentFlag();
+  const isPaymentResult = paymentFlag === "success" || paymentFlag === "fail";
+
+  const { allData, activeStep, inZone } = useSelector((state) => state.storeRegData);
   const [formValues, setFormValues] = useState({});
+  const [draftReady, setDraftReady] = useState(false);
   const { mutate, isLoading: regIsloading } = usePostStoreRegistration();
   const { mutate: businessMutate, isLoading } = usePostBusiness();
+  const wizardDepthRef = useRef(0);
+  const STEP_QUERY = "reg_step";
+
+  const parseStepQuery = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0 || n > 3) return null;
+    return n;
+  };
+
+  const readStepFromLocation = () => {
+    if (typeof window === "undefined") return null;
+    return parseStepQuery(
+      new URLSearchParams(window.location.search).get(STEP_QUERY)
+    );
+  };
+
+  const buildStepUrl = useCallback((nextStep, extraQuery = {}) => {
+    const params = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : ""
+    );
+    Object.entries(extraQuery).forEach(([key, val]) => {
+      if (val == null || val === "") params.delete(key);
+      else params.set(key, String(val));
+    });
+    params.set(STEP_QUERY, String(nextStep));
+    if (nextStep < 3) params.delete("flag");
+    const path =
+      typeof window !== "undefined"
+        ? window.location.pathname
+        : router.pathname || "/store-registration";
+    const search = params.toString();
+    return search ? `${path}?${search}` : path;
+  }, [router.pathname]);
+
+  const goToStep = useCallback(
+    (nextStep, { replace = false, extraQuery = {} } = {}) => {
+      dispatch(setActiveStep(nextStep));
+      if (typeof window === "undefined") return;
+      const url = buildStepUrl(nextStep, extraQuery);
+      const state = {
+        ...(window.history.state || {}),
+        as: url,
+        url,
+        reg_step: nextStep,
+      };
+      if (replace) {
+        window.history.replaceState(state, "", url);
+      } else {
+        window.history.pushState(state, "", url);
+        wizardDepthRef.current += 1;
+      }
+    },
+    [buildStepUrl, dispatch]
+  );
+
+  const goBack = useCallback(() => {
+    submitInProgressRef.current = false;
+    const current = Number(activeStep) || 0;
+    if (current > 0) {
+      if (typeof window !== "undefined" && wizardDepthRef.current > 0) {
+        window.history.back();
+        return;
+      }
+      goToStep(current - 1, { replace: true });
+      return;
+    }
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    const hasZone =
+      typeof window !== "undefined" && Boolean(localStorage.getItem("zoneid"));
+    router.push(hasZone ? "/home" : "/");
+  }, [activeStep, goToStep, router]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (typeof window === "undefined") return;
+      if (!window.location.pathname.includes("store-registration")) return;
+      wizardDepthRef.current = Math.max(0, wizardDepthRef.current - 1);
+      const step = readStepFromLocation();
+      if (step != null) {
+        dispatch(setActiveStep(step));
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const resultFlag = getPaymentFlag();
+        if (resultFlag === "success") {
+          dispatch(setActiveStep(3));
+          dispatch(setAllData(null));
+          dispatch(setInZone(null));
+          clearStoreRegistrationDraft().catch(() => {});
+          return;
+        }
+        const draft = await loadStoreRegistrationDraft();
+        if (cancelled) return;
+        const pendingStoreId = loadPendingStoreId();
+        if (draft) {
+          const values = deserializeStoreRegistrationDraft(draft);
+          if (values) {
+            const restored = {
+              ...values,
+              store_id: values.store_id || pendingStoreId || "",
+            };
+            dispatch(setAllData(restored));
+            if (restored.inZone != null) {
+              dispatch(setInZone(restored.inZone));
+            }
+            if (restored.store_id || restored.business_plan) {
+              setResData((prev) => ({
+                ...(prev || {}),
+                store_id: restored.store_id || prev?.store_id,
+                type: restored.business_plan || prev?.type,
+                package_id: restored.package_id ?? prev?.package_id,
+              }));
+            }
+          }
+          const urlStep =
+            readStepFromLocation() ?? parseStepQuery(router.query[STEP_QUERY]);
+          if (
+            resultFlag !== "fail" &&
+            urlStep == null &&
+            typeof draft.activeStep === "number" &&
+            draft.activeStep >= 0 &&
+            draft.activeStep < 3
+          ) {
+            dispatch(setActiveStep(draft.activeStep));
+          }
+        } else if (pendingStoreId) {
+          setResData((prev) => ({
+            ...(prev || {}),
+            store_id: pendingStoreId,
+          }));
+        }
+        if (resultFlag === "fail") {
+          dispatch(setActiveStep(3));
+        }
+      } catch (_) {
+        // ignore
+      } finally {
+        if (!cancelled) setDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, router.isReady, getPaymentFlag]);
+
+  const wipeRegistrationDraft = () => {
+    dispatch(setAllData(null));
+    dispatch(setInZone(null));
+    clearStoreRegistrationDraft().catch(() => {});
+  };
+
+  useEffect(() => {
+    if (activeStep === 0 || activeStep == null) return undefined;
+    if (!allData || typeof allData !== "object") return undefined;
+    if (Object.keys(allData).length === 0) return undefined;
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          const existing = await loadStoreRegistrationDraft();
+          const merged = {
+            ...(existing || {}),
+            ...allData,
+            logo: isUsableUpload(allData.logo) ? allData.logo : existing?.logo,
+            cover_photo: isUsableUpload(allData.cover_photo)
+              ? allData.cover_photo
+              : existing?.cover_photo,
+            tin_certificate_image: isUsableUpload(allData.tin_certificate_image)
+              ? allData.tin_certificate_image
+              : existing?.tin_certificate_image,
+            restaurant_name:
+              allData.restaurant_name &&
+              Object.values(allData.restaurant_name || {}).some((v) =>
+                String(v || "").trim()
+              )
+                ? allData.restaurant_name
+                : existing?.restaurant_name,
+            restaurant_address:
+              allData.restaurant_address &&
+              Object.values(allData.restaurant_address || {}).some((v) =>
+                String(v || "").trim()
+              )
+                ? allData.restaurant_address
+                : existing?.restaurant_address,
+            inZone,
+            activeStep,
+          };
+          await saveStoreRegistrationDraft(
+            await serializeStoreRegistrationDraft(merged)
+          );
+        } catch (_) {
+          // ignore
+        }
+      })();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [allData, activeStep, inZone]);
 
   const extractErrorMessage = (error) => {
     const data = error?.response?.data;
@@ -72,7 +304,7 @@ const StoreRegistration = () => {
 
     if (step0Errors && Object.keys(step0Errors).length > 0) {
       dispatch(setFieldErrors(step0Errors));
-      dispatch(setActiveStep(0));
+      goToStep(0, { replace: true });
       setRegistrationError(
         Object.keys(otherErrors).length > 0
           ? Object.values(otherErrors)[0]
@@ -94,22 +326,19 @@ const StoreRegistration = () => {
       business_plan: value?.business_plan,
       package_id: value?.package_id,
     };
+    submitInProgressRef.current = false;
     setRegistrationError("");
-    dispatch(setAllData(nextData));
+    dispatch(setAllData({
+      ...nextData,
+      store_id: allData?.store_id || nextData?.store_id || loadPendingStoreId(),
+    }));
     setResData((prev) => ({
       ...(prev || {}),
       type: value?.business_plan,
       package_id: value?.package_id,
+      store_id: prev?.store_id || allData?.store_id || loadPendingStoreId(),
     }));
-
-    // Commission flow completes from Step-2 directly (no payment step).
-    if (value?.business_plan === "commission") {
-      submitBusiness({}, nextData);
-      return;
-    }
-
-    // Subscription flow moves to payment selection (Step-3).
-    dispatch(setActiveStep(2));
+    goToStep(2);
   };
 
   const submitBusiness = (values, dataOverride) => {
@@ -118,6 +347,54 @@ const StoreRegistration = () => {
     submitInProgressRef.current = true;
     setRegistrationError("");
     const sourceData = dataOverride || allData || {};
+    const persistPendingVendor = async (registrationRes) => {
+      const storeId = registrationRes?.store_id;
+      if (!storeId) return;
+      savePendingStoreId(storeId);
+      const merged = {
+        ...sourceData,
+        store_id: storeId,
+        business_plan:
+          registrationRes?.type ?? sourceData?.business_plan,
+        package_id:
+          registrationRes?.package_id ?? sourceData?.package_id,
+      };
+      dispatch(setAllData(merged));
+      setResData((prev) => ({
+        ...(prev || {}),
+        ...registrationRes,
+        store_id: storeId,
+        type: merged.business_plan,
+        package_id: merged.package_id,
+      }));
+      try {
+        const existing = await loadStoreRegistrationDraft();
+        await saveStoreRegistrationDraft(
+          await serializeStoreRegistrationDraft(
+            {
+              ...(existing || {}),
+              ...merged,
+              logo: isUsableUpload(merged.logo) ? merged.logo : existing?.logo,
+              cover_photo: isUsableUpload(merged.cover_photo)
+                ? merged.cover_photo
+                : existing?.cover_photo,
+              tin_certificate_image: isUsableUpload(
+                merged.tin_certificate_image
+              )
+                ? merged.tin_certificate_image
+                : existing?.tin_certificate_image,
+            },
+            {
+              activeStep: 2,
+              store_id: storeId,
+            }
+          )
+        );
+      } catch (_) {
+        // ignore
+      }
+    };
+
     const handleRegisteredStore = (registrationRes) => {
       const businessPayload = {
         business_plan: registrationRes?.type ?? sourceData?.business_plan,
@@ -128,58 +405,44 @@ const StoreRegistration = () => {
 
       // Commission plan can complete without payment transaction.
       if (businessPayload?.business_plan === "commission") {
-        const currentQuery = router.query;
-        const updatedQuery = { ...currentQuery, flag: "success", active: "" };
-        router.replace(
-          {
-            pathname: router.pathname,
-            query: updatedQuery,
-          },
-          undefined,
-          { shallow: true }
-        );
-        dispatch(setActiveStep(3));
-        dispatch(setAllData(null));
-        dispatch(setInZone(null));
+        goToStep(3, { extraQuery: { flag: "success", active: "" } });
+        wipeRegistrationDraft();
         return;
       }
 
       businessMutate(businessPayload, {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           if (res) {
+            await persistPendingVendor({
+              store_id: businessPayload.store_id,
+              type: businessPayload.business_plan,
+              package_id: businessPayload.package_id,
+            });
             if (res?.redirect_link && res?.payment !== "free_trial") {
-              const redirect_url = `${res?.redirect_link}`;
-              dispatch(setActiveStep(3));
-              dispatch(setAllData(null));
-              dispatch(setInZone(null));
-              router.push(redirect_url);
-            } else {
-              const currentQuery = router.query;
-              const updatedQuery = {
-                ...currentQuery,
-                flag: "success",
-                active: "",
-              };
-              router.replace(
-                {
-                  pathname: router.pathname,
-                  query: updatedQuery,
-                },
-                undefined,
-                { shallow: true }
+              const redirect_url = normalizePaymentRedirectLink(
+                res.redirect_link
               );
-              dispatch(setActiveStep(3));
-              dispatch(setAllData(null));
-              dispatch(setInZone(null));
+              if (typeof window !== "undefined") {
+                window.location.assign(redirect_url);
+              }
+              return;
             }
+            goToStep(3, { extraQuery: { flag: "success", active: "" } });
+            wipeRegistrationDraft();
           }
         },
         onError: handleRegistrationApiError,
       });
     };
 
-    if (resData?.store_id) {
-      handleRegisteredStore(resData);
+    const pendingStoreId = resData?.store_id || sourceData?.store_id || allData?.store_id || loadPendingStoreId();
+    if (pendingStoreId) {
+      handleRegisteredStore({
+        ...(resData || {}),
+        store_id: pendingStoreId,
+        type: sourceData?.business_plan,
+        package_id: sourceData?.package_id,
+      });
       return;
     }
 
@@ -193,37 +456,92 @@ const StoreRegistration = () => {
 
     // Final step: create vendor record only here.
     mutate(registrationPayload, {
-      onSuccess: (registrationRes) => {
-        setResData((prev) => ({
-          ...(prev || {}),
-          ...registrationRes,
-          type: registrationRes?.type ?? sourceData?.business_plan,
-          package_id: registrationRes?.package_id ?? sourceData?.package_id,
-        }));
+      onSuccess: async (registrationRes) => {
+        await persistPendingVendor(registrationRes);
         handleRegisteredStore(registrationRes);
       },
-      onError: handleRegistrationApiError,
+      onError: (error) => {
+        const existingId =
+          error?.response?.data?.store_id ||
+          sourceData?.store_id ||
+          allData?.store_id ||
+          resData?.store_id ||
+          loadPendingStoreId();
+        const msg = String(
+          error?.response?.data?.message ||
+            error?.response?.data?.errors?.[0]?.message ||
+            ""
+        ).toLowerCase();
+        if (existingId && /already|exist|taken|registered/.test(msg)) {
+          handleRegisteredStore({
+            store_id: existingId,
+            type: sourceData?.business_plan,
+            package_id: sourceData?.package_id,
+          });
+          return;
+        }
+        handleRegistrationApiError(error);
+      },
     });
   };
 
   useEffect(() => {
-    if (flag === "success") {
+    if (!router.isReady || !draftReady) return;
+    const resultFlag = getPaymentFlag();
+    if (resultFlag === "success") {
       dispatch(setActiveStep(3));
+      if (typeof window !== "undefined") {
+        const url = buildStepUrl(3, { flag: resultFlag });
+        window.history.replaceState(
+          { ...(window.history.state || {}), as: url, url, reg_step: 3 },
+          "",
+          url
+        );
+      }
+      return;
     }
-  }, [flag]);
-
-  useEffect(() => {
-    if (active === "active" || activeStep === null || activeStep === undefined) {
-      dispatch(setActiveStep(0));
+    if (resultFlag === "fail") {
+      dispatch(setActiveStep(3));
+      return;
     }
-  }, [active, activeStep]);
+    const fromUrl =
+      readStepFromLocation() ?? parseStepQuery(router.query[STEP_QUERY]);
+    if (fromUrl != null) {
+      if (fromUrl !== activeStep) {
+        dispatch(setActiveStep(fromUrl));
+      }
+      return;
+    }
+    const step =
+      activeStep === null || activeStep === undefined ? 0 : activeStep;
+    if (typeof window === "undefined") return;
+    const url = buildStepUrl(step);
+    window.history.replaceState(
+      { ...(window.history.state || {}), as: url, url, reg_step: step },
+      "",
+      url
+    );
+    if (step !== activeStep) {
+      dispatch(setActiveStep(step));
+    }
+  }, [router.isReady, draftReady, getPaymentFlag]);
 
   const handleActiveStep = () => {
+    if (isPaymentResult) {
+      return (
+        <SuccessStoreRegistration
+          flag={paymentFlag}
+          onBack={goBack}
+          onGoToStep={goToStep}
+        />
+      );
+    }
     const step = (activeStep === null || activeStep === undefined) ? 0 : activeStep;
     if (step === 0) {
       return (
         <StoreRegistrationForm
           setActiveStep={setActiveStep}
+          onGoToStep={goToStep}
           setFormValues={setFormValues}
           clearRegistrationError={() => {
             setRegistrationError("");
@@ -236,30 +554,25 @@ const StoreRegistration = () => {
         <BusinessPlan
           setActiveStep={setActiveStep}
           formSubmit={formSubmit}
-          isLoading={regIsloading || isLoading}
+          isLoading={false}
           registrationResponse={resData}
+          onBack={goBack}
           onBackToGeneralInfo={() => {
-            setResData({});
             setRegistrationError("");
           }}
           registrationError={registrationError}
           clearRegistrationError={() => setRegistrationError("")}
         />
       );
-    } else if (
-      step === 3 ||
-      (step === 3 && flag === "success") ||
-      (step === 3 && flag === "fail") ||
-      flag === "success" ||
-      flag === "fail"
-    ) {
-      return <SuccessStoreRegistration flag={flag || "success"} />;
+    } else if (step === 3) {
+      return <SuccessStoreRegistration flag={flag || "success"} onBack={goBack} onGoToStep={goToStep} />;
     } else if (step === 2) {
       return (
         <PaymentSelect
           isLoading={isLoading || regIsloading}
           resData={resData}
           submitBusiness={submitBusiness}
+          onBack={goBack}
           registrationError={registrationError}
           clearRegistrationError={() => setRegistrationError("")}
         />
@@ -302,7 +615,7 @@ const StoreRegistration = () => {
               "Join GIFT Marketplace and grow your business with online orders, powerful tools, and dedicated customer reach."
             )}
           </Typography>
-          <StoreStepper flag={flag} activeStep={activeStep} />
+          <StoreStepper flag={flag} activeStep={isPaymentResult ? 3 : activeStep} />
           {handleActiveStep()}
         </CustomStackFullWidth>
       </CustomContainer>

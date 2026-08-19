@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Grid } from "@mui/material";
 import useGetMoreFromStores from "../../api-manage/hooks/react-query/product-details/useGetMoreFromStore";
 import { CustomStackFullWidth } from "../../styled-components/CustomStyles.style";
-import ProductCard from "../cards/ProductCard";
+import ModuleMarketplaceProductCard from "../home/ModuleMarketplaceProductCard";
 import H1 from "../typographies/H1";
 
 const ProductsMoreFromTheStore = ({ productDetails }) => {
@@ -24,21 +25,25 @@ const ProductsMoreFromTheStore = ({ productDetails }) => {
 		refetch();
 	}, []);
 
+	if (!moreItem || moreItem.length === 0) return null;
+
 	return (
-		<CustomStackFullWidth>
+		<CustomStackFullWidth spacing={2}>
 			<H1 textAlign="start" text="More From This Store!" component="h2" />
-			{moreItem?.slice(0, 4)?.map((item, index) => {
-				return (
-					<ProductCard
-						item={item}
+			<Grid container spacing={2}>
+				{moreItem?.slice(0, 8)?.map((item, index) => (
+					<Grid
+						item
+						xs={6}
+						sm={4}
+						md={3}
 						key={index}
-						cardWidth="350px"
-						cardheight="160px"
-						horizontalcard="true"
-						cardFor="popular items"
-					/>
-				);
-			})}
+						sx={{ display: "flex" }}
+					>
+						<ModuleMarketplaceProductCard item={item} />
+					</Grid>
+				))}
+			</Grid>
 		</CustomStackFullWidth>
 	);
 };

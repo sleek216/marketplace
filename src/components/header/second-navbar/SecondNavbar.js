@@ -867,7 +867,6 @@ const SecondNavBar = ({ configData }) => {
           xs: "none",
           lg: "0 2px 8px rgba(15, 23, 42, 0.035)",
         },
-        zIndex: 1251,
       }}
     >
       <NoSsr>

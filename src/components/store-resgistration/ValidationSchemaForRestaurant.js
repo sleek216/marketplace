@@ -47,18 +47,24 @@ const ValidationSchemaForRestaurant = () => {
 			.test(
 				"filePresent",
 				t("The logo field is required."),
-				(value) => value instanceof File || (value && typeof value.size === "number")
+				(value) =>
+					value instanceof File ||
+					value instanceof Blob ||
+					(value && typeof value.size === "number")
 			)
 			.test(
 				"fileSize",
 				t("Image size must be less than 5MB"),
-				(value) => !value || (value instanceof File && value.size <= FILE_SIZE)
+				(value) =>
+					!value ||
+					!(value instanceof Blob) ||
+					value.size <= FILE_SIZE
 			)
 			.test(
 				"fileFormat",
 				t("Unsupported Format"),
 				(value) =>
-					value instanceof File &&
+					!(value instanceof File) ||
 					IMAGE_SUPPORTED_FORMATS.includes(value.type)
 			),
 		cover_photo: Yup.mixed()
@@ -66,18 +72,24 @@ const ValidationSchemaForRestaurant = () => {
 			.test(
 				"filePresent",
 				t("The cover photo field is required."),
-				(value) => value instanceof File || (value && typeof value.size === "number")
+				(value) =>
+					value instanceof File ||
+					value instanceof Blob ||
+					(value && typeof value.size === "number")
 			)
 			.test(
 				"fileSize",
 				t("Image size must be less than 5MB"),
-				(value) => !value || (value instanceof File && value.size <= FILE_SIZE)
+				(value) =>
+					!value ||
+					!(value instanceof Blob) ||
+					value.size <= FILE_SIZE
 			)
 			.test(
 				"fileFormat",
 				t("Unsupported Format"),
 				(value) =>
-					value instanceof File &&
+					!(value instanceof File) ||
 					IMAGE_SUPPORTED_FORMATS.includes(value.type)
 			),
 		email: Yup.string()
@@ -124,6 +136,16 @@ const ValidationSchemaForRestaurant = () => {
 			.required(t("Confirm Password required"))
 			.oneOf([Yup.ref("password"), null], t("Passwords must match")),
 		tandc: Yup.boolean().oneOf([true], t("Please accept terms and conditions")),
+		tin: Yup.string()
+			.nullable()
+			.transform((value) =>
+				value == null ? "" : String(value).replace(/\D/g, "")
+			)
+			.test(
+				"ntn-optional-length",
+				t("NTN must be 7 to 13 digits"),
+				(value) => !value || (value.length >= 7 && value.length <= 13)
+			),
 		// tin: Yup.string()
 		// 	.required(t("Taxpayer Identification Number(TIN) is required"))
 		// 	.matches(/^[0-9\W]*$/, t("TIN can only contain numbers and symbols"))

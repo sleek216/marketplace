@@ -107,25 +107,9 @@ const CartContent = (props) => {
   };
 
   /**
-   * Resolve the authoritative per-unit price for a cart item.
-   * Priority (per API doc: cartRow.price = unit price):
-   * 1. itemBasePrice  — set from cartRow.price by normalizeCartListResponse
-   * 2. price          — top-level price field (also from API)
-   * 3. totalPrice÷qty — derive from what we know
-   * 4. selectedOption[0].price — last resort for variation-only items
+   * Resolve the authoritative per-unit price for a cart item (includes food variations).
    */
-  const getSingleUnitPrice = (item) => {
-    if (Number(item?.itemBasePrice) > 0) return Number(item.itemBasePrice);
-    if (Number(item?.price) > 0) return Number(item.price);
-    const qty = Number(item?.quantity);
-    if (qty > 0 && Number(item?.totalPrice) > 0) {
-      return Number(item.totalPrice) / qty;
-    }
-    if (item?.selectedOption?.length > 0 && Number(item?.selectedOption?.[0]?.price) > 0) {
-      return Number(item.selectedOption[0].price);
-    }
-    return Number(item?.item?.price || 0);
-  };
+  const getSingleUnitPrice = (item) => getCartItemUnitPrice(item);
 
   /**
    * Sync quantity change to backend.

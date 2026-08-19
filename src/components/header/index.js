@@ -92,6 +92,8 @@ const HeaderComponent = () => {
           <Card
             sx={{
               boxShadow: "none",
+              overflow: "visible",
+              backgroundImage: "none",
             }}
           >
             <Box ref={topNavRef}>

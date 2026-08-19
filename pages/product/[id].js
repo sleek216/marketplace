@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { setConfigData } from "redux/slices/configData";
 import SEO from "../../src/components/seo";
 import CustomContainer from "../../src/components/container";
-import useScrollToTop from "api-manage/hooks/custom-hooks/useScrollToTop";
 import {NoSsr} from "@mui/material";
 
 const Index = ({ configData, productDetailsData, landingPageData }) => {
@@ -14,7 +13,7 @@ const Index = ({ configData, productDetailsData, landingPageData }) => {
   const { cartList, campaignItem } = useSelector((state) => state.cart);
   const [productDetails, setProductDetails] = useState([]);
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo(0, 0);
   }, []);
   useEffect(() => {
     if (configData) {

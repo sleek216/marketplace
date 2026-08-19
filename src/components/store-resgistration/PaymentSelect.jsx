@@ -14,6 +14,7 @@ const PaymentSelect = ({
   submitBusiness,
   resData,
   isLoading,
+  onBack,
   registrationError,
   clearRegistrationError,
 }) => {
@@ -23,9 +24,15 @@ const PaymentSelect = ({
   const { configData } = useSelector((state) => state.configData);
   const { allData } = useSelector((state) => state.storeRegData);
   const theme = useTheme();
+  const planType = resData?.type || allData?.business_plan;
+  const isCommission = planType === "commission";
 
   const submitPayment = () => {
     clearRegistrationError?.();
+    if (isCommission) {
+      submitBusiness({});
+      return;
+    }
     submitBusiness({
       payment: selectedMethod ?? selectType,
       payment_gateway: selectedMethod ?? selectType,
@@ -47,9 +54,48 @@ const PaymentSelect = ({
         padding: { xs: "1rem", md: "30px" },
       }}
     >
+      {isCommission ? (
+        <Stack spacing={1.5} alignItems="center" textAlign="center">
+          <Typography fontSize="18px" fontWeight="600">
+            {t("Complete Registration")}
+          </Typography>
+          <Typography
+            fontSize="14px"
+            color={theme.palette.neutral[500]}
+            maxWidth="520px"
+          >
+            {t(
+              "Your store details are saved on this device only. Confirm to submit your registration. After this step, your seller account will be created."
+            )}
+          </Typography>
+          <Stack
+            width="100%"
+            maxWidth="420px"
+            spacing={1}
+            sx={{
+              mt: 1,
+              p: 2,
+              borderRadius: "8px",
+              border: `1px solid ${alpha(theme.palette.neutral[400], 0.35)}`,
+              backgroundColor: alpha(theme.palette.primary.main, 0.04),
+              textAlign: "left",
+            }}
+          >
+            <Typography fontSize="13px" color="text.secondary">
+              {t("Business Plan")}
+            </Typography>
+            <Typography fontSize="15px" fontWeight={600}>
+              {t("Commission Base")}
+            </Typography>
+            <Typography fontSize="13px" color="text.secondary">
+              {t("No payment is required for this plan.")}
+            </Typography>
+          </Stack>
+        </Stack>
+      ) : (
+        <>
       <Stack
         sx={{
-          // backgroundColor: (theme) => alpha(theme.palette.neutral[400], 0.1),
           padding: ".6rem",
           borderRadius: "8px",
           justifyContent: "center",
@@ -189,6 +235,8 @@ const PaymentSelect = ({
           </Stack>
         </>
       )}
+        </>
+      )}
       {registrationError && (
         <Alert
           severity="error"
@@ -212,7 +260,7 @@ const PaymentSelect = ({
         <ResetButton
           type="button"
           variant="outlined"
-          onClick={() => dispatch(setActiveStep(1))}
+          onClick={() => (onBack ? onBack() : dispatch(setActiveStep(1)))}
         >
           {t("Back")}
         </ResetButton>
@@ -220,9 +268,12 @@ const PaymentSelect = ({
           onClick={submitPayment}
           variant="contained"
           loading={isLoading}
-          disabled={isLoading || (!selectedMethod && selectType === "pay_now")}
+          disabled={
+            isLoading ||
+            (!isCommission && !selectedMethod && selectType === "pay_now")
+          }
         >
-          {t("Confirm")}
+          {isCommission ? t("Complete Registration") : t("Confirm")}
         </SaveButton>
       </CustomStackFullWidth>
     </CustomStackFullWidth>

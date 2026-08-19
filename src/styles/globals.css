@@ -2,6 +2,7 @@ html,
 body {
     margin: 0;
     padding: 0;
+    overflow-anchor: none;
     font-family: "Plus Jakarta Sans", "Rubik", system-ui, -apple-system,
         BlinkMacSystemFont, sans-serif;
     letter-spacing: -0.011em;

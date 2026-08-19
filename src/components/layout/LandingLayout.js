@@ -23,12 +23,16 @@ export const LandingLayout = ({ children, configData, landingPageData }) => {
         sx={{
           mt: !isSmall ? "5.9rem" : isMobile ? "5.5rem" : "3.5rem",
           flexGrow: 1,
+          minHeight: {
+            xs: "calc(100dvh - 5.5rem)",
+            md: "calc(100dvh - 5.9rem)",
+          },
         }}
       >
 
         {children}
       </Stack>
-      <footer>
+      <footer style={{ overflowAnchor: "none" }}>
         <FooterComponent
           configData={configData}
           landingPageData={data ?? landingPageData}

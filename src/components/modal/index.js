@@ -29,6 +29,7 @@ const CustomModal = (props) => {
       open={openModal}
       onClose={handleCloseModal}
       sx={{
+        zIndex: (theme) => theme.zIndex.tooltip + 50,
         ".MuiDialog-paper": {
           margin: "16px",
           maxWidth: maxWidth,

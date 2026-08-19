@@ -95,7 +95,7 @@ const NavPopover = ({
       // events on the nav triggers underneath, otherwise the menu opens and
       // instantly schedules a close (flicker) and the sibling dropdown can't
       // be hovered while one is open.
-      sx={{ zIndex: 1400, pointerEvents: "none" }}
+      sx={{ zIndex: 1500, pointerEvents: "none" }}
     >
       {popoverFor === "category" ? (
         <CategoryPopover onClose={onClose} />
