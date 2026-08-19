@@ -14,7 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Box, Stack } from "@mui/system";
 import { FoodHalalHaram } from "components/cards/SpecialCard";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactImageMagnify from "react-image-magnify";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
@@ -62,9 +62,25 @@ const ProductImageView = ({
   const [imageIndex, setImageIndex] = useState(0);
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
-  const tempProduct = productImage;
+
+  const allThumbnails = useMemo(() => {
+    const list = [];
+    if (productImage) {
+      list.push(productImage);
+    }
+    if (Array.isArray(productThumbImage)) {
+      productThumbImage.forEach((img) => {
+        if (img && !list.includes(img)) {
+          list.push(img);
+        }
+      });
+    }
+    return list;
+  }, [productImage, productThumbImage]);
+
   useEffect(() => {
-    setPreViewImage(tempProduct);
+    setPreViewImage(productImage);
+    setImageIndex(0);
   }, [productImage]);
 
   const handleClick = (item, index) => {
@@ -73,7 +89,7 @@ const ProductImageView = ({
   };
   const borderColor = theme.palette.primary.main;
   return (
-    <Stack justifyContent="flex-start" spacing={2} width="100%" sx={{ }}>
+    <Stack justifyContent="flex-start" spacing={2} width="100%">
       <NoSsr>
         <Stack sx={{ position: "relative" }}>
           <Stack
@@ -134,16 +150,12 @@ const ProductImageView = ({
               smallImage: {
                 alt: "image",
                 isFluidWidth: true,
-                src: preViewImage,
+                src: preViewImage || productImage,
                 objectFit: "cover",
-                //sizes: "(min-width: 480px) 30vw, 80vw",
-                // width: tem,
-                // height: hs,
               },
               imageClassName: "magnify-image",
-
               largeImage: {
-                src: preViewImage,
+                src: preViewImage || productImage,
                 width: 1200,
                 height: 1800,
                 objectFit: "cover",
@@ -170,7 +182,7 @@ const ProductImageView = ({
         </Stack>
       </NoSsr>
 
-      {productThumbImage?.length > 0 && (
+      {allThumbnails.length > 1 && (
         <SliderCustom
           sx={{
             margin: {
@@ -181,7 +193,7 @@ const ProductImageView = ({
           }}
         >
           <Slider {...ProductsThumbnailsSettings}>
-            {productThumbImage?.map((item, index) => {
+            {allThumbnails.map((item, index) => {
               return (
                 <ChildrenImageWrapper
                   key={index}

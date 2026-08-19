@@ -22,8 +22,6 @@ import {
 } from "helper-functions/normalizeCartListResponse";
 import { setCart, setCartList } from "redux/slices/cart";
 import { addWishList } from "redux/slices/wishList";
-import SimpleBar from "simplebar-react";
-import "simplebar-react/dist/simplebar.min.css";
 import {
 	not_logged_in_message,
 	out_of_limits,
@@ -640,45 +638,44 @@ const ProductInformation = ({
 		<>
 			{state.modalData.length > 0 && (
 				<CustomStackFullWidth spacing={2}>
-					<SimpleBar style={{ maxHeight: "315px" }}>
-						<>
-							{topInformation()}
-							<Stack
-								padding={{
-									xs: "10px 10px 10px 10px",
-									sm: "20px",
-									md: "0px",
-								}}
-							>
-								{state.modalData[0]?.variations?.length > 0 && (
-									<VariationsManager
-										productDetailsData={state.modalData[0]}
-										handleChoices={handleChoices}
+					<Box sx={{ width: "100%" }}>
+						{topInformation()}
+						<Stack
+							padding={{
+								xs: "10px 0px",
+								sm: "15px 0px",
+								md: "0px",
+							}}
+							spacing={1.5}
+						>
+							{state.modalData[0]?.variations?.length > 0 && (
+								<VariationsManager
+									productDetailsData={state.modalData[0]}
+									handleChoices={handleChoices}
+								/>
+							)}
+							{/*<SizeVariation productDetailsData={productDetailsData} />*/}
+							{state.modalData.length > 0 && (
+								<IncrementDecrementManager
+									decrementQuantity={decrementQuantity}
+									incrementQuantity={incrementQuantity}
+									modalData={state?.modalData[0]}
+									productUpdate={productUpdate}
+									marketplaceLayout={modalmanage === "true"}
+								/>
+							)}
+							{isSmall && (
+								<CustomStackFullWidth sx={{ mt: ".5rem" }}>
+									<CategoryInformation
+										tags={state?.modalData?.[0]?.tags}
+										categories={
+											state?.modalData?.[0]?.category_ids
+										}
 									/>
-								)}
-								{/*<SizeVariation productDetailsData={productDetailsData} />*/}
-								{state.modalData.length > 0 && (
-									<IncrementDecrementManager
-										decrementQuantity={decrementQuantity}
-										incrementQuantity={incrementQuantity}
-										modalData={state?.modalData[0]}
-										productUpdate={productUpdate}
-										marketplaceLayout={modalmanage === "true"}
-									/>
-								)}
-								{isSmall && (
-									<CustomStackFullWidth sx={{ mt: ".5rem" }}>
-										<CategoryInformation
-											tags={state?.modalData?.[0]?.tags}
-											categories={
-												state?.modalData?.[0]?.category_ids
-											}
-										/>
-									</CustomStackFullWidth>
-								)}
-							</Stack>
-						</>
-					</SimpleBar>
+								</CustomStackFullWidth>
+							)}
+						</Stack>
+					</Box>
 
 					<ProductInformationBottomSection
 						addToCard={addToCard}

@@ -3,7 +3,6 @@ import { alpha, Stack, Typography } from "@mui/material";
 import { Minus as RemoveIcon, Plus as AddIcon } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import {
-  CustomFab,
   CustomStackFullWidth,
 } from "../../../styled-components/CustomStyles.style";
 import { t } from "i18next";
@@ -140,159 +139,31 @@ const IncrementDecrementManager = (props) => {
     </Stack>
   );
 
-  if (marketplaceLayout) {
-    return (
-      <CustomStackFullWidth spacing={1.5} sx={{ mt: 1 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography fontWeight="400" color="customColor.textGray" fontSize="13px">
-            {t("Unit")} :
-          </Typography>
-          <Typography fontWeight="600" fontSize="13px">
-            {modalData?.unit_type}
-          </Typography>
-        </Stack>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-        >
-          <MarketplaceQty
-            value={modalData?.quantity || 1}
-            onDec={decrementQuantity}
-            onInc={incrementQuantity}
-            disabledDec={
-              modalData?.totalPrice === 0 || modalData?.quantity <= 1
-            }
-          />
-          {totalPriceLabel}
-        </Stack>
-      </CustomStackFullWidth>
-    );
-  }
-
   return (
-    <CustomStackFullWidth spacing={2}>
+    <CustomStackFullWidth spacing={1.5} sx={{ mt: 1 }}>
       <Stack direction="row" spacing={1} alignItems="center">
-        <Typography fontWeight="400" color="customColor.textGray">
+        <Typography fontWeight="400" color="customColor.textGray" fontSize="13px">
           {t("Unit")} :
         </Typography>
-        <Typography fontWeight="500">{modalData?.unit_type}</Typography>
+        <Typography fontWeight="600" fontSize="13px">
+          {modalData?.unit_type}
+        </Typography>
       </Stack>
-      <CustomStackFullWidth
-        key={modalData}
-        direction={productUpdate ? "column" : "row"}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
         spacing={2}
-        alignItems={productUpdate ? "flex-start" : "center"}
-        justifyContent="flex-start"
+        alignItems={{ xs: "flex-start", sm: "center" }}
       >
-        <Stack direction="row" spacing={4} alignItems="center">
-          <Stack
-            direction="row"
-            alignIems="center"
-            justifyContent="space-between"
-            sx={{
-              minWidth: { xs: "117px", sm: "130px", md: "142px" },
-              backgroundColor:
-                getModule()?.module_type === "pharmacy"
-                  ? theme.palette.background.custom5
-                  : (theme) => alpha(theme.palette.neutral[200], 0.2),
-            }}
-            borderRadius={
-              getModule()?.module_type === "pharmacy" ||
-              getModule()?.module_type === "grocery"
-                ? "5px"
-                : "13%"
-            }
-            padding={
-              getModule()?.module_type === "pharmacy" ||
-              getModule()?.module_type === "grocery"
-                ? "5px"
-                : "0px"
-            }
-          >
-            <CustomFab
-              onClick={decrementQuantity}
-              aria-label="remove"
-              disabled={modalData?.totalPrice === 0 || modalData?.quantity <= 1}
-              sx={{
-                color:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? (theme) => theme.palette.neutral[1000]
-                    : (theme) => alpha(theme.palette.primary.main, 0.9),
-                backgroundColor:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? (theme) => theme.palette.background.custom5
-                    : (theme) => alpha(theme.palette.primary.main, 0.2),
-                boxShadow:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? "none"
-                    : "0px 2px 6px rgb(100 116 139 / 12%)",
-                borderRadius:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? "0px"
-                    : "50%",
-                "&:hover": {
-                  backgroundColor:
-                    getModule()?.module_type === "pharmacy" ||
-                    getModule()?.module_type === "grocery"
-                      ? (theme) => alpha(theme.palette.neutral[200], 0.2)
-                      : (theme) => alpha(theme.palette.primary.main, 0.4),
-                },
-              }}
-            >
-              <RemoveIcon size="small" />
-            </CustomFab>
-            <Stack alignItems="center" justifyContent="center">
-              <Typography variant="body1" fontWeight="500" textAlign="center">
-                {modalData?.quantity < 10 && "0"}
-                {modalData?.quantity}
-              </Typography>
-            </Stack>
-            <CustomFab
-              color="primary"
-              aria-label="add"
-              onClick={incrementQuantity}
-              module_type={getModule()?.module_type}
-              sx={{
-                color:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? (theme) => theme.palette.neutral[1000]
-                    : (theme) => theme.palette.neutral[100],
-                backgroundColor:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? theme.palette.background.custom5
-                    : (theme) => theme.palette.primary.main,
-                borderRadius:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? "0px"
-                    : "50%",
-                boxShadow:
-                  getModule()?.module_type === "pharmacy" ||
-                  getModule()?.module_type === "grocery"
-                    ? "none"
-                    : "0px 2px 6px rgb(100 116 139 / 12%)",
-                "&:hover": {
-                  backgroundColor:
-                    getModule()?.module_type === "pharmacy" ||
-                    getModule()?.module_type === "grocery"
-                      ? (theme) => alpha(theme.palette.neutral[200], 0.2)
-                      : (theme) => alpha(theme.palette.primary.main, 0.7),
-                },
-              }}
-            >
-              <AddIcon size="small" />
-            </CustomFab>
-          </Stack>
-        </Stack>
+        <MarketplaceQty
+          value={modalData?.quantity || 1}
+          onDec={decrementQuantity}
+          onInc={incrementQuantity}
+          disabledDec={
+            modalData?.totalPrice === 0 || modalData?.quantity <= 1
+          }
+        />
         {totalPriceLabel}
-      </CustomStackFullWidth>
+      </Stack>
     </CustomStackFullWidth>
   );
 };
