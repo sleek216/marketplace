@@ -487,258 +487,244 @@ const Top = (props) => {
       );
     } else {
       return (
-        <CustomStackFullWidth direction="row">
-          <ContentWrapper >
-            <CustomImageContainer
-              src={bannerCover}
-              width="100%"
-              height="100%"
-              objectFit="cover"
-              borderRadius="2px"
-            />
+        <CustomStackFullWidth
+          direction="row"
+          sx={{
+            borderRadius: "6px",
+            overflow: "hidden",
+            minHeight: "220px",
+            height: "235px",
+            boxShadow: "0px 2px 14px rgba(0, 0, 0, 0.06)",
+            border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+          }}
+        >
+          <Box
+            sx={{
+              width: "50%",
+              height: "100%",
+              backgroundColor: getModuleWiseBG()?.bgColor,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              p: { xs: "14px 18px", md: "18px 22px" },
+              color: theme.palette.whiteContainer.main,
+            }}
+          >
+            <Grid container spacing={1.5} alignItems="center">
+              <Grid item xs={3.5} md={3}>
+                <ImageWrapper>
+                  <CustomImageContainer
+                    src={logo}
+                    width="100%"
+                    height="100%"
+                    objectFit="cover"
+                    borderRadius="4px"
+                  />
+                  <ClosedNowScheduleWise
+                    active={storeDetails?.active}
+                    schedules={storeDetails?.schedules}
+                    borderRadius="50%"
+                  />
+                </ImageWrapper>
+              </Grid>
+              <Grid item xs={6.5} md={7} alignSelf="center">
+                <CustomStackFullWidth spacing={0.8}>
+                  <H1 text={storeDetails?.name} textAlign="flex-start" />
 
-            <ContentBox>
-              <CustomBoxFullWidth
+                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="center"
+                      spacing={0.4}
+                    >
+                      <StyledRating
+                        sx={{
+                          color:
+                            storeDetails?.avg_rating === 0
+                              ? alpha(
+                                  theme.palette.whiteContainer.main,
+                                  0.6
+                                )
+                              : "warning.dark",
+                        }}
+                        name="read-only"
+                        value={
+                          storeDetails?.avg_rating
+                            ? storeDetails?.avg_rating
+                            : 5
+                        }
+                        readOnly
+                        size="small"
+                        hasRating={
+                          storeDetails?.avg_rating === 0 ? true : false
+                        }
+                      />
+                      {storeDetails?.rating_count !== 0 ? (
+                        <Typography>{`(${storeDetails?.avg_rating})`}</Typography>
+                      ) : null}
+                    </Stack>
+                    <Typography
+                      sx={{
+                        color: (theme) => theme.palette.neutral[600],
+                      }}
+                    >
+                      |
+                    </Typography>
+                    {storeDetails?.rating_count !== 0 ? (
+                      <Typography
+                        onClick={() => setOpenReviewModal(true)}
+                        fontSize="13px"
+                        sx={{
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                        }}
+                        fontWeight="700"
+                        lineHeight="16.15px"
+                        component="span"
+                      >
+                        {storeDetails?.reviews_comments_count}
+                        <Typography
+                          component="span"
+                          fontSize="13px"
+                          fontWeight="400"
+                        >
+                          {t(" Reviews")}
+                        </Typography>
+                      </Typography>
+                    ) : (
+                      <Typography fontSize="13px">
+                        {t("No reviews yet")}
+                      </Typography>
+                    )}
+                  </Stack>
+
+                  <Typography
+                    fontSize="13px"
+                    textDecoration="underline"
+                    fontWeight="400"
+                    lineHeight="16.15px"
+                    sx={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {storeDetails?.address}
+                  </Typography>
+                </CustomStackFullWidth>
+              </Grid>
+              <Grid item xs={2} align="right">
+                {!isInWishList(storeDetails?.id) && (
+                  <Tooltip
+                    title={"Add to wishlist"}
+                    arrow
+                    placement={"bottom"}
+                  >
+                    <RoundedIconButton
+                      onClick={addToFavorite}
+                      sx={{ color: "primary.main", borderRadius: "2px" }}
+                    >
+                      <FavoriteBorderIcon size={18} fill="none" />
+                    </RoundedIconButton>
+                  </Tooltip>
+                )}
+                {isInWishList(storeDetails?.id) && (
+                  <Tooltip
+                    title={"Remove from wishlist"}
+                    arrow
+                    placement={"bottom"}
+                  >
+                    <RoundedIconButton
+                      onClick={() =>
+                        deleteWishlistStore(storeDetails?.id)
+                      }
+                      sx={{ color: "error.main", borderRadius: "2px" }}
+                    >
+                      <FavoriteIcon size={18} fill="currentColor" />
+                    </RoundedIconButton>
+                  </Tooltip>
+                )}
+
+                <Box mt="8px">
+                  <Tooltip title={"View on map"} arrow placement={"bottom"}>
+                    <RoundedIconButton
+                      onClick={openMapHandler}
+                      sx={{ color: "primary.main", borderRadius: "2px" }}
+                    >
+                      <DirectionsIcon size={18} />
+                    </RoundedIconButton>
+                  </Tooltip>
+                </Box>
+                <Box mt="8px">
+                  <Tooltip title={"Share"} arrow placement={"bottom"}>
+                    <RoundedIconButton
+                      onClick={() => setOpenShareModel(true)}
+                      sx={{ color: "primary.main", borderRadius: "2px" }}
+                    >
+                      <ShareOutlinedIcon />
+                    </RoundedIconButton>
+                  </Tooltip>
+                </Box>
+              </Grid>
+            </Grid>
+            {(storeDetails?.positive_rating !== 0 || storeDetails?.minimum_order !== 0) ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={{ xs: 2, sm: 3, md: 4 }}
                 sx={{
-                  borderTopLeftRadius: "2px",
-                  backgroundColor: getModuleWiseBG()?.bgColor,
+                  pt: 1,
+                  borderTop: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.15)}`,
                 }}
               >
-                <CustomBoxFullWidth
-                  sx={{
-                    borderTopRightRadius: "2px",
-                    borderTopLeftRadius: "2px",
-                    background: " rgba(255, 255, 255, 0.1)",
-                    boxShadow: "0px 2px 30px 2px rgba(0, 0, 0, 0.08)",
-                    padding: "10px 25px",
-                  }}
-                >
-                  <Grid container spacing={1}>
-                    <Grid item xs={3} md={2.5} sx={{ mt: "22px", mb: "30px" }}>
-                      <ImageWrapper>
-                        <CustomImageContainer
-                          src={logo}
-                          width="100%"
-                          height="100%"
-                          objectFit="cover"
-                          borderRadius="2px"
-                        />
-                        <ClosedNowScheduleWise
-                          active={storeDetails?.active}
-                          schedules={storeDetails?.schedules}
-                          borderRadius="50%"
-                        />
-                      </ImageWrapper>
-                    </Grid>
-                    <Grid item xs={7} md={7.5} alignSelf="center">
-                      <CustomStackFullWidth spacing={1}>
-                        <H1 text={storeDetails?.name} textAlign="flex-start" />
-
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            justifyContent="center"
-                            spacing={0.4}
-                          >
-                            <StyledRating
-                              sx={{
-                                color:
-                                  storeDetails?.avg_rating === 0
-                                    ? alpha(
-                                        theme.palette.whiteContainer.main,
-                                        0.6
-                                      )
-                                    : "warning.dark",
-                              }}
-                              name="read-only"
-                              value={
-                                storeDetails?.avg_rating
-                                  ? storeDetails?.avg_rating
-                                  : 5
-                              }
-                              readOnly
-                              size="small"
-                              hasRating={
-                                storeDetails?.avg_rating === 0 ? true : false
-                              }
-                            />
-                            {storeDetails?.rating_count !== 0 ? (
-                              <Typography>{`(${storeDetails?.avg_rating})`}</Typography>
-                            ) : null}
-                          </Stack>
-                          <Typography
-                            sx={{
-                              color: (theme) => theme.palette.neutral[600],
-                            }}
-                          >
-                            |
-                          </Typography>
-                          {storeDetails?.rating_count !== 0 ? (
-                            <Typography
-                              onClick={() => setOpenReviewModal(true)}
-                              fontSize="14px"
-                              sx={{
-                                textDecoration: "underLine",
-                                cursor: "pointer",
-                              }}
-                              fontWeight="700"
-                              lineHeight="16.15px"
-                              component="span"
-                            >
-                              {storeDetails?.reviews_comments_count}
-                              <Typography
-                                component="span"
-                                fontSize="13px"
-                                fontWeight="400"
-                              >
-                                {t(" Reviews")}
-                              </Typography>
-                            </Typography>
-                          ) : (
-                            <Typography fontSize="13.5px">
-                              {t("No reviews yet")}
-                            </Typography>
-                          )}
-                        </Stack>
-
-                        <Typography
-                          fontSize="14px"
-                          textDecoration="underline"
-                          fontWeight="400"
-                          lineHeight="16.15px"
-                        >
-                          {storeDetails?.address}
-                        </Typography>
-                      </CustomStackFullWidth>
-                    </Grid>
-                    <Grid item xs={2} align="right">
-                      {!isInWishList(storeDetails?.id) && (
-                        <Tooltip
-                          title={"Add to wishlist"}
-                          arrow
-                          placement={"bottom"}
-                        >
-                          <RoundedIconButton
-                            onClick={addToFavorite}
-                            sx={{ color: "primary.main", borderRadius: "2px" }}
-                          >
-                            <FavoriteBorderIcon size={20} fill="none" />
-                          </RoundedIconButton>
-                        </Tooltip>
-                      )}
-                      {isInWishList(storeDetails?.id) && (
-                        <Tooltip
-                          title={"Remove from wishlist"}
-                          arrow
-                          placement={"bottom"}
-                        >
-                          <RoundedIconButton
-                            onClick={() =>
-                              deleteWishlistStore(storeDetails?.id)
-                            }
-                            sx={{ color: "error.main", borderRadius: "2px" }}
-                          >
-                            <FavoriteIcon size={20} fill="currentColor" />
-                          </RoundedIconButton>
-                        </Tooltip>
-                      )}
-
-                      <Box mt="10px">
-                        <Tooltip title={"View on map"} arrow placement={"bottom"}>
-                          <RoundedIconButton
-                            onClick={openMapHandler}
-                            sx={{ color: "primary.main", borderRadius: "2px" }}
-                          >
-                            <DirectionsIcon size={20} />
-                          </RoundedIconButton>
-                        </Tooltip>
-                      </Box>
-                      <Box mt="10px">
-                        <Tooltip title={"Share"} arrow placement={"bottom"}>
-                          <RoundedIconButton
-                            onClick={() => setOpenShareModel(true)}
-                            sx={{ color: "primary.main", borderRadius: "2px" }}
-                          >
-                            <ShareOutlinedIcon />
-                          </RoundedIconButton>
-                        </Tooltip>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CustomBoxFullWidth>
-              </CustomBoxFullWidth>
-              {(storeDetails?.positive_rating !== 0 || storeDetails?.minimum_order !== 0) ? (
-                <CustomBoxFullWidth
-                  sx={{
-                    backgroundColor: getModuleWiseBG()?.bgColor,
-                    opacity: "0.9",
-                    padding: "13.5px 25px",
-                    borderBottomLeftRadius: "2px",
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={{ xs: 2, sm: 3, md: 5 }}
-                  >
-                    {storeDetails?.positive_rating !== 0 ? (
-                      <Stack alignItems="flex-start">
-                        <Typography
-                          textAlign="center"
-                          variant="h5"
-                          sx={{
-                            fontSize: {
-                              xs: "14px",
-                              sm: "22px",
-                              md: "22px",
-                            },
-                          }}
-                        >
-                          {storeDetails?.positive_rating.toFixed(0)}%
-                        </Typography>
-                        <Stack direction="row" alignItems="center" spacing={0.3}>
-                          <Typography>{t("Positive Review")}</Typography>
-                        </Stack>
-                      </Stack>
-                    ) : null}
-                    {storeDetails?.minimum_order !== 0 ? (
-                      <Stack alignItems="flex-start">
-                        <Typography
-                          variant="h5"
-                          sx={{
-                            fontSize: {
-                              xs: "16px",
-                              sm: "22px",
-                              md: "22px",
-                            },
-                          }}
-                        >
-                          {getAmountWithSign(storeDetails?.minimum_order)}
-                        </Typography>
-                        <Typography>{t("Minimum Order Value")}</Typography>
-                      </Stack>
-                    ) : null}
+                {storeDetails?.positive_rating !== 0 ? (
+                  <Stack alignItems="flex-start">
+                    <Typography
+                      textAlign="center"
+                      variant="h6"
+                      sx={{
+                        fontSize: "16px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {storeDetails?.positive_rating.toFixed(0)}%
+                    </Typography>
+                    <Typography fontSize="12px">{t("Positive Review")}</Typography>
                   </Stack>
-                </CustomBoxFullWidth>
-              ) : null}
-            </ContentBox>
-          </ContentWrapper>
+                ) : null}
+                {storeDetails?.minimum_order !== 0 ? (
+                  <Stack alignItems="flex-start">
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontSize: "16px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {getAmountWithSign(storeDetails?.minimum_order)}
+                    </Typography>
+                    <Typography fontSize="12px">{t("Minimum Order Value")}</Typography>
+                  </Stack>
+                ) : null}
+              </Stack>
+            ) : null}
+          </Box>
           <Stack
             width="50%"
             sx={{
               position: "relative",
               backgroundColor: "background.default",
-              borderTopRightRadius: "2px",
-              borderBottomRightRadius: "2px",
               overflow: "hidden",
+              height: "100%",
             }}
           >
             {storeDetails?.discount ? (
               <Stack
                 sx={{
                   position: "absolute",
-                  bottom:"6px",
+                  bottom: "6px",
                   left: 0,
                   right: 0,
                   backgroundColor: (theme) =>
@@ -746,7 +732,6 @@ const Top = (props) => {
                   color: (theme) => theme.palette.neutral[100],
                   padding: "10px",
                   borderRadius: "0px",
-                  borderBottomRightRadius:"2px",
                   zIndex: 999,
                 }}
               >
@@ -756,7 +741,6 @@ const Top = (props) => {
                   )} ${max} ${getAmountWithSign(
                     storeDetails?.discount?.max_discount
                   )}, ${text2}`}
-
                 </Typography>
               </Stack>
             ) : null}
@@ -774,32 +758,28 @@ const Top = (props) => {
                           sx={{
                             cursor: "pointer",
                             width: "100%",
-                            borderTopRightRadius:"2px", borderBottomRightRadius:"2px"
+                            height: "235px",
                           }}
                         >
                           <CustomImageContainer
                             src={banner?.image_full_url}
                             width="100%"
-                            height="251px"
+                            height="235px"
                             objectFit="cover"
-                            borderRadius="2px"
                           />
                         </Stack>
                       );
                     })}
                   </Slider>
                 ) : (
-                  <Stack sx={{borderTopRightRadius:"2px", borderBottomRightRadius:"2px"}}>
+                  <Stack sx={{ width: "100%", height: "235px" }}>
                     <CustomImageContainer
                       src={bannerCover}
                       width="100%"
-                      height="251px"
+                      height="235px"
                       objectFit="cover"
-                      borderTopRightRadius="2px"
-                      borderBottomRightRadius="2px"
                     />
                   </Stack>
-
                 )}
               </>
             ) : (

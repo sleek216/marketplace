@@ -213,10 +213,19 @@ const AddOrderToCart = (props) => {
               fullWidth
               onClick={() => handleBuyNowClick()}
               sx={{
-                color: "black",
-                backgroundColor: theme.palette.customColor.buyButton,
+                color: theme.palette.primary.contrastText,
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: "2px",
+                textTransform: "none",
+                fontWeight: 700,
+                minHeight: 40,
+                boxShadow: "none",
                 fontSize: {
                   xs: "12px",
+                  md: "14px",
+                },
+                "&:hover": {
+                  backgroundColor: theme.palette.primary.dark,
                 },
               }}
             >
@@ -226,8 +235,21 @@ const AddOrderToCart = (props) => {
           <Grid item xs={6} sm={6} md={6}>
             {isInCart(product?.id) && (
               <PrimaryButton
+                fullWidth
                 onClick={() => addToCard()}
-                sx={{ width: 200, fontSize: { xs: "12px", md: "14px" } }}
+                sx={{
+                  backgroundColor: theme.palette.secondary.main,
+                  color: theme.palette.secondary.contrastText,
+                  borderRadius: "2px",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  minHeight: 40,
+                  boxShadow: "none",
+                  fontSize: { xs: "12px", md: "14px" },
+                  "&:hover": {
+                    backgroundColor: theme.palette.secondary.dark,
+                  },
+                }}
               >
                 {updateIsLoading ? (
                   <Stack
@@ -244,9 +266,22 @@ const AddOrderToCart = (props) => {
             )}
             {!isInCart(product?.id) && (
               <PrimaryButton
+                fullWidth
                 onClick={() => addToCard()}
                 loading={isLoading}
-                sx={{ fontSize: { xs: "12px", md: "14px" } }}
+                sx={{
+                  backgroundColor: theme.palette.secondary.main,
+                  color: theme.palette.secondary.contrastText,
+                  borderRadius: "2px",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  minHeight: 40,
+                  boxShadow: "none",
+                  fontSize: { xs: "12px", md: "14px" },
+                  "&:hover": {
+                    backgroundColor: theme.palette.secondary.dark,
+                  },
+                }}
               >
                 {isLoading ? (
                   <Stack

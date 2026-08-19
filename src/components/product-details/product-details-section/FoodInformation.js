@@ -11,13 +11,12 @@ import StartPriceView from "../../food-details/foodDetail-modal/StartPriceView";
 import { handleProductVariationRequirementsToaster } from "../../food-details/foodDetail-modal/SomeHelperFuctions";
 import AddUpdateOrderToCart from "../../food-details/foodDetail-modal/AddUpdateOrderToCart";
 import AddOrderToCart from "../../food-details/foodDetail-modal/AddOrderToCart";
-import TotalAmountVisibility from "../../food-details/foodDetail-modal/TotalAmountVisibility";
 import AddOnsManager from "../../food-details/foodDetail-modal/AddOnsManager";
 import VariationsManager from "../../food-details/foodDetail-modal/VariationsManager";
-import IncrementDecrementManager from "../../food-details/foodDetail-modal/IncrementDecrementManager";
+import { MarketplaceQty } from "./IncrementDecrementManager";
 import { handleInitialTotalPriceVarPriceQuantitySet } from "../../food-details/foodDetail-modal/helper-functions/handleDataOnFirstMount";
 import { calculateItemBasePrice, getIndexFromArrayByComparision, isAvailable } from "utils/CustomFunctions";
-import { getDiscountedAmount } from "helper-functions/CardHelpers";
+import { getAmountWithSign, getDiscountedAmount } from "helper-functions/CardHelpers";
 import { setBuyNowItemList, setCampaignItemList, setCart, setCartList, setClearCart, setUpdateVariationToCart } from "redux/slices/cart";
 import { getCartsFromResponse, mapApiCartRowsToReduxItems } from "helper-functions/normalizeCartListResponse";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
@@ -696,28 +695,52 @@ const FoodInformation = ({
         )}
       </Stack>
 
-      <Box sx={{ p: 2, bgcolor: (theme) => theme.palette.neutral[100], borderRadius: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <TotalAmountVisibility
-            modalData={modalData}
-            totalPrice={totalPrice}
-            t={t}
-            productDiscount={product?.discount}
-            productDiscountType={product?.discount_type}
-            productRestaurantDiscount={product?.store_discount}
-            productQuantity={quantity}
-            selectedAddOns={selectedAddons}
-          />
-          <IncrementDecrementManager
-            decrementPrice={decrementPrice}
-            totalPrice={totalPrice}
-            quantity={quantity}
-            incrementPrice={incrementPrice}
-          />
+      {modalData?.[0]?.unit_type && (
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+          <Typography fontWeight="400" color="customColor.textGray" fontSize="13px">
+            {t("Unit")} :
+          </Typography>
+          <Typography fontWeight="600" fontSize="13px">
+            {modalData?.[0]?.unit_type}
+          </Typography>
         </Stack>
-      </Box>
+      )}
 
-      <Box mt={2}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        sx={{ mt: 1.5, mb: 1.5 }}
+      >
+        <MarketplaceQty
+          value={quantity}
+          onDec={decrementPrice}
+          onInc={incrementPrice}
+          disabledDec={totalPrice === 0 || quantity <= 1}
+        />
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography fontWeight="500" fontSize={{ xs: "12px", md: "14px" }}>
+            {t("Total Price")}:
+          </Typography>
+          <Typography
+            fontWeight="700"
+            fontSize={{ xs: "12px", md: "14px" }}
+            color="primary.main"
+          >
+            {getAmountWithSign(
+              getDiscountedAmount(
+                totalPrice,
+                product?.discount,
+                product?.discount_type,
+                product?.store_discount,
+                quantity
+              )
+            )}
+          </Typography>
+        </Stack>
+      </Stack>
+
+      <Box mt={1.5}>
         {modalData.length > 0 && isAvailable(modalData[0].available_time_starts, modalData[0].available_time_ends) && !modalData[0]?.available_date_starts && (
           <AddOrderToCart
             isInCart={isInCart}
