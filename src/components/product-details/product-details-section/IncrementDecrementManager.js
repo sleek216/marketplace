@@ -106,24 +106,14 @@ const IncrementDecrementManager = (props) => {
   };
 
   const totalPriceLabel = (
-    <Stack
-      direction="row"
-      spacing={1}
-      paddingLeft={
-        marketplaceLayout
-          ? 0
-          : productUpdate
-            ? "none"
-            : { sm: "0px", md: "45px" }
-      }
-    >
+    <Stack direction="row" spacing={1} alignItems="center">
       <Typography fontWeight="500" fontSize={{ xs: "12px", md: "14px" }}>
         {t("Total Price")}:
       </Typography>
       <Typography
         fontWeight="700"
         fontSize={{ xs: "12px", md: "14px" }}
-        color={marketplaceLayout ? "primary.main" : "inherit"}
+        color="primary.main"
       >
         {modalData &&
           getAmountWithSign(
@@ -170,4 +160,5 @@ const IncrementDecrementManager = (props) => {
 
 IncrementDecrementManager.propTypes = {};
 
+export { MarketplaceQty };
 export default IncrementDecrementManager;
