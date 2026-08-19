@@ -1,4 +1,4 @@
-import { Skeleton, Typography, useTheme } from "@mui/material";
+import { Box, Skeleton, Typography, useTheme } from "@mui/material";
 import { Stack } from "@mui/system";
 import React, { useEffect, useReducer, useState } from "react";
 import { CustomStackFullWidth } from "styled-components/CustomStyles.style";
