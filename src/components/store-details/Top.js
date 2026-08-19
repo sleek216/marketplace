@@ -668,75 +668,60 @@ const Top = (props) => {
                   </Grid>
                 </CustomBoxFullWidth>
               </CustomBoxFullWidth>
-              <CustomBoxFullWidth
-                sx={{
-                  backgroundColor: getModuleWiseBG()?.bgColor,
-                  opacity: "0.9",
-                  padding: "13.5px 25px",
-
-                  borderBottomLeftRadius: "2px",
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={{ xs: 2, sm: 3, md: 5 }}
+              {(storeDetails?.positive_rating !== 0 || storeDetails?.minimum_order !== 0) ? (
+                <CustomBoxFullWidth
+                  sx={{
+                    backgroundColor: getModuleWiseBG()?.bgColor,
+                    opacity: "0.9",
+                    padding: "13.5px 25px",
+                    borderBottomLeftRadius: "2px",
+                  }}
                 >
-                  {storeDetails?.positive_rating !== 0 ? (
-                    <Stack alignItems="flex-start">
-                      <Typography
-                        textAlign="center"
-                        variant="h5"
-                        sx={{
-                          fontSize: {
-                            xs: "14px",
-                            sm: "22px",
-                            md: "22px",
-                          },
-                        }}
-                      >
-                        {storeDetails?.positive_rating.toFixed(0)}%
-                      </Typography>
-                      <Stack direction="row" alignItems="center" spacing={0.3}>
-                        <Typography>{t("Positive Review")}</Typography>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={{ xs: 2, sm: 3, md: 5 }}
+                  >
+                    {storeDetails?.positive_rating !== 0 ? (
+                      <Stack alignItems="flex-start">
+                        <Typography
+                          textAlign="center"
+                          variant="h5"
+                          sx={{
+                            fontSize: {
+                              xs: "14px",
+                              sm: "22px",
+                              md: "22px",
+                            },
+                          }}
+                        >
+                          {storeDetails?.positive_rating.toFixed(0)}%
+                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={0.3}>
+                          <Typography>{t("Positive Review")}</Typography>
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  ) : null}
-                  {storeDetails?.minimum_order !== 0 ? (
-                    <Stack alignItems="flex-start">
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontSize: {
-                            xs: "16px",
-                            sm: "22px",
-                            md: "22px",
-                          },
-                        }}
-                      >
-                        {getAmountWithSign(storeDetails?.minimum_order)}
-                      </Typography>
-                      <Typography>{t("Minimum Order Value")}</Typography>
-                    </Stack>
-                  ) : null}
-
-                  <Stack alignItems="flex-start">
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontSize: {
-                          xs: "16px",
-                          sm: "22px",
-                          md: "22px",
-                        },
-                      }}
-                    >
-                      {storeDetails?.delivery_time}
-                    </Typography>
-                    <Typography>{t("Delivery Time")}</Typography>
+                    ) : null}
+                    {storeDetails?.minimum_order !== 0 ? (
+                      <Stack alignItems="flex-start">
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            fontSize: {
+                              xs: "16px",
+                              sm: "22px",
+                              md: "22px",
+                            },
+                          }}
+                        >
+                          {getAmountWithSign(storeDetails?.minimum_order)}
+                        </Typography>
+                        <Typography>{t("Minimum Order Value")}</Typography>
+                      </Stack>
+                    ) : null}
                   </Stack>
-                </Stack>
-              </CustomBoxFullWidth>
+                </CustomBoxFullWidth>
+              ) : null}
             </ContentBox>
           </ContentWrapper>
           <Stack

@@ -64,7 +64,7 @@ const StoreDetails = ({ storeDetails, configData }) => {
   const layoutHandler = () => {
     if (isSmall) {
       return (
-        <CustomStackFullWidth spacing={{ xs: 1, sm: 2, md: 3 }}>
+        <CustomStackFullWidth spacing={{ xs: 1, sm: 2, md: 3 }} pt={{ xs: "12px", sm: "16px" }}>
           {storeDetails?.announcement === 1 && (
             <StoreCustomMessage
               storeAnnouncement={storeDetails?.announcement_message}
@@ -106,7 +106,7 @@ const StoreDetails = ({ storeDetails, configData }) => {
     } else {
       return (
         <CustomContainer>
-          <CustomStackFullWidth spacing={3} mt="1rem">
+          <CustomStackFullWidth spacing={3} mt={{ xs: "1rem", sm: "1.5rem", md: "2rem" }}>
             {storeDetails?.announcement === 1 && (
               <StoreCustomMessage
                 storeAnnouncement={storeDetails?.announcement_message}
