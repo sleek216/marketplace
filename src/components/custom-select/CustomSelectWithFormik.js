@@ -62,7 +62,6 @@ const CustomSelectWithFormik = (props) => {
         variant="outlined"
         labelId="demo-simple-select-label"
         id="demo-simple-select"
-        value={value || ""} // Ensure empty string when no value
         label={inputLabel}
         onChange={handleChange}
         error={Boolean(touched && errors)}
@@ -88,6 +87,13 @@ const CustomSelectWithFormik = (props) => {
           return selectedItem ? t(selectedItem.label) : selected;
         }}
         {...fieldProps}
+        value={
+          fieldProps?.value == null ||
+          fieldProps?.value === "null" ||
+          fieldProps?.value === ""
+            ? ""
+            : fieldProps.value
+        }
         sx={{
           height: "45px",
           "& .MuiSelect-select": {

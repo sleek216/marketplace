@@ -23,36 +23,37 @@ export const StoreGroupHeader = ({ storeName, storeLogo, storeId, itemCount, sx 
 			spacing={1.5}
 			sx={{
 				px: { xs: 1.5, sm: 2 },
-				py: 1,
+				py: 1.25,
 				borderBottom: (theme) =>
-					`1px solid ${alpha(theme.palette.neutral[300], 0.45)}`,
+					`1px solid ${alpha(theme.palette.divider, 0.4)}`,
 				...sx,
 			}}
 		>
 			{resolvedLogo ? (
 				<Box
 					sx={{
-						width: 36,
-						height: 36,
-						borderRadius: "2px",
+						width: 40,
+						height: 40,
+						borderRadius: "8px",
 						overflow: "hidden",
 						flexShrink: 0,
 						border: (theme) =>
-							`1px solid ${alpha(theme.palette.neutral[300], 0.35)}`,
+							`1px solid ${alpha(theme.palette.divider, 0.25)}`,
+						boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
 					}}
 				>
 					<CustomImageContainer
 						src={resolvedLogo}
-						width="36px"
-						height="36px"
+						width="40px"
+						height="40px"
 						objectfit="cover"
-						borderRadius="2px"
+						borderRadius="8px"
 					/>
 				</Box>
 			) : null}
-			<Stack spacing={0} minWidth={0} flex={1}>
+			<Stack spacing={0.25} minWidth={0} flex={1}>
 				{resolvedName ? (
-					<Typography fontWeight={600} fontSize={{ xs: "15px", sm: "16px" }} noWrap>
+					<Typography fontWeight={700} fontSize={{ xs: "15px", sm: "16px" }} noWrap color="text.primary">
 						{resolvedName}
 					</Typography>
 				) : null}

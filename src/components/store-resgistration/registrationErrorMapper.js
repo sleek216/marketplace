@@ -15,12 +15,14 @@ const API_TO_FORMIK_FIELD = {
   delivery_time_type: "delivery_time_type",
   latitude: "lat",
   longitude: "lng",
+  coordinates_out_of_zone: "lat",
   tin: "tin",
   tin_expire_date: "tin_expire_date",
   tin_certificate_image: "tin_certificate_image",
   pickup_zone_id: "pickup_zone_id",
   translations: "restaurant_name",
   name: "restaurant_name",
+  description: "restaurant_address",
   address: "restaurant_address",
   restaurant_name: "restaurant_name",
   restaurant_address: "restaurant_address",
@@ -58,6 +60,30 @@ const extractRawFieldErrors = (data) => {
   return {};
 };
 
+/** Flatten `{ errors: [{ code, message }] }` (and Laravel objects) into toast/alert copy. */
+export const collectRegistrationErrorMessages = (error) => {
+  const data = error?.response?.data;
+  const messages = [];
+
+  if (Array.isArray(data?.errors)) {
+    data.errors.forEach((item) => {
+      const msg = typeof item === "string" ? item : item?.message || item?.error;
+      if (typeof msg === "string" && msg.trim()) messages.push(msg.trim());
+    });
+  } else if (data?.errors && typeof data.errors === "object") {
+    Object.values(data.errors).forEach((val) => {
+      const msg = Array.isArray(val) ? val[0] : val;
+      if (typeof msg === "string" && msg.trim()) messages.push(msg.trim());
+    });
+  }
+
+  if (messages.length === 0 && typeof data?.message === "string" && data.message.trim()) {
+    messages.push(data.message.trim());
+  }
+
+  return [...new Set(messages)];
+};
+
 /**
  * Splits registration API validation errors into step-0 (inline) vs later-step (alert) buckets.
  */
@@ -78,6 +104,7 @@ export const parseRegistrationApiErrors = (error) => {
 
   const firstOtherMessage =
     Object.values(otherErrors)[0] ||
+    collectRegistrationErrorMessages(error)[0] ||
     (typeof data?.message === "string" ? data.message : null);
 
   return { step0Errors, otherErrors, firstOtherMessage };
@@ -88,7 +115,9 @@ export const getScrollTargetForFieldErrors = (fieldErrors) => {
   if (!fieldErrors) return null;
   if (fieldErrors.logo) return "store-reg-logo";
   if (fieldErrors.cover_photo) return "store-reg-cover-photo";
-  if (fieldErrors.email) return "seller-email";
+  if (fieldErrors.email || fieldErrors.f_name || fieldErrors.phone) {
+    return "seller-email";
+  }
   if (fieldErrors.restaurant_name || fieldErrors.restaurant_address) {
     return "store-reg-general-info";
   }

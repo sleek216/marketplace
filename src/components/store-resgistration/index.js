@@ -21,7 +21,11 @@ import {
   setInZone,
 } from "redux/slices/storeRegistrationData";
 import { normalizePaymentRedirectLink } from "helper-functions/normalizePaymentRedirectLink";
-import { parseRegistrationApiErrors } from "components/store-resgistration/registrationErrorMapper";
+import {
+  collectRegistrationErrorMessages,
+  parseRegistrationApiErrors,
+} from "components/store-resgistration/registrationErrorMapper";
+import toast from "react-hot-toast";
 import {
   clearStoreRegistrationDraft,
   deserializeStoreRegistrationDraft,
@@ -161,9 +165,30 @@ const StoreRegistration = () => {
         const resultFlag = getPaymentFlag();
         if (resultFlag === "success") {
           dispatch(setActiveStep(3));
-          dispatch(setAllData(null));
+          dispatch(setAllData({}));
           dispatch(setInZone(null));
           clearStoreRegistrationDraft().catch(() => {});
+          return;
+        }
+        const wantsNewStore =
+          String(router.query?.new || "").toLowerCase() === "1" ||
+          String(router.query?.fresh || "").toLowerCase() === "1";
+        if (wantsNewStore) {
+          dispatch(setAllData({}));
+          dispatch(setInZone(null));
+          dispatch(setFieldErrors(null));
+          dispatch(setActiveStep(0));
+          setResData({});
+          setFormValues({});
+          await clearStoreRegistrationDraft();
+          if (typeof window !== "undefined") {
+            const url = buildStepUrl(0, { new: "", fresh: "", flag: "" });
+            window.history.replaceState(
+              { ...(window.history.state || {}), as: url, url, reg_step: 0 },
+              "",
+              url
+            );
+          }
           return;
         }
         const draft = await loadStoreRegistrationDraft();
@@ -218,11 +243,13 @@ const StoreRegistration = () => {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, router.isReady, getPaymentFlag]);
+  }, [dispatch, router.isReady, getPaymentFlag, router.query?.new, router.query?.fresh, buildStepUrl]);
 
   const wipeRegistrationDraft = () => {
-    dispatch(setAllData(null));
+    dispatch(setAllData({}));
     dispatch(setInZone(null));
+    setResData({});
+    setFormValues({});
     clearStoreRegistrationDraft().catch(() => {});
   };
 
@@ -299,24 +326,24 @@ const StoreRegistration = () => {
 
   const handleRegistrationApiError = (error) => {
     submitInProgressRef.current = false;
-    const { step0Errors, otherErrors, firstOtherMessage } =
-      parseRegistrationApiErrors(error);
+    const { step0Errors } = parseRegistrationApiErrors(error);
+    const messages = collectRegistrationErrorMessages(error);
+    const joined =
+      messages.join("\n") || extractErrorMessage(error);
+
+    setRegistrationError(joined);
+    if (messages.length > 0) {
+      messages.forEach((msg, index) => {
+        toast.error(msg, { id: `store-reg-error-${index}` });
+      });
+    } else {
+      onErrorResponse(error);
+    }
 
     if (step0Errors && Object.keys(step0Errors).length > 0) {
       dispatch(setFieldErrors(step0Errors));
       goToStep(0, { replace: true });
-      setRegistrationError(
-        Object.keys(otherErrors).length > 0
-          ? Object.values(otherErrors)[0]
-          : ""
-      );
-      return;
     }
-
-    setRegistrationError(
-      firstOtherMessage || extractErrorMessage(error)
-    );
-    onErrorResponse(error);
   };
 
   const formSubmit = (value) => {
@@ -395,16 +422,34 @@ const StoreRegistration = () => {
       }
     };
 
+    const unwrapRegistration = (registrationRes) => {
+      const nested = registrationRes?.data;
+      const data =
+        nested && typeof nested === "object" && !Array.isArray(nested)
+          ? { ...registrationRes, ...nested }
+          : registrationRes || {};
+      return {
+        ...data,
+        store_id: data?.store_id || data?.id || nested?.store_id || nested?.id,
+        type: data?.type || data?.business_plan || sourceData?.business_plan,
+        package_id: data?.package_id ?? sourceData?.package_id,
+      };
+    };
+
     const handleRegisteredStore = (registrationRes) => {
+      const normalized = unwrapRegistration(registrationRes);
       const businessPayload = {
-        business_plan: registrationRes?.type ?? sourceData?.business_plan,
-        store_id: registrationRes?.store_id,
-        package_id: registrationRes?.package_id ?? sourceData?.package_id,
+        business_plan: normalized?.type ?? sourceData?.business_plan,
+        store_id: normalized?.store_id,
+        package_id: normalized?.package_id ?? sourceData?.package_id,
+        module_id: sourceData?.module_id,
+        zone_id: sourceData?.zoneId,
         ...values,
       };
 
       // Commission plan can complete without payment transaction.
       if (businessPayload?.business_plan === "commission") {
+        submitInProgressRef.current = false;
         goToStep(3, { extraQuery: { flag: "success", active: "" } });
         wipeRegistrationDraft();
         return;
@@ -412,6 +457,7 @@ const StoreRegistration = () => {
 
       businessMutate(businessPayload, {
         onSuccess: async (res) => {
+          submitInProgressRef.current = false;
           if (res) {
             await persistPendingVendor({
               store_id: businessPayload.store_id,
@@ -457,8 +503,9 @@ const StoreRegistration = () => {
     // Final step: create vendor record only here.
     mutate(registrationPayload, {
       onSuccess: async (registrationRes) => {
-        await persistPendingVendor(registrationRes);
-        handleRegisteredStore(registrationRes);
+        const normalized = unwrapRegistration(registrationRes);
+        await persistPendingVendor(normalized);
+        handleRegisteredStore(normalized);
       },
       onError: (error) => {
         const existingId =
@@ -543,6 +590,8 @@ const StoreRegistration = () => {
           setActiveStep={setActiveStep}
           onGoToStep={goToStep}
           setFormValues={setFormValues}
+          forceNewStore={String(router.query?.new || "").toLowerCase() === "1"}
+          registrationError={registrationError}
           clearRegistrationError={() => {
             setRegistrationError("");
             dispatch(setFieldErrors(null));

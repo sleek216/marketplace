@@ -118,6 +118,17 @@ const SuccessStoreRegistration = ({ flag, onBack, onGoToStep }) => {
             >
               {t("Got it")}
             </Button>
+            <Button
+              variant="text"
+              sx={{
+                mt: 1,
+                textTransform: "none",
+                fontWeight: 600,
+              }}
+              onClick={() => router.push("/store-registration?new=1")}
+            >
+              {t("Register another store")}
+            </Button>
           </Stack>
         </>
       ) : (

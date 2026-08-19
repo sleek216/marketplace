@@ -3,10 +3,14 @@ import { vendor_check_contact_api } from "../../../ApiRoutes";
 import MainApi from "../../../MainApi";
 
 const postCheckContact = async ({ email, phone }) => {
-  const { data } = await MainApi.post(vendor_check_contact_api, {
-    email,
-    phone,
-  });
+  const { data } = await MainApi.post(
+    vendor_check_contact_api,
+    {
+      email,
+      phone,
+    },
+    { omitAuth: true, omitModuleId: true, omitZoneId: true }
+  );
   return data;
 };
 

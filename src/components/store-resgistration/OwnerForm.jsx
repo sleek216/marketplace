@@ -62,6 +62,17 @@ const OwnerForm = ({
       >
         {t("Owner Information")}
       </Typography>
+      <Typography
+        fontSize="12px"
+        color="text.secondary"
+        textAlign="left"
+        px={{ xs: 1.2, sm: 2 }}
+        pt={1}
+      >
+        {t(
+          "This creates a separate seller account and store ID. Your customer login stays the same. For another store, use a unique seller email and phone."
+        )}
+      </Typography>
       <Stack p={2} pb={{xs: 2, md: 0}} mt={1}>
         <Grid container columnSpacing={3}>
           <Grid item xs={12} md={12} align="left">

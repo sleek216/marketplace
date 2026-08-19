@@ -9,15 +9,15 @@ import { Receipt } from "lucide-react";
 
 export const OrderSummaryCalculationCard = styled(CustomStackFullWidth)(
   ({ theme }) => ({
-    paddingInline: "18px",
-    paddingBlock: "18px",
+    paddingInline: "20px",
+    paddingBlock: "20px",
     backgroundColor:
       theme.palette.mode === "dark"
         ? alpha(theme.palette.neutral[900], 0.8)
         : theme.palette.background.paper,
-    borderRadius: "2px",
-    border: `1px solid ${alpha(theme.palette.divider, 0.55)}`,
-    boxShadow: "none",
+    borderRadius: "10px",
+    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+    boxShadow: "0 2px 14px rgba(0,0,0,0.03)",
   })
 );
 const getItemsPrice = (items) => {
@@ -85,7 +85,7 @@ const OrderCalculation = ({ data, t, trackOrderData }) => {
             placeItems: "center",
             width: 34,
             height: 34,
-            borderRadius: "2px",
+            borderRadius: "8px",
             backgroundColor: alpha(theme.palette.primary.main, 0.1),
             color: theme.palette.primary.main,
           }}
@@ -281,10 +281,10 @@ const OrderCalculation = ({ data, t, trackOrderData }) => {
         justifyContent="space-between"
         spacing={2}
         sx={{
-          padding: "10px 12px",
-          borderRadius: "2px",
-          backgroundColor: alpha(theme.palette.primary.main, 0.06),
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.18)}`,
+          padding: "12px 16px",
+          borderRadius: "8px",
+          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
         }}
       >
         <Typography component="span" fontWeight={700} fontSize="15px" color={theme.palette.primary.main}>

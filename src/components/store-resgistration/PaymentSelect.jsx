@@ -224,11 +224,11 @@ const PaymentSelect = ({
             </Typography>
           </Typography>
           <Stack direction="row" gap="1rem" flexWrap="wrap">
-            {configData?.active_payment_method_list?.map((method) => (
+            {configData?.active_payment_method_list?.map((method, index) => (
               <StoreRegPaymentCard
                 setSelectedMethod={setSelectedMethod}
                 selectedMethod={selectedMethod}
-                key={method}
+                key={method?.gateway || method?.id || `payment-${index}`}
                 method={method}
               />
             ))}
@@ -243,8 +243,7 @@ const PaymentSelect = ({
           sx={{
             mt: 2,
             borderRadius: "8px",
-            textAlign: "left",
-            fontSize: "14px",
+            whiteSpace: "pre-line",
           }}
         >
           {t(registrationError)}

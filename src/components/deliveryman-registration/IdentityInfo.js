@@ -116,7 +116,25 @@ const IdentityInfo = ({
         if (!/^[A-Za-z0-9-]$/.test(event.key)) event.preventDefault();
         break;
       case "passport":
-        if (!/^[A-Za-z0-9]$/.test(event.key)) event.preventDefault();
+        if (!/^[A-Za-z0-9]$/.test(event.key)) {
+          event.preventDefault();
+          break;
+        }
+        {
+          const input = event.target;
+          const current = String(input?.value || "").replace(/[^A-Za-z0-9]/g, "");
+          const start = input?.selectionStart ?? current.length;
+          const end = input?.selectionEnd ?? start;
+          const next = (
+            current.slice(0, start) +
+            event.key +
+            current.slice(end)
+          ).toUpperCase();
+          const firstTwo = next.slice(0, Math.min(2, next.length));
+          if (firstTwo && !/^[A-Za-z]{1,2}$/.test(firstTwo)) {
+            event.preventDefault();
+          }
+        }
         break;
       default:
         if (!/^[A-Za-z0-9-]$/.test(event.key)) event.preventDefault();
@@ -152,11 +170,20 @@ const IdentityInfo = ({
         if (!/^[A-Za-z0-9\s-]+$/.test(pastedText)) {
           event.preventDefault();
         } else {
-          const strippedValue = stripIdentityNumberFormatting(pastedText, selectedIdentityType);
+          let strippedValue = stripIdentityNumberFormatting(pastedText, selectedIdentityType);
+          const chars = strippedValue.split("");
+          strippedValue = chars
+            .filter((ch, index) => index >= 2 || /[A-Za-z]/.test(ch))
+            .join("");
+          if (!/^[A-Za-z]{2}/.test(strippedValue) && strippedValue.length >= 2) {
+            event.preventDefault();
+            break;
+          }
           const formattedValue = formatIdentityNumber(strippedValue, selectedIdentityType);
           setDisplayIdentityNumber(formattedValue);
           handleFieldChange("identity_number", strippedValue);
         }
+        break;
         break;
       default:
         if (!/^[A-Za-z0-9\s-]+$/.test(pastedText)) {
@@ -168,7 +195,13 @@ const IdentityInfo = ({
   // Handle identity number input with formatting
   const handleIdentityNumberChange = (inputValue) => {
     const selectedIdentityType = deliveryManFormik.values.identity_type;
-    const strippedValue = stripIdentityNumberFormatting(inputValue, selectedIdentityType);
+    let strippedValue = stripIdentityNumberFormatting(inputValue, selectedIdentityType);
+    if (selectedIdentityType === "passport") {
+      strippedValue = String(strippedValue)
+        .split("")
+        .filter((ch, index) => index >= 2 || /[A-Za-z]/.test(ch))
+        .join("");
+    }
     const formattedValue = formatIdentityNumber(strippedValue, selectedIdentityType);
     
     // Update display state

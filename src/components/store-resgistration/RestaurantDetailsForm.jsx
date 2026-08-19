@@ -150,7 +150,7 @@ const RestaurantDetailsForm = ({
 
   return (
     <CustomStackFullWidth alignItems="center" key={address || selectedLanguage}>
-      <Grid container spacing={{ xs: "0", md: "3" }}>
+      <Grid container spacing={0}>
         <CustomStackFullWidth spacing={4}>
           <CustomStackFullWidth
             sx={{
@@ -246,7 +246,7 @@ const RestaurantDetailsForm = ({
             </Stack>
           </CustomStackFullWidth>
 
-          <CustomStackFullWidth gap={{ xs: "30px", md: "30px" }}>
+          <CustomStackFullWidth sx={{ gap: "30px" }}>
             <Grid item xs={12} sm={12} md={12}>
               <CustomSelectWithFormik
                 labelColor={alpha(theme.palette.neutral[1000], 0.8)}
@@ -326,7 +326,8 @@ const RestaurantDetailsForm = ({
 
 
             {/* NTN Fields Section */}
-            <Grid item container xs={12} sm={12} md={12} spacing={{ xs: 0, md: 2 }} sx={{ mt: 3 }}>
+            <Grid item xs={12} sx={{ mt: 3 }}>
+            <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fontSize="12px"
@@ -564,6 +565,7 @@ const RestaurantDetailsForm = ({
                   </Box>
                 </Stack>
               </Grid>
+            </Grid>
             </Grid>
           </CustomStackFullWidth>
         </CustomStackFullWidth>

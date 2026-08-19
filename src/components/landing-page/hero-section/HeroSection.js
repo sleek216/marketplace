@@ -32,13 +32,6 @@ import {
   useCategoryAutoScroll,
 } from "components/home/CategoryHorizontalStrip";
 
-import promotionalBannerImg from "../../home/assets/promotional_banner.png";
-import banner1 from "../../home/assets/banner.webp";
-import banner2 from "../../home/assets/ecommerce_top_bg.png";
-import banner3 from "../../home/assets/food.png";
-import banner4 from "../../home/assets/pharmacy.png";
-import banner5 from "../../home/assets/parcelBg.png";
-
 const HeroSection = ({
   landingPageData,
   landingPageDataheroSection,
@@ -63,13 +56,56 @@ const HeroSection = ({
     setMounted(true);
   }, []);
 
+  // Extract all banners configured by Admin (No static / placeholder fallbacks)
+  const bannerSectionEnabled =
+    landingPageData?.banner_section?.banner_section_status !== 0 &&
+    landingPageData?.banner_section?.banner_section_status !== false;
+  const mainBannerUrl =
+    bannerSectionEnabled && landingPageData?.banner_section?.banner_iamge_full_url
+      ? landingPageData.banner_section.banner_iamge_full_url
+      : null;
+
+  const promoSectionEnabled =
+    landingPageData?.promotional_banner_section?.promotion_banner_section_status !== 0 &&
+    landingPageData?.promotional_banner_section?.promotion_banner_section_status !== false;
+
+  const rawPromoBanners = promoSectionEnabled
+    ? landingPageData?.promotional_banner_section?.promotion_banners_full_url || promotionalBanner || []
+    : promotionalBanner || [];
+
+  const promoBannersList = Array.isArray(rawPromoBanners)
+    ? rawPromoBanners
+        .map((item) =>
+          typeof item === "string" ? item : item?.img || item?.image_full_url || item?.image
+        )
+        .filter(Boolean)
+    : [];
+
+  const adminBanners = [];
+  if (mainBannerUrl && !adminBanners.includes(mainBannerUrl)) {
+    adminBanners.push(mainBannerUrl);
+  }
+  promoBannersList.forEach((url) => {
+    if (url && !adminBanners.includes(url)) {
+      adminBanners.push(url);
+    }
+  });
+
+  const totalBanners = adminBanners.length;
+  const leftSlides =
+    totalBanners >= 4
+      ? [adminBanners[0], ...adminBanners.slice(3)]
+      : totalBanners > 0
+      ? [adminBanners[0]]
+      : [];
+
   useEffect(() => {
-    if (!promotionalBanner || promotionalBanner.length <= 1) return;
+    if (leftSlides.length <= 1) return;
     const interval = setInterval(() => {
-      setActiveBannerIndex((prev) => (prev + 1) % promotionalBanner.length);
+      setActiveBannerIndex((prev) => (prev + 1) % leftSlides.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [promotionalBanner]);
+  }, [leftSlides.length]);
 
   const [activeCategoryBtn, setActiveCategoryBtn] = useState("right");
   const isDarkMode = theme.palette.mode === "dark";
@@ -249,157 +285,203 @@ const HeroSection = ({
         )}
 
         {/* ═══════════════════════════════════════════
-            HERO SECTION BANNERS
+            HERO SECTION BANNERS (ADMIN UPLOADED ONLY)
         ═══════════════════════════════════════════ */}
-        <Box
-          sx={{
-            background: theme.palette.background.paper,
-            pt: isCategorySectionEnabled && featuredCategories.length > 0
-              ? { xs: "12px", sm: "16px", md: "20px" }
-              : { xs: "32px", sm: "44px", md: "52px" },
-            pb: { xs: "12px", sm: "16px", md: "20px" },
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <CustomContainer>
-            <Grid container spacing={{ xs: 2, md: 2 }} alignItems="stretch">
-              {/* ── Left Column: Large Shopee Banner Carousel (`xs={12} md={8} lg={8.5}`) ── */}
-              <Grid item xs={12} md={8} lg={8.5} sx={{ display: "flex" }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    position: "relative",
-                    width: "100%",
-                    minHeight: { xs: "160px", sm: "210px", md: "240px", lg: "260px" },
-                    height: "100%",
-                    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-                    boxShadow: "0 6px 25px rgba(0,0,0,0.12)",
-                    "&:hover .carousel-arrow": {
-                      opacity: 1,
-                    },
-                  }}
-                >
-                  {/* Active Slide Image */}
-                  {(() => {
-                    const carouselSlides = promotionalBanner && promotionalBanner.length > 0
-                      ? promotionalBanner.map(item => typeof item === "string" ? item : item?.img || item?.image_full_url)
-                      : [banner1.src, banner2.src, promotionalBannerImg.src, banner3.src];
-                    const currentSlideUrl = carouselSlides[activeBannerIndex % carouselSlides.length];
-                    return (
+        {totalBanners > 0 && (
+          <Box
+            sx={{
+              background: theme.palette.background.paper,
+              pt: isCategorySectionEnabled && featuredCategories.length > 0
+                ? { xs: "12px", sm: "16px", md: "20px" }
+                : { xs: "32px", sm: "44px", md: "52px" },
+              pb: { xs: "12px", sm: "16px", md: "20px" },
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <CustomContainer>
+              {totalBanners === 1 && (
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        position: "relative",
+                        width: "100%",
+                        height: { xs: "180px", sm: "240px", md: "300px", lg: "340px" },
+                        border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                        boxShadow: "0 6px 25px rgba(0,0,0,0.12)",
+                      }}
+                    >
                       <Box
                         component="img"
-                        src={currentSlideUrl}
+                        src={adminBanners[0]}
+                        alt="Hero Promotional Banner"
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+
+              {totalBanners === 2 && (
+                <Grid container spacing={{ xs: 1.5, md: 2 }} alignItems="stretch">
+                  {adminBanners.map((bannerUrl, idx) => (
+                    <Grid item xs={12} sm={6} key={idx} sx={{ display: "flex" }}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          position: "relative",
+                          width: "100%",
+                          minHeight: { xs: "160px", sm: "190px", md: "230px", lg: "250px" },
+                          height: "100%",
+                          border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                          boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={bannerUrl}
+                          alt={`Hero Banner ${idx + 1}`}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+
+              {totalBanners >= 3 && (
+                <Grid container spacing={{ xs: 1.5, md: 2 }} alignItems="stretch">
+                  {/* Left Column: Large Hero Banner Carousel */}
+                  <Grid item xs={12} md={8} lg={8.5} sx={{ display: "flex" }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        position: "relative",
+                        width: "100%",
+                        minHeight: { xs: "160px", sm: "210px", md: "240px", lg: "260px" },
+                        height: "100%",
+                        border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                        boxShadow: "0 6px 25px rgba(0,0,0,0.12)",
+                        "&:hover .carousel-arrow": {
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={leftSlides[activeBannerIndex % leftSlides.length]}
                         alt="Hero Promotional Banner"
                         sx={{
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
                           transition: "opacity 0.5s ease-in-out, transform 0.5s ease",
-                          cursor: "default",
                         }}
                       />
-                    );
-                  })()}
 
-                  {/* Left Navigation Arrow */}
-                  <IconButton
-                    className="carousel-arrow"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const total = promotionalBanner && promotionalBanner.length > 0 ? promotionalBanner.length : 4;
-                      setActiveBannerIndex((prev) => (prev - 1 + total) % total);
-                    }}
-                    sx={{
-                      position: "absolute",
-                      left: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "rgba(0, 0, 0, 0.4)",
-                      color: "#fff",
-                      width: 36,
-                      height: 36,
-                      opacity: 0,
-                      transition: "all 0.25s ease",
-                      "&:hover": { background: "rgba(0, 0, 0, 0.75)" },
-                    }}
-                  >
-                    <ArrowBackIosIcon sx={{ fontSize: 16, ml: 0.5 }} />
-                  </IconButton>
+                      {leftSlides.length > 1 && (
+                        <>
+                          <IconButton
+                            className="carousel-arrow"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveBannerIndex((prev) => (prev - 1 + leftSlides.length) % leftSlides.length);
+                            }}
+                            sx={{
+                              position: "absolute",
+                              left: 12,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              background: "rgba(0, 0, 0, 0.4)",
+                              color: "#fff",
+                              width: 36,
+                              height: 36,
+                              opacity: 0,
+                              transition: "all 0.25s ease",
+                              "&:hover": { background: "rgba(0, 0, 0, 0.75)" },
+                            }}
+                          >
+                            <ArrowBackIosIcon sx={{ fontSize: 16, ml: 0.5 }} />
+                          </IconButton>
 
-                  {/* Right Navigation Arrow */}
-                  <IconButton
-                    className="carousel-arrow"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const total = promotionalBanner && promotionalBanner.length > 0 ? promotionalBanner.length : 4;
-                      setActiveBannerIndex((prev) => (prev + 1) % total);
-                    }}
-                    sx={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "rgba(0, 0, 0, 0.4)",
-                      color: "#fff",
-                      width: 36,
-                      height: 36,
-                      opacity: 0,
-                      transition: "all 0.25s ease",
-                      "&:hover": { background: "rgba(0, 0, 0, 0.75)" },
-                    }}
-                  >
-                    <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
+                          <IconButton
+                            className="carousel-arrow"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveBannerIndex((prev) => (prev + 1) % leftSlides.length);
+                            }}
+                            sx={{
+                              position: "absolute",
+                              right: 12,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              background: "rgba(0, 0, 0, 0.4)",
+                              color: "#fff",
+                              width: 36,
+                              height: 36,
+                              opacity: 0,
+                              transition: "all 0.25s ease",
+                              "&:hover": { background: "rgba(0, 0, 0, 0.75)" },
+                            }}
+                          >
+                            <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
 
-                  {/* Indicator Dots (`• • • •`) */}
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{
-                      position: "absolute",
-                      bottom: 16,
-                      right: { xs: "50%", md: 24 },
-                      transform: { xs: "translateX(50%)", md: "none" },
-                      zIndex: 2,
-                    }}
-                  >
-                    {(() => {
-                      const total = promotionalBanner && promotionalBanner.length > 0 ? promotionalBanner.length : 4;
-                      return Array.from({ length: total }).map((_, idx) => (
-                        <Box
-                          key={idx}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveBannerIndex(idx);
-                          }}
-                          sx={{
-                            width: idx === activeBannerIndex % total ? 24 : 8,
-                            height: 8,
-                            borderRadius: 4,
-                            background: idx === activeBannerIndex % total ? theme.palette.primary.main : "rgba(255, 255, 255, 0.65)",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-                            cursor: "pointer",
-                            transition: "all 0.3s ease",
-                          }}
-                        />
-                      ));
-                    })()}
-                  </Stack>
-                </Paper>
-              </Grid>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{
+                              position: "absolute",
+                              bottom: 16,
+                              right: { xs: "50%", md: 24 },
+                              transform: { xs: "translateX(50%)", md: "none" },
+                              zIndex: 2,
+                            }}
+                          >
+                            {leftSlides.map((_, idx) => (
+                              <Box
+                                key={idx}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveBannerIndex(idx);
+                                }}
+                                sx={{
+                                  width: idx === activeBannerIndex % leftSlides.length ? 24 : 8,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  background: idx === activeBannerIndex % leftSlides.length ? theme.palette.primary.main : "rgba(255, 255, 255, 0.65)",
+                                  boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                                  cursor: "pointer",
+                                  transition: "all 0.3s ease",
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        </>
+                      )}
+                    </Paper>
+                  </Grid>
 
-              {/* ── Right Column: Two Stacked Banners (`xs={12} md={4} lg={3.5}`) ── */}
-              <Grid item xs={12} md={4} lg={3.5}>
-                <Stack spacing={{ xs: 1.5, md: 1.5 }} sx={{ height: "100%", justifyContent: "space-between" }}>
-                  {/* Top Right Banner Card */}
-                  {(() => {
-                    const topUrl = promotionalBanner && promotionalBanner.length > 1
-                      ? (typeof promotionalBanner[1] === "string" ? promotionalBanner[1] : promotionalBanner[1]?.img || promotionalBanner[1]?.image_full_url)
-                      : banner4.src;
-                    return (
+                  {/* Right Column: Two Stacked Admin Banners */}
+                  <Grid item xs={12} md={4} lg={3.5}>
+                    <Stack spacing={{ xs: 1.5, md: 1.5 }} sx={{ height: "100%", justifyContent: "space-between" }}>
+                      {/* Top Right Admin Banner */}
                       <Paper
                         elevation={0}
                         sx={{
@@ -416,8 +498,8 @@ const HeroSection = ({
                         <Box
                           component="img"
                           className="right-banner-1"
-                          src={topUrl}
-                          alt="Top Right Banner"
+                          src={adminBanners[1]}
+                          alt="Right Top Banner"
                           sx={{
                             width: "100%",
                             height: "100%",
@@ -425,15 +507,8 @@ const HeroSection = ({
                           }}
                         />
                       </Paper>
-                    );
-                  })()}
 
-                  {/* Bottom Right Banner Card */}
-                  {(() => {
-                    const bottomUrl = promotionalBanner && promotionalBanner.length > 2
-                      ? (typeof promotionalBanner[2] === "string" ? promotionalBanner[2] : promotionalBanner[2]?.img || promotionalBanner[2]?.image_full_url)
-                      : banner5.src;
-                    return (
+                      {/* Bottom Right Admin Banner */}
                       <Paper
                         elevation={0}
                         sx={{
@@ -450,8 +525,8 @@ const HeroSection = ({
                         <Box
                           component="img"
                           className="right-banner-2"
-                          src={bottomUrl}
-                          alt="Bottom Right Banner"
+                          src={adminBanners[2]}
+                          alt="Right Bottom Banner"
                           sx={{
                             width: "100%",
                             height: "100%",
@@ -459,13 +534,13 @@ const HeroSection = ({
                           }}
                         />
                       </Paper>
-                    );
-                  })()}
-                </Stack>
-              </Grid>
-            </Grid>
-          </CustomContainer>
-        </Box>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              )}
+            </CustomContainer>
+          </Box>
+        )}
 
         {/* ═══════════════════════════════════════════
             TRUST STRIP

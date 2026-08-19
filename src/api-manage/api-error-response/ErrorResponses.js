@@ -21,6 +21,51 @@ const flattenLaravelValidationErrors = (errors) => {
     .filter((m) => typeof m === "string" && m.length > 0);
 };
 
+export const getApiErrorMessage = (error) => {
+  const status = error?.response?.status;
+  const data = error?.response?.data;
+  const payload = data && typeof data === "object" && !Array.isArray(data) ? data : null;
+
+  const fromArray =
+    Array.isArray(payload?.errors) && payload.errors.length > 0
+      ? payload.errors
+          .map((item) =>
+            typeof item === "string" ? item : item?.message || item?.error
+          )
+          .find((m) => typeof m === "string" && m.trim())
+      : null;
+  const fromObject = flattenLaravelValidationErrors(payload?.errors)[0];
+  const fromMessage =
+    typeof payload?.message === "string" && payload.message.trim()
+      ? payload.message
+      : typeof data === "string" && data.trim() && !data.trim().startsWith("<")
+        ? data.trim()
+        : null;
+
+  const msg = fromArray || fromObject || fromMessage;
+  if (msg) return formatErrorMessage(msg);
+
+  if (status === 403) {
+    return t("Please check the highlighted fields and try again.");
+  }
+  if (status === 401) {
+    return t("You are not allowed to complete this action. Please try again.");
+  }
+  if (status === 422) {
+    return t("Please check the form details and try again.");
+  }
+  if (status === 404) {
+    return t("The requested resource was not found.");
+  }
+  if (status >= 500) {
+    return t("Server error. Please try again later.");
+  }
+  if (error?.message && !String(error.message).startsWith("Request failed")) {
+    return formatErrorMessage(error.message);
+  }
+  return t("Something went wrong. Please try again.");
+};
+
 export const handleTokenExpire = (item, status) => {
   if (status === 401) {
     if (typeof window !== "undefined" && window.localStorage.getItem("token")) {
@@ -43,74 +88,39 @@ export const handleTokenExpire = (item, status) => {
 export const onErrorResponse = (error) => {
   const status = error?.response?.status;
   const data = error?.response?.data;
+  const message = getApiErrorMessage(error);
 
-  if (data?.errors?.length > 0) {
-    // Standard GiftMarketplace errors array format
-    data.errors.forEach((item) => {
-      handleTokenExpire(item, status);
-    });
-  } else if (
-    data?.errors &&
-    typeof data.errors === "object" &&
-    !Array.isArray(data.errors)
-  ) {
-    // Laravel validation object (no top-level message)
-    const messages = flattenLaravelValidationErrors(data.errors);
-    if (messages.length > 0) {
-      messages.forEach((msg) => {
-        if (status === 401) {
-          handleTokenExpire({ message: msg }, 401);
-        } else {
-          toast.error(formatErrorMessage(msg), { id: "error" });
-        }
-      });
-    } else if (data?.message) {
-      if (status === 401) {
-        handleTokenExpire({ message: data.message }, 401);
-      } else {
-        toast.error(formatErrorMessage(data.message), { id: "error" });
-      }
-    }
-  } else if (data?.message) {
-    // Laravel generic error with a message field
-    if (status === 401) {
-      handleTokenExpire({ message: data.message }, 401);
-    } else {
-      toast.error(formatErrorMessage(data.message), { id: "error" });
-    }
-  } else if (status === 403) {
-    toast.error(
-      t("Access denied. Please check your account settings or contact support."),
-      { id: "error" }
-    );
-  } else if (status === 404) {
-    toast.error(t("The requested resource was not found."), { id: "error" });
-  } else if (status === 500) {
-    toast.error(t("Server error. Please try again later."), { id: "error" });
-  } else if (status) {
-    toast.error(t("Something went wrong. Please try again."), { id: "error" });
+  if (status === 401 && typeof window !== "undefined" && window.localStorage.getItem("token")) {
+    handleTokenExpire({ message }, 401);
+    return;
   }
+
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    let shown = false;
+    data.errors.forEach((item, index) => {
+      const text =
+        typeof item === "string"
+          ? item
+          : item?.message || item?.error;
+      if (typeof text === "string" && text.trim()) {
+        shown = true;
+        toast.error(formatErrorMessage(text), {
+          id: `error-${item?.code || index}-${text.slice(0, 24)}`,
+        });
+      }
+    });
+    if (shown) return;
+  }
+
+  toast.error(message, { id: "error" });
 };
 export const onSingleErrorResponse = (error) => {
   const status = error?.response?.status;
-  const data = error?.response?.data;
-  const msg =
-    data?.message ||
-    flattenLaravelValidationErrors(data?.errors)[0] ||
-    error?.message;
+  const msg = getApiErrorMessage(error);
 
-  // Expired session: redirect + single toast (do not also show API message)
   if (status === 401 && typeof window !== "undefined" && window.localStorage.getItem("token")) {
     handleTokenExpire({ message: msg }, 401);
     return;
   }
-  if (msg) {
-    toast.error(formatErrorMessage(msg), {
-      id: "error",
-    });
-    return;
-  }
-  if (status === 401) {
-    handleTokenExpire({ message: null }, 401);
-  }
+  toast.error(msg, { id: "error" });
 };

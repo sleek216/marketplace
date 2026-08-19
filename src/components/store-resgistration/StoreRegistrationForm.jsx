@@ -6,6 +6,7 @@ import {
   CustomStackFullWidth,
 } from "styled-components/CustomStyles.style";
 import {
+  Alert,
   alpha,
   Checkbox,
   FormControlLabel,
@@ -31,7 +32,10 @@ import AccountInfo from "components/store-resgistration/AccountInfo";
 import { useQuery } from "react-query";
 import { GoogleApi } from "api-manage/hooks/react-query/googleApi";
 import { useDispatch, useSelector } from "react-redux";
-import { getZoneWiseModule } from "components/store-resgistration/helper";
+import {
+  getZoneWiseModule,
+  resolveStoreLatLng,
+} from "components/store-resgistration/helper";
 import {
   setAllData,
   setActiveStep,
@@ -99,7 +103,12 @@ function getVendorContactReasonMessage(reason, kind, t) {
   }
 }
 
-export const generateInitialValues = (languages, allData) => {
+export const generateInitialValues = (languages, allData, profileInfo) => {
+  const coords = resolveStoreLatLng(allData?.lat, allData?.lng);
+  const zoneId =
+    allData?.zoneId == null || String(allData.zoneId) === "null"
+      ? ""
+      : allData.zoneId;
   const initialValues = {
     restaurant_name: {},
     restaurant_address: {},
@@ -107,15 +116,15 @@ export const generateInitialValues = (languages, allData) => {
     max_delivery_time: allData?.max_delivery_time || "45",
     logo: isUsableUpload(allData?.logo) ? allData.logo : "",
     cover_photo: isUsableUpload(allData?.cover_photo) ? allData.cover_photo : "",
-    f_name: allData?.f_name || "",
-    l_name: allData?.l_name || "",
-    phone: allData?.phone || "",
-    email: allData?.email || "",
+    f_name: allData?.f_name || profileInfo?.f_name || "",
+    l_name: allData?.l_name || profileInfo?.l_name || "",
+    phone: allData?.phone || profileInfo?.phone || "",
+    email: allData?.email || profileInfo?.email || "",
     password: allData?.password || "",
     confirm_password: allData?.confirm_password || "",
-    lat: allData?.lat || "",
-    lng: allData?.lng || "",
-    zoneId: allData?.zoneId || "",
+    lat: coords.lat || "",
+    lng: coords.lng || "",
+    zoneId,
     module_id: allData?.module_id || "",
     delivery_time_type: allData?.delivery_time_type || "min",
     pickup_zone_id: allData?.pickup_zone_id || "",
@@ -164,12 +173,15 @@ const StoreRegistrationForm = ({
   setActiveStep,
   onGoToStep,
   setFormValues,
+  registrationError,
   clearRegistrationError,
+  forceNewStore = false,
 }) => {
   const router = useRouter();
   const theme = useTheme();
   const dispatch = useDispatch();
   const { t } = useTranslation();
+  const { profileInfo } = useSelector((state) => state.profileInfo);
   const { modules, configData } = useSelector((state) => state.configData);
   const [polygonPaths, setPolygonPaths] = useState([]);
   const [showZoneWarning, setShowZoneWarning] = useState(false);
@@ -183,7 +195,11 @@ const StoreRegistrationForm = ({
     (state) => state.storeRegData
   );
   const { data, refetch } = useGetModule();
-  const initialValues = generateInitialValues(configData?.language, allData);
+  const initialValues = generateInitialValues(
+    configData?.language,
+    forceNewStore ? {} : allData,
+    profileInfo
+  );
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [draftReady, setDraftReady] = useState(false);
@@ -391,7 +407,9 @@ const StoreRegistrationForm = ({
   }, [RestaurantJoinFormik?.values?.zoneId, activeStep]);
   const formSubmitOnSuccess = async (values) => {
     clearRegistrationError?.();
-    let pendingStoreId = allData?.store_id || values?.store_id || loadPendingStoreId() || "";
+    let pendingStoreId = forceNewStore
+      ? ""
+      : allData?.store_id || values?.store_id || loadPendingStoreId() || "";
     const sameEmail =
       String(values.email || "").trim().toLowerCase() ===
       String(allData?.email || "").trim().toLowerCase();
@@ -419,22 +437,31 @@ const StoreRegistrationForm = ({
           return;
         }
         const canResume =
-          Boolean(pendingStoreId || res?.store_id) ||
-          isResumableVendorReason(res?.email_reason) ||
-          isResumableVendorReason(res?.phone_reason);
+          !forceNewStore &&
+          (Boolean(pendingStoreId || res?.store_id) ||
+            isResumableVendorReason(res?.email_reason) ||
+            isResumableVendorReason(res?.phone_reason));
         if (!res?.email_available && !canResume) {
           toast.error(
-            getVendorContactReasonMessage(res?.email_reason, "email", t)
+            forceNewStore
+              ? t(
+                  "This seller email is already used. Use a different email to register another store."
+                )
+              : getVendorContactReasonMessage(res?.email_reason, "email", t)
           );
           return;
         }
         if (!res?.phone_available && !canResume) {
           toast.error(
-            getVendorContactReasonMessage(res?.phone_reason, "phone", t)
+            forceNewStore
+              ? t(
+                  "This seller phone is already used. Use a different phone number to register another store."
+                )
+              : getVendorContactReasonMessage(res?.phone_reason, "phone", t)
           );
           return;
         }
-        if (res?.store_id) pendingStoreId = res.store_id;
+        if (!forceNewStore && res?.store_id) pendingStoreId = res.store_id;
       } catch (e) {
         onErrorResponse(e);
         return;
@@ -443,6 +470,24 @@ const StoreRegistrationForm = ({
 
     const nextValues = {
       ...values,
+      restaurant_name: {
+        ...(values.restaurant_name || {}),
+        en:
+          String(values?.restaurant_name?.en || "").trim() ||
+          Object.values(values?.restaurant_name || {}).find((v) =>
+            String(v || "").trim()
+          ) ||
+          "",
+      },
+      restaurant_address: {
+        ...(values.restaurant_address || {}),
+        en:
+          String(values?.restaurant_address?.en || "").trim() ||
+          Object.values(values?.restaurant_address || {}).find((v) =>
+            String(v || "").trim()
+          ) ||
+          "",
+      },
       store_id: pendingStoreId || values?.store_id || allData?.store_id,
     };
     setFormValues(nextValues);
@@ -622,10 +667,12 @@ const StoreRegistrationForm = ({
     applyValidImageField("cover_photo", value);
   };
   const zoneHandler = (value) => {
+    const next =
+      value == null || value === "null" || value === undefined ? "" : value;
     const currentZoneId = RestaurantJoinFormik.values.zoneId;
-    RestaurantJoinFormik.setFieldValue("zoneId", value);
+    RestaurantJoinFormik.setFieldValue("zoneId", next);
 
-    if (String(value ?? "") !== String(currentZoneId ?? "")) {
+    if (String(next ?? "") !== String(currentZoneId ?? "")) {
       RestaurantJoinFormik.setFieldValue("module_id", "");
     }
   };
@@ -638,16 +685,18 @@ const StoreRegistrationForm = ({
     RestaurantJoinFormik.setFieldValue("pickup_zone_id", pickupZoneId);
   };
   const handleLocation = (value) => {
-    RestaurantJoinFormik.setFieldValue("lng", value?.lat);
-    RestaurantJoinFormik.setFieldValue("lat", value?.lng);
+    if (value?.lat == null || value?.lng == null) return;
+    const { lat, lng } = resolveStoreLatLng(value.lat, value.lng);
+    RestaurantJoinFormik.setFieldValue("lat", lat);
+    RestaurantJoinFormik.setFieldValue("lng", lng);
   };
   /**
-   * Form fields are swapped vs map coords (see handleLocation).
    * Empty strings became Number("") → 0 and broke the map with 0,0.
+   * Older drafts stored lat/lng swapped; resolveStoreLatLng undoes that.
    */
   const savedMapLocation = useMemo(() => {
-    const rawLngField = RestaurantJoinFormik?.values?.lng;
     const rawLatField = RestaurantJoinFormik?.values?.lat;
+    const rawLngField = RestaurantJoinFormik?.values?.lng;
     if (
       rawLngField === "" ||
       rawLatField === "" ||
@@ -656,11 +705,15 @@ const StoreRegistrationForm = ({
     ) {
       return undefined;
     }
-    const mapLat = Number(rawLngField);
-    const mapLng = Number(rawLatField);
-    if (!Number.isFinite(mapLat) || !Number.isFinite(mapLng)) return undefined;
-    if (mapLat === 0 && mapLng === 0) return undefined;
-    return { lat: mapLat, lng: mapLng };
+    const { lat: mapLat, lng: mapLng } = resolveStoreLatLng(
+      rawLatField,
+      rawLngField
+    );
+    if (!Number.isFinite(Number(mapLat)) || !Number.isFinite(Number(mapLng))) {
+      return undefined;
+    }
+    if (Number(mapLat) === 0 && Number(mapLng) === 0) return undefined;
+    return { lat: Number(mapLat), lng: Number(mapLng) };
   }, [RestaurantJoinFormik?.values?.lng, RestaurantJoinFormik?.values?.lat]);
 
   const mapSeedLocation = useMemo(() => {
@@ -793,13 +846,61 @@ const StoreRegistrationForm = ({
     }
   }, [showZoneWarning]);
 
+  const handleFormSubmit = async (event) => {
+    event.preventDefault();
+    if (inZone !== true) {
+      toast.error(t("Please place the map pin inside the selected zone."));
+      document
+        .getElementById("store-reg-general-info")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const errors = await RestaurantJoinFormik.validateForm();
+    if (errors && Object.keys(errors).length > 0) {
+      const touched = Object.keys(RestaurantJoinFormik.values).reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {}
+      );
+      RestaurantJoinFormik.setTouched(touched, false);
+      const firstKey = Object.keys(errors)[0];
+      const firstMsg = errors[firstKey];
+      const text =
+        typeof firstMsg === "string"
+          ? firstMsg
+          : firstMsg?.message || t("Please fill all required fields.");
+      toast.error(text);
+      const scrollTarget = getScrollTargetForFieldErrors(errors);
+      if (scrollTarget) {
+        document
+          .getElementById(scrollTarget)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    RestaurantJoinFormik.handleSubmit();
+  };
+
   return (
     <CustomStackFullWidth
       sx={{
         marginTop: "2rem",
       }}
     >
-      <form noValidate onSubmit={RestaurantJoinFormik.handleSubmit}>
+      <form noValidate onSubmit={handleFormSubmit}>
+        {registrationError ? (
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              borderRadius: "8px",
+              textAlign: "left",
+              fontSize: "14px",
+              whiteSpace: "pre-line",
+            }}
+          >
+            {registrationError}
+          </Alert>
+        ) : null}
         <CustomStackFullWidth
           mt="20px"
           mb="8px"

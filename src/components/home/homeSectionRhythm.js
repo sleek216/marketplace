@@ -19,26 +19,37 @@ export const sectionBandPySx = {
   py: { xs: 1, sm: 1.25, md: 1.5 },
 };
 
-/** Landing + module banner grid — keep heights/widths identical */
-export const bannerMainHeightSx = {
+/**
+ * 3-slot banner board: 1 large + 2 stacked.
+ * The OUTER board has a locked size so extra/odd images never shift layout.
+ */
+export const BANNER_GRID_GAP_PX = 12;
+export const bannerBoardHeightSx = {
+  xs: "auto",
+  sm: "auto",
+  md: "260px",
+  lg: "280px",
+};
+export const bannerMobileSlotHeightSx = {
   xs: "160px",
-  sm: "210px",
-  md: "240px",
-  lg: "260px",
+  sm: "190px",
 };
 
+/** @deprecated Prefer bannerBoardHeightSx */
+export const bannerMainAspectRatio = "16 / 7";
+export const bannerSideAspectRatio = "16 / 7";
+export const bannerMainHeightSx = bannerBoardHeightSx;
 export const bannerSideTileMinSx = {
   xs: "75px",
   sm: "100px",
   md: "115px",
   lg: "123px",
 };
+export const BANNER_SIDE_STACK_GAP_PX = BANNER_GRID_GAP_PX;
 
 export const bannerSectionPySx = {
   py: { xs: "12px", sm: "16px", md: "20px" },
 };
-
-export const BANNER_SIDE_STACK_GAP_PX = 12;
 
 /** Left-aligned module home section headers (ecommerce + marketplace). */
 export const moduleSectionStackSx = {

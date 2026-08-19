@@ -34,6 +34,7 @@ const ValidationSchemaForRestaurant = () => {
 					Object.values(value).some((val) => val && val.trim().length > 0)
 			),
 		module_id: Yup.string().required(t("Module is required")),
+		zoneId: Yup.mixed().required(t("Business zone is required")),
 		f_name: Yup.string().required(t("Name is required")),
 		l_name: Yup.string().required(t("Last name required")),
 		phone: Yup.string().required(t("Phone number required")),
@@ -48,9 +49,8 @@ const ValidationSchemaForRestaurant = () => {
 				"filePresent",
 				t("The logo field is required."),
 				(value) =>
-					value instanceof File ||
-					value instanceof Blob ||
-					(value && typeof value.size === "number")
+					(value instanceof File || value instanceof Blob) &&
+					value.size > 0
 			)
 			.test(
 				"fileSize",
@@ -73,9 +73,8 @@ const ValidationSchemaForRestaurant = () => {
 				"filePresent",
 				t("The cover photo field is required."),
 				(value) =>
-					value instanceof File ||
-					value instanceof Blob ||
-					(value && typeof value.size === "number")
+					(value instanceof File || value instanceof Blob) &&
+					value.size > 0
 			)
 			.test(
 				"fileSize",

@@ -5,7 +5,12 @@ import MainApi from "../../../MainApi";
 const postData = async (businessData) => {
   const { data: responseData } = await MainApi.post(
     `${store_business_plan}`,
-    businessData
+    businessData,
+    {
+      omitAuth: true,
+      moduleIdOverride: businessData?.module_id,
+      zoneIdOverride: businessData?.zone_id || businessData?.zoneId,
+    }
   );
   return responseData;
 };

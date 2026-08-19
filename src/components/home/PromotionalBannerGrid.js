@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   alpha,
   Box,
-  Grid,
   IconButton,
-  Paper,
   Skeleton,
   Stack,
   useTheme,
@@ -13,10 +11,10 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import CustomContainer from "../container";
 import {
-  bannerMainHeightSx,
+  BANNER_GRID_GAP_PX,
+  bannerBoardHeightSx,
+  bannerMobileSlotHeightSx,
   bannerSectionPySx,
-  bannerSideTileMinSx,
-  BANNER_SIDE_STACK_GAP_PX,
 } from "./homeSectionRhythm";
 
 const fillImageSx = {
@@ -25,12 +23,28 @@ const fillImageSx = {
   width: "100%",
   height: "100%",
   objectFit: "cover",
+  objectPosition: "center center",
   display: "block",
+  maxWidth: "none",
+  transform: "none",
 };
 
+const slotSx = (theme) => ({
+  position: "relative",
+  overflow: "hidden",
+  minWidth: 0,
+  minHeight: 0,
+  width: "100%",
+  height: "100%",
+  borderRadius: "2px",
+  bgcolor: alpha(theme.palette.neutral[200], 0.45),
+  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+});
+
 /**
- * Landing-style promotional banner grid: main carousel + 2 side tiles.
- * Fixed heights match landing HeroSection at every breakpoint.
+ * Always 3 fixed slots: large left + 2 stacked right.
+ * Extra banners rotate only inside the left slot — board size never changes.
  */
 const PromotionalBannerGrid = ({
   slides = [],
@@ -43,25 +57,20 @@ const PromotionalBannerGrid = ({
 }) => {
   const theme = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
+  const showSideColumn = alwaysShowSideColumn;
 
-  const carouselSlides = slides;
-  const slideCount = carouselSlides.length;
+  // 1 banner = 1 slot. Extra banners stay in the LEFT slot only.
+  const sideTopSlide = loading
+    ? null
+    : slides[1] || fallbackSideSlides?.[0] || null;
+  const sideBottomSlide = loading
+    ? null
+    : slides[2] || fallbackSideSlides?.[1] || fallbackSideSlides?.[0] || null;
+  const sideSlides = [sideTopSlide, sideBottomSlide];
 
-  const resolveSideSlides = () => {
-    if (loading) return [null, null];
-    return [0, 1].map(
-      (offset) =>
-        slides[offset + 1] ||
-        fallbackSideSlides?.[offset] ||
-        slides[0] ||
-        fallbackSideSlides?.[0] ||
-        null
-    );
-  };
-
-  const sideSlides = resolveSideSlides();
-  const showSideColumn =
-    alwaysShowSideColumn && (loading || sideSlides.some(Boolean));
+  const mainSlides =
+    slides.length > 3 ? [slides[0], ...slides.slice(3)] : slides.slice(0, 1);
+  const slideCount = mainSlides.length;
 
   useEffect(() => {
     setActiveIndex(0);
@@ -69,15 +78,13 @@ const PromotionalBannerGrid = ({
 
   useEffect(() => {
     if (loading || slideCount <= 1) return undefined;
-
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % slideCount);
     }, autoplayMs);
-
     return () => clearInterval(interval);
   }, [loading, slideCount, autoplayMs]);
 
-  if (!loading && slideCount === 0) {
+  if (!loading && slideCount === 0 && !fallbackSideSlides?.length) {
     return null;
   }
 
@@ -98,41 +105,10 @@ const PromotionalBannerGrid = ({
     onSlideClick?.(slide, index);
   };
 
-  const currentSlide = carouselSlides[activeIndex % Math.max(slideCount, 1)];
-
-  const mainPaperSx = {
-    borderRadius: "2px",
-    overflow: "hidden",
-    position: "relative",
-    width: "100%",
-    height: bannerMainHeightSx,
-    minHeight: bannerMainHeightSx,
-    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-    "&:hover .carousel-arrow": {
-      opacity: 1,
-    },
-  };
-
-  const sidePaperSx = (imageClass) => ({
-    borderRadius: "2px",
-    overflow: "hidden",
-    position: "relative",
-    cursor: loading || !onSlideClick ? "default" : "pointer",
-    flex: "1 1 0",
-    minHeight: { xs: bannerSideTileMinSx.xs, sm: bannerSideTileMinSx.sm },
-    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    ...(!loading &&
-      onSlideClick && {
-        "&:hover": {
-          transform: "translateY(-2px)",
-          boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-          [`& .${imageClass}`]: { transform: "scale(1.03)" },
-        },
-      }),
-  });
+  const currentSlide =
+    slideCount > 0
+      ? mainSlides[activeIndex % slideCount]
+      : fallbackSideSlides?.[0] || null;
 
   const arrowSx = {
     position: "absolute",
@@ -148,8 +124,8 @@ const PromotionalBannerGrid = ({
     "&:hover": { background: "rgba(0, 0, 0, 0.75)" },
   };
 
-  const renderMainContent = () => {
-    if (loading) {
+  const renderImage = (slide, alt) => {
+    if (loading || !slide?.src) {
       return (
         <Skeleton
           variant="rectangular"
@@ -157,22 +133,51 @@ const PromotionalBannerGrid = ({
         />
       );
     }
-
     return (
-      <>
-        <Box
-          component="img"
-          src={currentSlide?.src}
-          alt={currentSlide?.alt || "Promotional banner"}
-          onClick={() => handleSlideActivate(currentSlide, activeIndex)}
-          sx={{
-            ...fillImageSx,
-            transition: "opacity 0.5s ease-in-out, transform 0.5s ease",
-            cursor: onSlideClick ? "pointer" : "default",
-          }}
-        />
+      <Box
+        component="img"
+        src={slide.src}
+        alt={slide.alt || alt}
+        sx={fillImageSx}
+      />
+    );
+  };
 
-        {slideCount > 1 && (
+  const board = (
+    <Box
+      sx={{
+        display: "grid",
+        width: "100%",
+        height: bannerBoardHeightSx,
+        gap: `${BANNER_GRID_GAP_PX}px`,
+        gridTemplateColumns: {
+          xs: "1fr",
+          md: showSideColumn ? "minmax(0, 2fr) minmax(0, 1fr)" : "1fr",
+        },
+        gridTemplateRows: {
+          xs: showSideColumn
+            ? `${bannerMobileSlotHeightSx.xs} ${bannerMobileSlotHeightSx.xs} ${bannerMobileSlotHeightSx.xs}`
+            : bannerMobileSlotHeightSx.xs,
+          sm: showSideColumn
+            ? `${bannerMobileSlotHeightSx.sm} ${bannerMobileSlotHeightSx.sm} ${bannerMobileSlotHeightSx.sm}`
+            : bannerMobileSlotHeightSx.sm,
+          md: showSideColumn ? "1fr 1fr" : "1fr",
+        },
+      }}
+    >
+      <Box
+        onClick={() => handleSlideActivate(currentSlide, activeIndex)}
+        sx={{
+          ...slotSx(theme),
+          gridColumn: { xs: "1", md: "1" },
+          gridRow: { xs: "1", md: showSideColumn ? "1 / 3" : "1" },
+          cursor: !loading && onSlideClick && currentSlide ? "pointer" : "default",
+          "&:hover .carousel-arrow": { opacity: 1 },
+        }}
+      >
+        {renderImage(currentSlide, "Promotional banner")}
+
+        {!loading && slideCount > 1 && (
           <>
             <IconButton
               className="carousel-arrow"
@@ -190,7 +195,6 @@ const PromotionalBannerGrid = ({
             >
               <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
             </IconButton>
-
             <Stack
               direction="row"
               spacing={1}
@@ -202,7 +206,7 @@ const PromotionalBannerGrid = ({
                 zIndex: 2,
               }}
             >
-              {carouselSlides.map((_, idx) => (
+              {mainSlides.map((_, idx) => (
                 <Box
                   key={idx}
                   onClick={(event) => {
@@ -226,79 +230,35 @@ const PromotionalBannerGrid = ({
             </Stack>
           </>
         )}
-      </>
-    );
-  };
+      </Box>
 
-  const grid = (
-    <Grid container spacing={{ xs: 2, md: 2 }} alignItems="stretch">
-      <Grid
-        item
-        xs={12}
-        md={showSideColumn ? 8 : 12}
-        lg={showSideColumn ? 8.5 : 12}
-        sx={{ display: "flex" }}
-      >
-        <Paper elevation={0} sx={mainPaperSx}>
-          {renderMainContent()}
-        </Paper>
-      </Grid>
-
-      {showSideColumn && (
-        <Grid item xs={12} md={4} lg={3.5} sx={{ display: "flex" }}>
-          <Stack
-            direction="column"
-            spacing={`${BANNER_SIDE_STACK_GAP_PX}px`}
-            sx={{
-              width: "100%",
-              height: { xs: "auto", md: bannerMainHeightSx },
-              minHeight: { xs: "auto", md: bannerMainHeightSx },
-            }}
-          >
-            {(loading ? [0, 1] : [0, 1]).map((slot, index) => {
-              const slide = loading ? null : sideSlides[index];
-              const imageClass = `side-banner-${index + 1}`;
-              const slideIndex = index + 1;
-
-              return (
-                <Paper
-                  key={loading ? index : slide?.id || index}
-                  elevation={0}
-                  onClick={
-                    loading || !slide || !onSlideClick
-                      ? undefined
-                      : () => handleSlideActivate(slide, slideIndex)
-                  }
-                  sx={sidePaperSx(imageClass)}
-                >
-                  {loading || !slide?.src ? (
-                    <Skeleton
-                      variant="rectangular"
-                      sx={{ ...fillImageSx, position: "absolute" }}
-                    />
-                  ) : (
-                    <Box
-                      component="img"
-                      className={imageClass}
-                      src={slide.src}
-                      alt={slide.alt || "Side banner"}
-                      sx={{
-                        ...fillImageSx,
-                        transition: "transform 0.5s ease",
-                      }}
-                    />
-                  )}
-                </Paper>
-              );
-            })}
-          </Stack>
-        </Grid>
-      )}
-    </Grid>
+      {showSideColumn &&
+        [0, 1].map((index) => {
+          const slide = sideSlides[index];
+          return (
+            <Box
+              key={`side-slot-${index}`}
+              onClick={
+                loading || !slide || !onSlideClick
+                  ? undefined
+                  : () => handleSlideActivate(slide, index + 1)
+              }
+              sx={{
+                ...slotSx(theme),
+                gridColumn: { xs: "1", md: "2" },
+                gridRow: { xs: String(index + 2), md: String(index + 1) },
+                cursor: loading || !slide || !onSlideClick ? "default" : "pointer",
+              }}
+            >
+              {renderImage(slide, "Side banner")}
+            </Box>
+          );
+        })}
+    </Box>
   );
 
   if (!wrapSection) {
-    return grid;
+    return board;
   }
 
   return (
@@ -311,7 +271,7 @@ const PromotionalBannerGrid = ({
         width: "100%",
       }}
     >
-      <CustomContainer>{grid}</CustomContainer>
+      <CustomContainer>{board}</CustomContainer>
     </Box>
   );
 };

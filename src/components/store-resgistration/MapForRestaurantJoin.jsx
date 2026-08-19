@@ -182,15 +182,14 @@ const MapForRestaurantJoin = ({
     }
   }, [placeDetails, applyLocationFromMapOrGps]);
   const successHandler = (res) => {
-    setInZone(res);
-
-    if (!res && res !== undefined) {
-      setShowZoneWarning(true);
-      zoneHandler?.(null);
-      //restaurantAddressHandler?.(null);
-    } else {
-      setShowZoneWarning(false);
-    }
+    const inside =
+      res === true ||
+      res === 1 ||
+      res === "1" ||
+      Boolean(res?.zone_id) ||
+      res?.status === true;
+    setInZone(inside);
+    setShowZoneWarning(!inside);
   };
   const { data: checkedData } = useGetCheckZone(
     location,

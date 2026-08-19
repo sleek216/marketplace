@@ -73,8 +73,15 @@ const deliveryManValidationSchema = () => {
       .when("identity_type", (identityType, schema) => {
         const selectedType = Array.isArray(identityType) ? identityType[0] : identityType;
         if (selectedType === "passport") {
-          return schema.matches(
-            /^[A-Za-z0-9]{6,10}$/,
+          return schema.test(
+            "passport-first-two-letters",
+            "First 2 characters must be letters",
+            (value) => {
+              if (!value) return true;
+              return /^[A-Za-z]{2}/.test(String(value));
+            }
+          ).matches(
+            /^[A-Za-z]{2}[A-Za-z0-9]{4,8}$/,
             "Passport format should be AB1234567 (6-10 characters)"
           );
         }
