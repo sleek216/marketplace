@@ -150,13 +150,24 @@ const GoogleLoginComp = (props) => {
   };
   const handleCallBackResponse = (res) => {
     const userObj = jwt_decode(res.credential);
+    const resolvedUniqueId =
+      userObj?.sub ||
+      res?.unique_id ||
+      res?.clientId ||
+      userObj?.aud ||
+      clientId;
 
-    setJwtToken(res);
+    setJwtToken({
+      ...res,
+      credential: res.credential,
+      clientId: resolvedUniqueId,
+      unique_id: resolvedUniqueId,
+    });
     setUserInfo(userObj);
     const tempValue = {
-      email: res?.email ?? userObj.email,
-      token: res?.token ?? res.credential,
-      unique_id: res?.unique_id ?? res?.clientId,
+      email: res?.email ?? userObj?.email,
+      token: res?.token ?? res?.credential,
+      unique_id: resolvedUniqueId,
       medium: res?.medium ?? "google",
       login_type: res?.login_type ?? "social",
       guest_id: loginValue?.guest_id ?? getGuestId(),

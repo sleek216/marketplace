@@ -1054,6 +1054,8 @@ const ItemCheckout = (props) => {
 	const handleOrderSuccess = () => {
 		if (page === "buysetScheduleAt_now") {
 			dispatch(setRemoveItemFromCart(cartList?.[0]));
+		} else {
+			dispatch(setClearCart());
 		}
 		localStorage.setItem("totalAmount", totalAmount);
 		if (!token) {

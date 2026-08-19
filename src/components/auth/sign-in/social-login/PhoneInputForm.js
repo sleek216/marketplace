@@ -39,7 +39,11 @@ const PhoneInputForm = (props) => {
 		const info = {
 			email: userInfo?.email,
 			token: jwtToken?.credential,
-			unique_id: jwtToken?.clientId,
+			unique_id:
+				jwtToken?.unique_id ||
+				jwtToken?.clientId ||
+				userInfo?.sub ||
+				userInfo?.id,
 			medium: medium,
 			phone: values.phone,
 			id_token: true,

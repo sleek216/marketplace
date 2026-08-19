@@ -171,7 +171,11 @@ const AuthModal = ({ modalFor, open, handleClose, setModalFor }) => {
         email: userInfo?.email,
         guest_id: getGuestId(),
         token: jwtToken?.credential,
-        unique_id: jwtToken?.clientId,
+        unique_id:
+          jwtToken?.unique_id ||
+          jwtToken?.clientId ||
+          userInfo?.sub ||
+          userInfo?.id,
         medium: medium,
       };
     } else {
